@@ -18,6 +18,7 @@ s" WEAVE" getenv nip constant weaving?
 : atom-length@ ( A -- n ) 1 cells + @ ;
 : atom-data@ ( A -- a ) 2 cells + @ ;
 : atom-string@ ( A -- $ ) dup atom-data@ swap atom-length@ ;
+: atom-head ( A -- A[head] ) 3 cells + ;
 
 : chain-link ( head[t] -- a head[t] ) here 0 , swap ;
 : chain-first ( head[t] -- ) chain-link 2dup ! cell+ ! ;
@@ -27,21 +28,25 @@ s" WEAVE" getenv nip constant weaving?
 : $clone ( $ - $ ) here over 1+ allot swap 2dup >r >r cmove r> r> ;
 : 3dup ( xyz -- xyzxyz ) >r 2dup r> dup >r swap >r swap r> r> ;
 
-create atom-head  0 , 0 ,
-: atom-new ( $ -- A ) $clone atom-head chain , , 0 , 0 , atom-head cell+ @ ;
+create atom-root  0 , 0 ,
+: atom-new ( $ -- A ) $clone atom-root chain , , 0 , 0 , atom-root cell+ @ ;
 
 : atom. ( A -- ) atom-string@ type ;
 
-: atoms. ( -- ) atom-head @ begin dup while dup atom. cr ->next repeat drop ;
+: atoms. ( -- ) atom-root @ begin dup while dup atom. cr ->next repeat drop ;
 
 : atom= ( $ A -- f ) atom-string@ compare 0= ;
 
 : atom-find' ( $ A -- A ) dup 0= if nip nip exit then
                           3dup atom= if nip nip exit then
                           ->next recurse ;
-: atom-find ( $ -- A ) atom-head @ atom-find' ;
+: atom-find ( $ -- A ) atom-root @ atom-find' ;
 
 : atom ( $ -- A ) 2dup atom-find dup if nip nip else drop atom-new then ;
+
+: atom-append ( A n Ad -- ) atom-head chain , , ;
+: atom+=$ ( A Ad -- ) 0 swap atom-append ;
+: atom+=ref ( A Ad -- ) 1 swap atom-append ;
 
 
 
