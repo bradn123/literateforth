@@ -19,24 +19,27 @@ s" WEAVE" getenv nip constant weaving?
 : atom-data@ ( A -- a ) 2 cells + @ ;
 : atom-string@ ( A -- $ ) dup atom-data@ swap atom-length@ ;
 
-: chain ( head -- ) dup @ here swap , swap ! ;
+: chain-link ( head[t] -- a head[t] ) here 0 , swap ;
+: chain-first ( head[t] -- ) chain-link 2dup ! cell+ ! ;
+: chain-rest ( head[t] -- ) chain-link cell+ 2dup @ ! ! ;
+: chain ( head[t] -- ) dup @ if chain-rest else chain-first then ;
 : ->next ( a -- a' ) @ ;
 : $clone ( $ - $ ) here over 1+ allot swap 2dup >r >r cmove r> r> ;
 : 3dup ( xyz -- xyzxyz ) >r 2dup r> dup >r swap >r swap r> r> ;
 
-variable atom-root
-: atom-new ( $ -- A ) $clone atom-root chain , , 0 , 0 , atom-root @ ;
+create atom-head  0 , 0 ,
+: atom-new ( $ -- A ) $clone atom-head chain , , 0 , 0 , atom-head cell+ @ ;
 
 : atom. ( A -- ) atom-string@ type ;
 
-: atoms. ( -- ) atom-root @ begin dup while dup atom. cr ->next repeat drop ;
+: atoms. ( -- ) atom-head @ begin dup while dup atom. cr ->next repeat drop ;
 
 : atom= ( $ A -- f ) atom-string@ compare 0= ;
 
 : atom-find' ( $ A -- A ) dup 0= if nip nip exit then
                           3dup atom= if nip nip exit then
                           ->next recurse ;
-: atom-find ( $ -- A ) atom-root @ atom-find' ;
+: atom-find ( $ -- A ) atom-head @ atom-find' ;
 
 : atom ( $ -- A ) 2dup atom-find dup if nip nip else drop atom-new then ;
 
