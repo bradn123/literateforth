@@ -64,20 +64,26 @@ create atom-root  0 , 0 ,
 : gather-string ( a A -- a' ) 2dup atom-string@ >r swap r> move tally-length ;
 : atom-walk-length ( A -- n ) 0 swap ['] tally-length swap atom-walk ;
 : atom-walk-gather ( a A -- ) swap ['] gather-string swap atom-walk drop ;
-: atom-deref ( A -- A' ) dup atom-walk-length here swap 2dup >r >r allot align
-                         atom-walk-gather r> r> $atom ;
+: means ( A -- A' ) dup atom-walk-length here swap 2dup >r >r allot align
+                    atom-walk-gather r> r> $atom ;
 
 
-(
-atom"  and BAR more" atom" bar" atom+=$
 
-atom" This is a test" atom" foo" atom+=$
+: assert ( n -- ) 0= if abort then ;
+
+\ Test atoms.
+atom" foo" atom" foo" = assert
+atom" bar" atom" foo" <> assert
+
+\ Test means.
+atom" abc" atom" bar" atom+=$
+atom" def" atom" bar" atom+=$
+atom" 1234" atom" foo" atom+=$
 atom" bar" atom" foo" atom+=ref
-atom"  dude and more" atom" foo" atom+=$
+atom" 5678 9" atom" foo" atom+=$
 atom" bar" atom" foo" atom+=ref
-
-atom" foo" atom-deref atom. cr
-)
+atom" foo" means atom" 1234abcdef5678 9abcdef" = assert
+0 assert
 
 
 : @{ ( start documentation chunk) ;
