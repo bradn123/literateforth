@@ -29,7 +29,8 @@ s" WEAVE" getenv nip constant weaving?
 : 3dup ( xyz -- xyzxyz ) >r 2dup r> dup >r swap >r swap r> r> ;
 
 create atom-root  0 , 0 ,
-: atom-new ( $ -- A ) $clone atom-root chain , , 0 , 0 , atom-root cell+ @ ;
+: $atom-new ( $ -- A ) atom-root chain , , 0 , 0 , atom-root cell+ @ ;
+: atom-new ( $ -- A ) $clone $atom-new ;
 
 : atom. ( A -- ) atom-string@ type ;
 
@@ -43,20 +44,40 @@ create atom-root  0 , 0 ,
 : atom-find ( $ -- A ) atom-root @ atom-find' ;
 
 : atom ( $ -- A ) 2dup atom-find dup if nip nip else drop atom-new then ;
+: $atom ( $ -- A ) 2dup atom-find dup if nip nip else drop $atom-new then ;
+: atom" ( -- A ) [char] " parse atom ;
 
 : atom-append ( A n Ad -- ) atom-head chain , , ;
 : atom+=$ ( A Ad -- ) 0 swap atom-append ;
 : atom+=ref ( A Ad -- ) 1 swap atom-append ;
 
 
+: ref-parts ( ref -- A ref? ) cell+ dup cell+ @ swap @ ;
+: atom-walk ( fn A -- )
+    atom-head @ begin dup while
+        2dup >r >r
+        ref-parts if recurse else swap execute then
+        r> r>
+        ->next
+    repeat 2drop ;
+: tally-length ( n A -- n ) atom-length@ + ;
+: gather-string ( a A -- a' ) 2dup atom-string@ >r swap r> move tally-length ;
+: atom-walk-length ( A -- n ) 0 swap ['] tally-length swap atom-walk ;
+: atom-walk-gather ( a A -- ) swap ['] gather-string swap atom-walk drop ;
+: atom-deref ( A -- A' ) dup atom-walk-length here swap 2dup >r >r allot align
+                         atom-walk-gather r> r> $atom ;
 
-s" hello there" atom dup . atom. cr
-s" dude" atom dup . atom. cr
-s" hello there" atom dup . atom. cr
-s" what up" atom dup . atom. cr
-s" dude" atom dup . atom. cr
 
-atoms.
+(
+atom"  and BAR more" atom" bar" atom+=$
+
+atom" This is a test" atom" foo" atom+=$
+atom" bar" atom" foo" atom+=ref
+atom"  dude and more" atom" foo" atom+=$
+atom" bar" atom" foo" atom+=ref
+
+atom" foo" atom-deref atom. cr
+)
 
 
 : @{ ( start documentation chunk) ;
