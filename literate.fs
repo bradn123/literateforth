@@ -150,14 +150,18 @@ parse..| <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"
 "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
 <html>
 <head>
-<title>
-|-constant chapter-pre1
+<title>|-constant chapter-pre1
 
 parse..| </title>
 </head>
 <body>
+<h1>|-constant chapter-pre2
+
+parse..| </h1>
+</head>
+<body>
 <p>
-|-constant chapter-pre2
+|-constant chapter-pre3
 
 parse..|
 </p>
@@ -167,21 +171,108 @@ parse..|
 
 
 
+parse..| <?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://www.idpf.org/2007/opf" version="2.0"
+unique-identifier="BookId">
+<metadata xmlns:dc="http://purl.org/dc/elements/1.1/"
+xmlns:opf="http://www.idpf.org/2007/opf">
+  <dc:title>Test1</dc:title>
+  <dc:language>en-us</dc:language>
+  <dc:identifier id="BookId" opf:scheme="ISBN">9999999999</dc:identifier>
+  <dc:creator>me</dc:creator>
+  <dc:publisher>Self</dc:publisher>
+  <dc:subject>Article</dc:subject>
+  <dc:date>2012-02-15</dc:date>
+  <dc:description>My short description.</dc:description>
+</metadata>
+
+<manifest>
+  <item id="My_Table_of_Contents" media-type="application/x-dtbncx+xml"
+   href="index.ncx"/>
+  <item id="toc" media-type="application/xhtml+xml" href="index.html"></item>
+|-constant opf-pre1
+
+parse..| <item id="|-constant opf-chapter-pre1
+parse..| " media-type="application/xhtml+xml" href="|-constant opf-chapter-pre2
+parse..| "></item>
+|-constant opf-chapter-post
+: opf-chapter ( A -- )
+  opf-chapter-pre1 doc+=$ 
+  dup doc+=$
+  opf-chapter-pre2 doc+=$ 
+  doc+=$
+  opf-chapter-post doc+=$ 
+;
+
+parse..|
+</manifest>
+<spine toc="My_Table_of_Contents">
+  <itemref idref="toc"/>
+|-constant opf-pre2
+
+parse..| <itemref idref="|-constant opf-chapter'-pre1
+parse..| "/>
+|-constant opf-chapter'-post
+: opf-chapter' ( A -- )
+  opf-chapter'-pre1 doc+=$ 
+  doc+=$
+  opf-chapter'-post doc+=$ 
+;
+
+
+parse..|
+</spine>
+<guide>
+  <reference type="toc" title="Table of Contents"
+   href="index.html"></reference>
+</guide>
+</package>
+|-constant opf-post
+
+
 
 variable chapter-count
 create chapters 0 , 0 ,
 : chapter-finish   chapter-post doc+=$ ;
 : |chapter:
     chapter-finish
-    parse-cr chapters chain dup dup ,
+    parse-cr chapters chain dup ,
     chapter-count @ ,   1 chapter-count +!
-    documentation-chunk ! doc!
+    dup documentation-chunk ! doc!
     chapter-pre1 doc+=$
-    doc+=$
+    dup doc+=$
     chapter-pre2 doc+=$
+    doc+=$
+    chapter-pre3 doc+=$
     feed
 ;
 
+
+parse..| <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"
+"http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head><title>Table of Contents</title></head>
+<body>
+<div>
+ <h1><b>TABLE OF CONTENTS</b></h1>
+|-constant toc-pre
+
+parse..|
+</div>
+</body>
+</html>
+|-constant toc-post
+
+parse..| <h3><b><a href="|-constant toc-chapter-pre1
+parse..| ">|-constant toc-chapter-pre2
+parse..| </a></b></h3>
+|-constant toc-chapter-post
+
+atom" ~~~TOC" constant atom-toc
+atom" index.html" constant toc-filename
+
+atom" ~~~OPF" constant atom-opf
+atom" index.opf" constant opf-filename
 
 
 : |section:   parse-cr pre-section doc+=$ doc+=$ post-section doc+=$ feed ;
@@ -200,7 +291,37 @@ atom" .html" constant .html
 : chapter-filename ( chp -- A )
     chapter-number [char] A + atom-ch .html atom+ ;
 : weave-chapter ( chapter -- ) dup chapter-text swap chapter-filename file! ;
-: weave   chapters @ begin dup while dup weave-chapter ->next repeat drop ;
+: weave-chapters
+   chapters @ begin dup while dup weave-chapter ->next repeat drop ;
+
+: weave-toc-chapter ( chapter -- )
+   toc-chapter-pre1 doc+=$
+   dup chapter-filename doc+=$
+   toc-chapter-pre2 doc+=$
+   chapter-name doc+=$
+   toc-chapter-post doc+=$
+;
+: weave-toc
+   atom-toc documentation-chunk ! doc!
+   toc-pre doc+=$
+   chapters @ begin dup while dup weave-toc-chapter ->next repeat drop
+   toc-post doc+=$
+   documentation means toc-filename file!
+;
+
+: weave-opf
+   atom-opf documentation-chunk ! doc!
+   opf-pre1 doc+=$
+   chapters @ begin dup while dup chapter-filename opf-chapter ->next repeat drop
+   opf-pre2 doc+=$
+   chapters @ begin dup while dup chapter-filename opf-chapter' ->next repeat drop
+   opf-post doc+=$
+   documentation means opf-filename file!
+;
+
+
+
+: weave    weave-chapters weave-toc weave-opf ;
 
 
 : tangle-file ( file -- ) cell+ @ dup means swap file! ;
