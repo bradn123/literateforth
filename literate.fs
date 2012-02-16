@@ -158,8 +158,6 @@ parse..| </title>
 <h1>|-constant chapter-pre2
 
 parse..| </h1>
-</head>
-<body>
 <p>
 |-constant chapter-pre3
 
@@ -220,6 +218,7 @@ parse..| "/>
 ;
 
 
+
 parse..|
 </spine>
 <guide>
@@ -228,6 +227,50 @@ parse..|
 </guide>
 </package>
 |-constant opf-post
+
+
+
+
+parse..| <?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE ncx PUBLIC "-//NISO//DTD ncx 2005-1//EN"
+"http://www.daisy.org/z3986/2005/ncx-2005-1.dtd">
+<ncx xmlns="http://www.daisy.org/z3986/2005/ncx/"
+ version="2005-1" xml:lang="en-US">
+<head>
+<meta name="dtb:uid" content="BookId"/>
+<meta name="dtb:depth" content="2"/>
+<meta name="dtb:totalPageCount" content="0"/>
+<meta name="dtb:maxPageNumber" content="0"/>
+</head>
+<docTitle><text>Test1</text></docTitle>
+<docAuthor><text>me</text></docAuthor>
+  <navMap>
+    <navPoint class="toc" id="toc" playOrder="1">
+      <navLabel>
+        <text>Table of Contents</text>
+      </navLabel>
+      <content src="index.html"/>
+    </navPoint>
+|-constant ncx-pre1
+
+parse..| <navPoint class="chapter" id="|-constant ncx-chapter-pre1
+parse..| " playOrder="|-constant ncx-chapter-pre2
+parse..| ">
+      <navLabel>
+        <text>|-constant ncx-chapter-pre3
+parse..| </text>
+      </navLabel>
+      <content src="|-constant ncx-chapter-pre4
+parse..| "/>
+    </navPoint>
+|-constant ncx-chapter-post
+
+parse..|
+  </navMap>
+</ncx>
+|-constant ncx-post
+
+
 
 
 
@@ -274,6 +317,9 @@ atom" index.html" constant toc-filename
 atom" ~~~OPF" constant atom-opf
 atom" index.opf" constant opf-filename
 
+atom" ~~~NCX" constant atom-ncx
+atom" index.ncx" constant ncx-filename
+
 
 : |section:   parse-cr pre-section doc+=$ doc+=$ post-section doc+=$ feed ;
 
@@ -309,6 +355,25 @@ atom" .html" constant .html
    documentation means toc-filename file!
 ;
 
+: weave-ncx-chapter ( chapter -- )
+   ncx-chapter-pre1 doc+=$
+   dup chapter-filename doc+=$
+   ncx-chapter-pre2 doc+=$
+   dup chapter-filename doc+=$
+   ncx-chapter-pre3 doc+=$
+   dup chapter-name doc+=$
+   ncx-chapter-pre4 doc+=$
+   chapter-filename doc+=$
+   ncx-chapter-post doc+=$
+;
+: weave-ncx
+   atom-ncx documentation-chunk ! doc!
+   ncx-pre1 doc+=$
+   chapters @ begin dup while dup weave-ncx-chapter ->next repeat drop
+   ncx-post doc+=$
+   documentation means ncx-filename file!
+;
+
 : weave-opf
    atom-opf documentation-chunk ! doc!
    opf-pre1 doc+=$
@@ -321,7 +386,7 @@ atom" .html" constant .html
 
 
 
-: weave    weave-chapters weave-toc weave-opf ;
+: weave    weave-chapters weave-toc weave-opf weave-ncx ;
 
 
 : tangle-file ( file -- ) cell+ @ dup means swap file! ;
