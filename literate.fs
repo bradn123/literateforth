@@ -126,6 +126,7 @@ doc!
 : || ( escaped | ) atom-| chunk+=$ feed ;
 : |; ( documentation ) doc? 0= if post-post-def doc+=$ then doc! feed ;
 : |$ ( paragraph ) paragraph doc+=$ feed ;
+: |\ ( whole line) parse-cr atom+=$ ;
 
 
 atom" <div><i>" constant pre-file
