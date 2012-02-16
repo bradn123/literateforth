@@ -124,6 +124,14 @@ doc!
 : |$ ( paragraph ) paragraph doc+=$ feed ;
 
 
+atom" <i>" constant pre-file
+atom" </i>" constant post-file
+create out-files 0 , 0 ,
+: |file: ( add a new output file )
+   parse-cr out-files chain dup ,
+   pre-file doc+=$ doc+=$ post-file doc+=$ feed ;
+
+
 : |-constant ( create atom constant ) constant ;
 
 : once! ( n a -- ) dup @ 0= assert ! ;
@@ -148,11 +156,25 @@ parse..| <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR
 
 : |section:   parse-cr pre-section doc+=$ doc+=$ post-section doc+=$ feed ;
 
+
+: file! ( A A -- )
+    atom-string@ w/o bin create-file 0= assert
+    swap over >r atom-string@ r> write-file 0= assert
+    close-file 0= assert
+;
+
 : weave   html-preamble documentation means atom. html-postamble ;
-: tangle   atom-* means atom. ;
+
+
+: tangle-file ( file -- ) cell+ @ dup means swap file! ;
+: tangle   out-files @ begin dup while dup tangle-file ->next repeat drop ;
+
+
 : run   atom-* means atom-string@ evaluate ;
-: |. ( exit literate mode ) weaving? if weave then
-                            tangling? if tangle then
+
+
+: |. ( exit literate mode ) weaving? if weave bye then
+                            tangling? if tangle bye then
                             running? if run then ;
 
 

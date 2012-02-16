@@ -6,13 +6,39 @@ s" literate.fs" included
 |section: Overview
 
 Our goal is to print the 4 raised to the 4th power.
-Like this:
+
+|section: Source Files
+
+There will be two files:
+|file: main.fs
+|file: power4.fs
+
+|$
+
+main.fs will have the main use case:
+|: main.fs
+  s" power4.fs" included
+  |@ use it
+|;
+
+power4.fs will have the definition of 4^.
+|: power4.fs
+  |@ define 4^
+|;
+
+When run directly it will work like this:
 |: *
   |@ define 4^
+  |@ use it
+
+
+|section: Basic Approach
+
+In total it will work like this:
+|: use it
   4 4^ . cr
   bye
 |;
-
 
 |section: Details of the implementation
 
@@ -34,5 +60,3 @@ Here's how we define square:
 That's it!
 
 |.
-
-bye
