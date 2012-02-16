@@ -84,13 +84,14 @@ create atom-root  0 , 0 ,
 
 
 : source@ source drop >in @ + ;
+: source-remaining source nip >in @ - ;
 : drop| ( -- ) source@ 1- c@ [char] | = if -1 >in +! then ;
 : need-refill? ( -- f) source nip >in @ <= ;
 : on|? ( -- f ) need-refill? if false exit then source@ c@ [char] | = ;
 : replenish ( -- f ) need-refill? if refill else true then ;
 : ?atom-cr+ ( A -- A ) on|? 0= if atom-cr+ then ;
 : eat| ( -- ) [char] | parse drop| atom atom+ ?atom-cr+ ;
-: parse| ( -- A ) [char] | parse atom ;
+: parse-cr ( -- A ) source@ source-remaining atom   source nip >in ! ;
 : parse..| ( -- A ) atom"" begin replenish 0= if exit then eat| on|? until ;
 
 atom" |" constant atom-|
@@ -116,24 +117,32 @@ doc!
 : feed ( read into current chunk ) atom-cr parse..| atom+ dup chunk+=$ ?doc+=$ ;
 : doc+=use ( A -- ) pre-use doc+=$ doc+=$ post-use doc+=$ ;
 : doc+=def ( A -- ) pre-def doc+=$ doc+=$ post-def doc+=$ ;
-: |@ ( use a chunk ) parse| dup chunk+=ref doc+=use feed ;
-: |+! ( add to a chunk ) parse| dup chunk ! doc+=def feed ;
+: |@ ( use a chunk ) parse-cr dup chunk+=ref doc+=use feed ;
+: |: ( add to a chunk ) parse-cr dup chunk ! doc+=def feed ;
 : || ( escaped | ) atom-| chunk+=$ feed ;
-: | ( documentation ) doc? 0= if post-post-def doc+=$ then doc! feed ;
-: |$| ( paragraph ) paragraph doc+=$ feed ;
+: |; ( documentation ) doc? 0= if post-post-def doc+=$ then doc! feed ;
+: |$ ( paragraph ) paragraph doc+=$ feed ;
+
+: once! ( n a -- ) dup @ 0= assert ! ;
 
 variable title
-: |title:   parse| title @ 0= assert title ! feed ;
+: |title:   parse-cr title once! feed ;
+variable author
+: |author:   parse-cr author once! feed ;
+
 : html-preamble ." <html><head><title>" title @ atom.
-                ." </title></head><body><p>" cr ;
+                ." </title></head><body>" cr
+                ." <h1>" title @ atom.
+                ."  - <i>" author @ atom. ." </i></h1><p>" cr ;
 : html-postamble ." </p></body></html>" cr ;
 
-: |section:   parse| pre-section doc+=$ doc+=$ post-section doc+=$ feed ;
+
+: |section:   parse-cr pre-section doc+=$ doc+=$ post-section doc+=$ feed ;
 
 : weave   html-preamble documentation means atom. html-postamble ;
 : tangle   atom-* means atom. ;
 : run   atom-* means atom-string@ evaluate ;
-: |; ( exit literate mode ) weaving? if weave then
+: |. ( exit literate mode ) weaving? if weave then
                             tangling? if tangle then
                             running? if run then ;
 
@@ -163,41 +172,3 @@ atom" testing" atom-cr+
 atom" Hello there" atom+ atom-cr+
 atom" 123" atom+ = assert
 
-
-(
-
-|
-
-This is a test.
-
-|+! *|
-|;
-
-
-@<title: fsdfsdfsdfssdfd fsd fsdf s>
-@<author: foo bar>
-@<section: foo>
-@<: variable blah>
-
-
-
-@{
-
-\title{ fdsfsdfsds }
-\author{ fsdfsd }
-\maketitle
-
-\tableofcontents
-\section{ foo }
-
-blah blah this is messed b{ up }
-\emph{ hi }
-
-\subsection{ bar }
-
-: test1
-  weaving? if ." We're weaving" else ." We're tangling" then cr
-;
-
-test1
-)
