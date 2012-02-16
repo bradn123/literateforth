@@ -46,6 +46,7 @@ create atom-root  0 , 0 ,
 : atom ( $ -- A ) 2dup atom-find dup if nip nip else drop atom-new then ;
 : $atom ( $ -- A ) 2dup atom-find dup if nip nip else drop $atom-new then ;
 : atom" ( -- A ) [char] " parse atom ;
+: atom"" ( -- A ) 0 0 atom ;
 
 : atom-append ( A n Ad -- ) atom-head chain , , ;
 : atom+=$ ( A Ad -- ) 0 swap atom-append ;
@@ -67,9 +68,31 @@ create atom-root  0 , 0 ,
 : means ( A -- A' ) dup atom-walk-length here swap 2dup >r >r allot align
                     atom-walk-gather r> r> $atom ;
 
-
+: atom, ( A -- ) atom-string@ dup here swap allot swap move ;
+: atom+ ( A A -- A ) swap here >r atom, atom, r> here over - align $atom ;
+: atomch ( ch -- A ) here c! here cell allot 1 atom ;
+10 atomch constant atomcr
+: atomcr+ ( A -- A ) atomcr atom+ ;
+                     
 
 : assert ( n -- ) 0= if abort then ;
+
+
+: source@ source drop >in @ + ;
+: drop| ( -- ) source@ 1- c@ [char] | = if -1 >in +! then ;
+: need-refill? ( -- f) source nip >in @ <= ;
+: on|? ( -- f ) need-refill? if false exit then source@ c@ [char] | = ;
+: replenish ( -- f ) need-refill? if refill else true then ;
+: ?atomcr+ ( A -- A ) on|? 0= if atomcr+ then ;
+: eat| ( -- ) [char] | parse drop| atom atom+ ?atomcr+ ;
+: parse| ( -- A ) atom"" begin replenish 0= if exit then eat| on|? until ;
+
+: |@ ( use a chunk ) parse| atom. ;
+: |+! ( add to a chunk ) parse| atom. ;
+: || ( escaped | ) parse| atom. ;
+: | ( documentation ) parse| atom. ;
+: |; ( exit literate mode ) ;
+
 
 \ Test atoms.
 atom" foo" atom" foo" = assert
@@ -83,15 +106,39 @@ atom" bar" atom" foo" atom+=ref
 atom" 5678 9" atom" foo" atom+=$
 atom" bar" atom" foo" atom+=ref
 atom" foo" means atom" 1234abcdef5678 9abcdef" = assert
-0 assert
 
+\ Test atom+.
+atom" testing" atom" 123" atom+ atom" testing123" = assert
 
-: @{ ( start documentation chunk) ;
-: =<< ( define a chunk ) ;
-: << ( use a chunk ) ;
+\ Test parse.
+parse| testing
+Hello there
+123|;
+atom" testing" atomcr+
+atom" Hello there" atom+ atomcr+
+atom" 123" atom+ = assert
+parse| testing
+Hello there
+123|;
 
 
 (
+
+|
+
+This is a test.
+
+|+! *|
+|;
+
+
+@<title: fsdfsdfsdfssdfd fsd fsdf s>
+@<author: foo bar>
+@<section: foo>
+@<: variable blah>
+
+
+
 @{
 
 \title{ fdsfsdfsds }
@@ -112,5 +159,3 @@ blah blah this is messed b{ up }
 
 test1
 )
-
-bye
