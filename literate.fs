@@ -102,7 +102,7 @@ atom" </p><pre><b>&lt; " constant pre-def
 atom"  &gt;</b> +&equiv; " constant post-def
 atom" </p><h2>" constant pre-section
 atom" </h2><p>" constant post-section
-atom" </pre>" constant post-post-def
+atom" </pre><p>" constant post-post-def
 atom" </p><p>" constant paragraph
 atom" *" constant atom-*
 variable chunk
@@ -123,6 +123,9 @@ doc!
 : |; ( documentation ) doc? 0= if post-post-def doc+=$ then doc! feed ;
 : |$ ( paragraph ) paragraph doc+=$ feed ;
 
+
+: |-constant ( create atom constant ) constant ;
+
 : once! ( n a -- ) dup @ 0= assert ! ;
 
 variable title
@@ -130,10 +133,16 @@ variable title
 variable author
 : |author:   parse-cr author once! feed ;
 
-: html-preamble ." <html><head><title>" title @ atom.
-                ." </title></head><body>" cr
-                ." <h1>" title @ atom.
-                ."  - <i>" author @ atom. ." </i></h1><p>" cr ;
+
+parse..| <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+|-constant xhtml
+
+: html-preamble
+    xhtml atom. cr
+    ." <html><head><title>" title @ atom.
+    ." </title></head><body>" cr
+    ." <h1>" title @ atom.
+    ."  - <i>" author @ atom. ." </i></h1><p>" cr ;
 : html-postamble ." </p></body></html>" cr ;
 
 
