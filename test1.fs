@@ -3,6 +3,8 @@ s" literate.fs" included
 |title: fun^4
 |author: me
 
+|chapter: Introduction
+
 |section: Overview
 
 Our goal is to print the 4 raised to the 4th power.
@@ -32,6 +34,8 @@ When run directly it will work like this:
   |@ use it
 |;
 
+
+|chapter: Implementation
 
 |section: Basic Approach
 

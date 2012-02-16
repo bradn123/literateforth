@@ -94,8 +94,12 @@ create atom-root  0 , 0 ,
 : parse-cr ( -- A ) source@ source-remaining atom   source nip >in ! ;
 : parse..| ( -- A ) atom"" begin replenish 0= if exit then eat| on|? until ;
 
+
+atom" ~~~blackhole" constant blackhole
+variable documentation-chunk   blackhole documentation-chunk !
+: documentation ( -- A ) documentation-chunk @ ;
+
 atom" |" constant atom-|
-atom" ~~~documentation" constant documentation
 atom" <b>( " constant pre-use
 atom"  )</b>" constant post-use
 atom" </p><pre><b>&lt; " constant pre-def
@@ -124,8 +128,8 @@ doc!
 : |$ ( paragraph ) paragraph doc+=$ feed ;
 
 
-atom" <i>" constant pre-file
-atom" </i>" constant post-file
+atom" <div><i>" constant pre-file
+atom" </i></div>" constant post-file
 create out-files 0 , 0 ,
 : |file: ( add a new output file )
    parse-cr out-files chain dup ,
@@ -142,16 +146,42 @@ variable author
 : |author:   parse-cr author once! feed ;
 
 
-parse..| <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
-|-constant xhtml
+parse..| <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"
+"http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+<html>
+<head>
+<title>
+|-constant chapter-pre1
 
-: html-preamble
-    xhtml atom. cr
-    ." <html><head><title>" title @ atom.
-    ." </title></head><body>" cr
-    ." <h1>" title @ atom.
-    ."  - <i>" author @ atom. ." </i></h1><p>" cr ;
-: html-postamble ." </p></body></html>" cr ;
+parse..| </title>
+</head>
+<body>
+<p>
+|-constant chapter-pre2
+
+parse..|
+</p>
+</body>
+</html>
+|-constant chapter-post
+
+
+
+
+variable chapter-count
+create chapters 0 , 0 ,
+: chapter-finish   chapter-post doc+=$ ;
+: |chapter:
+    chapter-finish
+    parse-cr chapters chain dup dup ,
+    chapter-count @ ,   1 chapter-count +!
+    documentation-chunk ! doc!
+    chapter-pre1 doc+=$
+    doc+=$
+    chapter-pre2 doc+=$
+    feed
+;
+
 
 
 : |section:   parse-cr pre-section doc+=$ doc+=$ post-section doc+=$ feed ;
@@ -163,7 +193,14 @@ parse..| <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR
     close-file 0= assert
 ;
 
-: weave   html-preamble documentation means atom. html-postamble ;
+: chapter-name ( chp -- A ) cell+ @ ;
+: chapter-text ( chp -- A ) cell+ @ means ;
+: chapter-number ( chp -- n ) 2 cells + @ ;
+atom" .html" constant .html
+: chapter-filename ( chp -- A )
+    chapter-number [char] A + atom-ch .html atom+ ;
+: weave-chapter ( chapter -- ) dup chapter-text swap chapter-filename file! ;
+: weave   chapters @ begin dup while dup weave-chapter ->next repeat drop ;
 
 
 : tangle-file ( file -- ) cell+ @ dup means swap file! ;
@@ -173,9 +210,11 @@ parse..| <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR
 : run   atom-* means atom-string@ evaluate ;
 
 
-: |. ( exit literate mode ) weaving? if weave bye then
-                            tangling? if tangle bye then
-                            running? if run then ;
+: |. ( exit literate mode )
+    chapter-finish
+    weaving? if weave bye then
+    tangling? if tangle bye then
+    running? if run then ;
 
 
 \ Test atoms.
