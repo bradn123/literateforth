@@ -1,7 +1,13 @@
 \ Literate Programming Words
 
+
+: assert ( n -- ) 0= if abort then ;
+
 \ Decide if we're weaving or tangling.
-s" WEAVE" getenv nip constant weaving?
+s" LITERATE" getenv s" weave" compare 0= constant weaving?
+s" LITERATE" getenv s" tangle" compare 0= constant tangling?
+s" LITERATE" getenv s" " compare 0= constant running?
+weaving? tangling? or running? or assert
 
 
 \ Atomic strings.
@@ -70,12 +76,11 @@ create atom-root  0 , 0 ,
 
 : atom, ( A -- ) atom-string@ dup here swap allot swap move ;
 : atom+ ( A A -- A ) swap here >r atom, atom, r> here over - align $atom ;
-: atomch ( ch -- A ) here c! here cell allot 1 atom ;
-10 atomch constant atomcr
-: atomcr+ ( A -- A ) atomcr atom+ ;
+: atom-ch ( ch -- A ) here c! here cell allot 1 atom ;
+10 atom-ch constant atom-cr
+: atom-cr+ ( A -- A ) atom-cr atom+ ;
                      
 
-: assert ( n -- ) 0= if abort then ;
 
 
 : source@ source drop >in @ + ;
@@ -83,15 +88,54 @@ create atom-root  0 , 0 ,
 : need-refill? ( -- f) source nip >in @ <= ;
 : on|? ( -- f ) need-refill? if false exit then source@ c@ [char] | = ;
 : replenish ( -- f ) need-refill? if refill else true then ;
-: ?atomcr+ ( A -- A ) on|? 0= if atomcr+ then ;
-: eat| ( -- ) [char] | parse drop| atom atom+ ?atomcr+ ;
-: parse| ( -- A ) atom"" begin replenish 0= if exit then eat| on|? until ;
+: ?atom-cr+ ( A -- A ) on|? 0= if atom-cr+ then ;
+: eat| ( -- ) [char] | parse drop| atom atom+ ?atom-cr+ ;
+: parse| ( -- A ) [char] | parse atom ;
+: parse..| ( -- A ) atom"" begin replenish 0= if exit then eat| on|? until ;
 
-: |@ ( use a chunk ) parse| atom. ;
-: |+! ( add to a chunk ) parse| atom. ;
-: || ( escaped | ) parse| atom. ;
-: | ( documentation ) parse| atom. ;
-: |; ( exit literate mode ) ;
+atom" |" constant atom-|
+atom" ~~~documentation" constant documentation
+atom" <b>( " constant pre-use
+atom"  )</b>" constant post-use
+atom" </p><pre><b>&lt; " constant pre-def
+atom"  &gt;</b> +&equiv; " constant post-def
+atom" </p><h2>" constant pre-section
+atom" </h2><p>" constant post-section
+atom" </pre>" constant post-post-def
+atom" </p><p>" constant paragraph
+atom" *" constant atom-*
+variable chunk
+: doc! ( back to documentation) documentation chunk ! ;
+doc!
+: doc? ( -- f) documentation chunk @ = ;
+: chunk+=$ ( A -- ) chunk @ atom+=$ ;
+: chunk+=ref ( A -- ) chunk @ atom+=ref ;
+: doc+=$ ( A -- ) documentation atom+=$ ;
+: doc+=ref ( A -- ) documentation atom+=ref ;
+: ?doc+=$ ( A -- ) doc? 0= if doc+=$ else drop then ;
+: feed ( read into current chunk ) atom-cr parse..| atom+ dup chunk+=$ ?doc+=$ ;
+: doc+=use ( A -- ) pre-use doc+=$ doc+=$ post-use doc+=$ ;
+: doc+=def ( A -- ) pre-def doc+=$ doc+=$ post-def doc+=$ ;
+: |@ ( use a chunk ) parse| dup chunk+=ref doc+=use feed ;
+: |+! ( add to a chunk ) parse| dup chunk ! doc+=def feed ;
+: || ( escaped | ) atom-| chunk+=$ feed ;
+: | ( documentation ) doc? 0= if post-post-def doc+=$ then doc! feed ;
+: |$| ( paragraph ) paragraph doc+=$ feed ;
+
+variable title
+: |title:   parse| title @ 0= assert title ! feed ;
+: html-preamble ." <html><head><title>" title @ atom.
+                ." </title></head><body><p>" cr ;
+: html-postamble ." </p></body></html>" cr ;
+
+: |section:   parse| pre-section doc+=$ doc+=$ post-section doc+=$ feed ;
+
+: weave   html-preamble documentation means atom. html-postamble ;
+: tangle   atom-* means atom. ;
+: run   atom-* means atom-string@ evaluate ;
+: |; ( exit literate mode ) weaving? if weave then
+                            tangling? if tangle then
+                            running? if run then ;
 
 
 \ Test atoms.
@@ -111,15 +155,13 @@ atom" foo" means atom" 1234abcdef5678 9abcdef" = assert
 atom" testing" atom" 123" atom+ atom" testing123" = assert
 
 \ Test parse.
-parse| testing
+: |halt! ;
+parse..| testing
 Hello there
-123|;
-atom" testing" atomcr+
-atom" Hello there" atom+ atomcr+
+123|halt!
+atom" testing" atom-cr+
+atom" Hello there" atom+ atom-cr+
 atom" 123" atom+ = assert
-parse| testing
-Hello there
-123|;
 
 
 (
