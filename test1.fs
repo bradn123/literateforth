@@ -30,6 +30,7 @@ When run directly it will work like this:
 |: *
   |@ define 4^
   |@ use it
+|;
 
 
 |section: Basic Approach
