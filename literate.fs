@@ -51,8 +51,13 @@ create atom-root  0 , 0 ,
 
 : atom ( $ -- A ) 2dup atom-find dup if nip nip else drop atom-new then ;
 : $atom ( $ -- A ) 2dup atom-find dup if nip nip else drop $atom-new then ;
-: atom" ( -- A ) [char] " parse atom ;
+: atom" ( -- A ) [char] " parse
+                 state @ if postpone sliteral postpone atom
+                         else atom then ; immediate
 : atom"" ( -- A ) 0 0 atom ;
+: atom{ ( -- A ) [char] } parse
+                 state @ if postpone sliteral postpone atom
+                         else atom then ; immediate
 
 : atom-append ( A n Ad -- ) atom-head chain , , ;
 : atom+=$ ( A Ad -- ) 0 swap atom-append ;
@@ -100,12 +105,6 @@ variable documentation-chunk   blackhole documentation-chunk !
 : documentation ( -- A ) documentation-chunk @ ;
 
 atom" |" constant atom-|
-atom" <b>( " constant pre-use
-atom"  )</b>" constant post-use
-atom" </p><pre><b>&lt; " constant pre-def
-atom"  &gt;</b> +&equiv; " constant post-def
-atom" </p><h2>" constant pre-section
-atom" </h2><p>" constant post-section
 atom" </pre><p>" constant post-post-def
 atom" </p><p>" constant paragraph
 atom" *" constant atom-*
@@ -116,11 +115,12 @@ doc!
 : chunk+=$ ( A -- ) chunk @ atom+=$ ;
 : chunk+=ref ( A -- ) chunk @ atom+=ref ;
 : doc+=$ ( A -- ) documentation atom+=$ ;
+: .d{ ( -- ) postpone atom{ postpone doc+=$ ; immediate
 : doc+=ref ( A -- ) documentation atom+=ref ;
 : ?doc+=$ ( A -- ) doc? 0= if doc+=$ else drop then ;
 : feed ( read into current chunk ) atom-cr parse..| atom+ dup chunk+=$ ?doc+=$ ;
-: doc+=use ( A -- ) pre-use doc+=$ doc+=$ post-use doc+=$ ;
-: doc+=def ( A -- ) pre-def doc+=$ doc+=$ post-def doc+=$ ;
+: doc+=use ( A -- ) .d{ <b>( } doc+=$ .d{  )</b>} ;
+: doc+=def ( A -- ) .d{ </p><pre><b>&lt; } doc+=$ .d{  &gt;</b> +&equiv; } ;
 : |@ ( use a chunk ) parse-cr dup chunk+=ref doc+=use feed ;
 : |: ( add to a chunk ) parse-cr dup chunk ! doc+=def feed ;
 : || ( escaped | ) atom-| chunk+=$ feed ;
@@ -129,12 +129,10 @@ doc!
 : |\ ( whole line) parse-cr atom+=$ feed ;
 
 
-atom" <div><i>" constant pre-file
-atom" </i></div>" constant post-file
 create out-files 0 , 0 ,
 : |file: ( add a new output file )
    parse-cr out-files chain dup ,
-   pre-file doc+=$ doc+=$ post-file doc+=$ feed ;
+   .d{ <div><i>} doc+=$ .d{ </i></div>} feed ;
 
 
 : |-constant ( create atom constant ) constant ;
@@ -322,7 +320,7 @@ atom" ~~~NCX" constant atom-ncx
 atom" index.ncx" constant ncx-filename
 
 
-: |section:   parse-cr pre-section doc+=$ doc+=$ post-section doc+=$ feed ;
+: |section:   parse-cr .d{ </p><h2>} doc+=$ .d{ </h2><p>} feed ;
 
 
 : file! ( A A -- )
