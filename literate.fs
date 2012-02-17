@@ -104,10 +104,6 @@ atom" ~~~blackhole" constant blackhole
 variable documentation-chunk   blackhole documentation-chunk !
 : documentation ( -- A ) documentation-chunk @ ;
 
-atom" |" constant atom-|
-atom" </pre><p>" constant post-post-def
-atom" </p><p>" constant paragraph
-atom" *" constant atom-*
 variable chunk
 : doc! ( back to documentation) documentation chunk ! ;
 doc!
@@ -123,9 +119,9 @@ doc!
 : doc+=def ( A -- ) .d{ </p><pre><b>&lt; } doc+=$ .d{  &gt;</b> +&equiv; } ;
 : |@ ( use a chunk ) parse-cr dup chunk+=ref doc+=use feed ;
 : |: ( add to a chunk ) parse-cr dup chunk ! doc+=def feed ;
-: || ( escaped | ) atom-| chunk+=$ feed ;
-: |; ( documentation ) doc? 0= if post-post-def doc+=$ then doc! feed ;
-: |$ ( paragraph ) paragraph doc+=$ feed ;
+: || ( escaped | ) atom" |" chunk+=$ feed ;
+: |; ( documentation ) doc? 0= if .d{ </pre><p>} then doc! feed ;
+: |$ ( paragraph ) .d{ </p><p>} feed ;
 : |\ ( whole line) parse-cr atom+=$ feed ;
 
 
@@ -392,7 +388,7 @@ atom" .html" constant .html
 : tangle   out-files @ begin dup while dup tangle-file ->next repeat drop ;
 
 
-: run   atom-* means atom-string@ evaluate ;
+: run   atom" *" means atom-string@ evaluate ;
 
 
 : |. ( exit literate mode )
