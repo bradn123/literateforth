@@ -4,7 +4,6 @@
 \ Literate Programming Words
 
 
-
 : assert ( n -- ) 0= if abort then ;
 
 : once! ( n a -- ) dup @ 0= assert ! ;
@@ -29,6 +28,7 @@ weaving? tangling? or running? or assert
 : chain-rest ( head[t] -- ) chain-link cell+ 2dup @ ! ! ;
 : chain ( head[t] -- ) dup @ if chain-rest else chain-first then ;
 : ->next ( a -- a' ) @ ;
+
 
 
 \ Atomic strings.
@@ -126,15 +126,17 @@ doc!
 : chunk+=ref ( A -- ) chunk @ atom+=ref ;
 : doc+=$ ( A -- ) documentation atom+=$ ;
 : .d{ ( -- ) postpone atom{ postpone doc+=$ ; immediate
+: .dcr   atom-cr doc+=$ ;
 : doc+=ref ( A -- ) documentation atom+=ref ;
 : ?doc+=$ ( A -- ) doc? 0= if doc+=$ else drop then ;
-: feed ( read into current chunk ) atom-cr parse..| atom+ dup chunk+=$ ?doc+=$ ;
+: feed ( read into current chunk ) parse..| atom-cr atom+ dup chunk+=$ ?doc+=$ ;
 : doc+=use ( A -- ) .d{ <b>( } doc+=$ .d{  )</b>} ;
-: doc+=def ( A -- ) .d{ </p><pre><b>&lt; } doc+=$ .d{  &gt;</b> +&equiv; } ;
+: doc+=def ( A -- ) .d{ </p><p><b>&lt; } doc+=$
+                    .d{  &gt;</b> +&equiv;<pre> } .dcr ;
 : |@ ( use a chunk ) parse-cr dup chunk+=ref doc+=use feed ;
 : |: ( add to a chunk ) parse-cr dup chunk ! doc+=def feed ;
 : || ( escaped | ) atom" |" chunk+=$ feed ;
-: |; ( documentation ) doc? 0= if .d{ </pre><p>} then doc! feed ;
+: |; ( documentation ) doc? 0= if .d{ </pre></p><p>} then doc! feed ;
 : |$ ( paragraph ) .d{ </p><p>} feed ;
 : |\ ( whole line) parse-cr dup chunk+=$ ?doc+=$ feed ;
 
@@ -167,6 +169,11 @@ parse..| <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"
 "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
 <html>
 <head>
+<style>
+pre {
+  margin: 0em 1em;
+}
+</style>
 <title>|-constant chapter-pre1
 
 parse..| </title>

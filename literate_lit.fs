@@ -171,15 +171,17 @@ We will also need to duplicate three items off the stack.
 |\ : chunk+=ref ( A -- ) chunk @ atom+=ref ;
 |\ : doc+=$ ( A -- ) documentation atom+=$ ;
 |\ : .d{ ( -- ) postpone atom{ postpone doc+=$ ; immediate
+|\ : .dcr   atom-cr doc+=$ ;
 |\ : doc+=ref ( A -- ) documentation atom+=ref ;
 |\ : ?doc+=$ ( A -- ) doc? 0= if doc+=$ else drop then ;
-|\ : feed ( read into current chunk ) atom-cr parse..| atom+ dup chunk+=$ ?doc+=$ ;
+|\ : feed ( read into current chunk ) parse..| atom-cr atom+ dup chunk+=$ ?doc+=$ ;
 |\ : doc+=use ( A -- ) .d{ <b>( } doc+=$ .d{  )</b>} ;
-|\ : doc+=def ( A -- ) .d{ </p><pre><b>&lt; } doc+=$ .d{  &gt;</b> +&equiv; } ;
+|\ : doc+=def ( A -- ) .d{ </p><p><b>&lt; } doc+=$
+|\                     .d{  &gt;</b> +&equiv;<pre> } .dcr ;
 |\ : |@ ( use a chunk ) parse-cr dup chunk+=ref doc+=use feed ;
 |\ : |: ( add to a chunk ) parse-cr dup chunk ! doc+=def feed ;
 |\ : || ( escaped | ) atom" |" chunk+=$ feed ;
-|\ : |; ( documentation ) doc? 0= if .d{ </pre><p>} then doc! feed ;
+|\ : |; ( documentation ) doc? 0= if .d{ </pre></p><p>} then doc! feed ;
 |\ : |$ ( paragraph ) .d{ </p><p>} feed ;
 |\ : |\ ( whole line) parse-cr dup chunk+=$ ?doc+=$ feed ;
 |\ 
@@ -212,6 +214,11 @@ We will also need to duplicate three items off the stack.
 |\ "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
 |\ <html>
 |\ <head>
+|\ <style>
+|\ pre {
+|\   margin: 0em 1em;
+|\ }
+|\ </style>
 |\ <title>|-constant chapter-pre1
 |\ 
 |\ parse..| </title>
