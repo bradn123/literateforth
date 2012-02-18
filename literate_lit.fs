@@ -11,19 +11,45 @@ s" literate.fs" included
 |@ *
 |;
 
+|section: Mode of operation
+
+We will need to decide which mode in which to operate.
+For the moment we will use the value of the LITERATE
+environment variable to select which mode.
+|$
+Modes currently include: weave, tangle, running.
+Running is selected by having LITERATE unset or empty.
+Anything else is considered an error.
+|: setup mode flags
+\ Decide if we're weaving or tangling.
+: literate-env ( -- $ ) s" LITERATE" getenv ;
+literate-env s" weave" compare 0= constant weaving?
+literate-env s" tangle" compare 0= constant tangling?
+literate-env s" " compare 0= constant running?
+\ Require we are in one of the modes.
+weaving? tangling? or running? or assert
+|;
+
+
+|section: Assertions
+We will often want to check if certain conditions are true,
+halting if they are not.
+|: assertion support
+: assert ( n -- ) 0= if abort then ;
+|;
+Additionally we may want to set a variable to a non-zero value,
+ensuring that this happens only once.
+|: assertion support
+: once! ( n a -- ) dup @ 0= assert ! ;
+|;
+
 |: *
 
 |\ \ Literate Programming Words
 |\ 
 |\ 
-|\ : assert ( n -- ) 0= if abort then ;
-|\ 
-|\ \ Decide if we're weaving or tangling.
-|\ s" LITERATE" getenv s" weave" compare 0= constant weaving?
-|\ s" LITERATE" getenv s" tangle" compare 0= constant tangling?
-|\ s" LITERATE" getenv s" " compare 0= constant running?
-|\ weaving? tangling? or running? or assert
-|\ 
+|@ assertion support
+|@ setup mode flags
 |\ 
 |\ \ Atomic strings.
 |\ \ Layout of an atom (in cells):
@@ -158,7 +184,6 @@ s" literate.fs" included
 |\ 
 |\ : |-constant ( create atom constant ) constant ;
 |\ 
-|\ : once! ( n a -- ) dup @ 0= assert ! ;
 |\ 
 |\ variable title
 |\ : |title:   parse-cr title once! feed ;
