@@ -11,7 +11,7 @@ s" literate.fs" included
 |@ *
 |;
 
-|section: Mode of operation
+|section: Modes of operation
 
 We will need to decide which mode in which to operate.
 For the moment we will use the value of the LITERATE
@@ -43,6 +43,29 @@ ensuring that this happens only once.
 : once! ( n a -- ) dup @ 0= assert ! ;
 |;
 
+
+|section: Linked lists
+
+|: linked lists
+: chain-link ( head[t] -- a head[t] ) here 0 , swap ;
+: chain-first ( head[t] -- ) chain-link 2dup ! cell+ ! ;
+: chain-rest ( head[t] -- ) chain-link cell+ 2dup @ ! ! ;
+: chain ( head[t] -- ) dup @ if chain-rest else chain-first then ;
+: ->next ( a -- a' ) @ ;
+|;
+
+
+|section: Odds and ends
+We will need to clone strings occasionally.
+|: utility words
+: $clone ( $ - $ ) here over 1+ allot swap 2dup >r >r cmove r> r> ;
+|;
+We will also need to duplicate three items off the stack.
+|: utility words
+: 3dup ( xyz -- xyzxyz ) >r 2dup r> dup >r swap >r swap r> r> ;
+|;
+
+
 |: *
 
 |\ \ Literate Programming Words
@@ -50,6 +73,8 @@ ensuring that this happens only once.
 |\ 
 |@ assertion support
 |@ setup mode flags
+|@ utility words
+|@ linked lists
 |\ 
 |\ \ Atomic strings.
 |\ \ Layout of an atom (in cells):
@@ -66,14 +91,6 @@ ensuring that this happens only once.
 |\ : atom-data@ ( A -- a ) 2 cells + @ ;
 |\ : atom-string@ ( A -- $ ) dup atom-data@ swap atom-length@ ;
 |\ : atom-head ( A -- A[head] ) 3 cells + ;
-|\ 
-|\ : chain-link ( head[t] -- a head[t] ) here 0 , swap ;
-|\ : chain-first ( head[t] -- ) chain-link 2dup ! cell+ ! ;
-|\ : chain-rest ( head[t] -- ) chain-link cell+ 2dup @ ! ! ;
-|\ : chain ( head[t] -- ) dup @ if chain-rest else chain-first then ;
-|\ : ->next ( a -- a' ) @ ;
-|\ : $clone ( $ - $ ) here over 1+ allot swap 2dup >r >r cmove r> r> ;
-|\ : 3dup ( xyz -- xyzxyz ) >r 2dup r> dup >r swap >r swap r> r> ;
 |\ 
 |\ create atom-root  0 , 0 ,
 |\ : $atom-new ( $ -- A ) atom-root chain , , 0 , 0 , atom-root cell+ @ ;

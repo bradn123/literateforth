@@ -9,5 +9,8 @@ lit:
 	LITERATE=tangle gforth literate_lit.fs
 	~/kindle/KindleGen_Mac_i386_v2/kindlegen index.opf || true
 
+install:
+	cp literate_out.fs literate.fs
+
 clean :
 	rm -f index.* power4.fs main.fs *.html literate_out.fs

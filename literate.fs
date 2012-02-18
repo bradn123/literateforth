@@ -1,13 +1,34 @@
+
+
+
 \ Literate Programming Words
+
 
 
 : assert ( n -- ) 0= if abort then ;
 
+: once! ( n a -- ) dup @ 0= assert ! ;
+
+
 \ Decide if we're weaving or tangling.
-s" LITERATE" getenv s" weave" compare 0= constant weaving?
-s" LITERATE" getenv s" tangle" compare 0= constant tangling?
-s" LITERATE" getenv s" " compare 0= constant running?
+: literate-env ( -- $ ) s" LITERATE" getenv ;
+literate-env s" weave" compare 0= constant weaving?
+literate-env s" tangle" compare 0= constant tangling?
+literate-env s" " compare 0= constant running?
+\ Require we are in one of the modes.
 weaving? tangling? or running? or assert
+
+
+: $clone ( $ - $ ) here over 1+ allot swap 2dup >r >r cmove r> r> ;
+
+: 3dup ( xyz -- xyzxyz ) >r 2dup r> dup >r swap >r swap r> r> ;
+
+
+: chain-link ( head[t] -- a head[t] ) here 0 , swap ;
+: chain-first ( head[t] -- ) chain-link 2dup ! cell+ ! ;
+: chain-rest ( head[t] -- ) chain-link cell+ 2dup @ ! ! ;
+: chain ( head[t] -- ) dup @ if chain-rest else chain-first then ;
+: ->next ( a -- a' ) @ ;
 
 
 \ Atomic strings.
@@ -25,14 +46,6 @@ weaving? tangling? or running? or assert
 : atom-data@ ( A -- a ) 2 cells + @ ;
 : atom-string@ ( A -- $ ) dup atom-data@ swap atom-length@ ;
 : atom-head ( A -- A[head] ) 3 cells + ;
-
-: chain-link ( head[t] -- a head[t] ) here 0 , swap ;
-: chain-first ( head[t] -- ) chain-link 2dup ! cell+ ! ;
-: chain-rest ( head[t] -- ) chain-link cell+ 2dup @ ! ! ;
-: chain ( head[t] -- ) dup @ if chain-rest else chain-first then ;
-: ->next ( a -- a' ) @ ;
-: $clone ( $ - $ ) here over 1+ allot swap 2dup >r >r cmove r> r> ;
-: 3dup ( xyz -- xyzxyz ) >r 2dup r> dup >r swap >r swap r> r> ;
 
 create atom-root  0 , 0 ,
 : $atom-new ( $ -- A ) atom-root chain , , 0 , 0 , atom-root cell+ @ ;
@@ -143,7 +156,6 @@ create out-files 0 , 0 ,
 
 : |-constant ( create atom constant ) constant ;
 
-: once! ( n a -- ) dup @ 0= assert ! ;
 
 variable title
 : |title:   parse-cr title once! feed ;
@@ -432,4 +444,5 @@ Hello there
 atom" testing" atom-cr+
 atom" Hello there" atom+ atom-cr+
 atom" 123" atom+ = assert
+
 
