@@ -5,4 +5,4 @@ all:
 	gforth test1.fs
 
 clean :
-	rm -f index.* power4.fs main.fs *.html
+	rm -f index.* power4.fs main.fs *.html literate_out.fs

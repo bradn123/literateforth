@@ -98,6 +98,7 @@ create atom-root  0 , 0 ,
 : eat| ( -- ) [char] | parse drop| atom atom+ ?atom-cr+ ;
 : parse-cr ( -- A ) source@ source-remaining atom   source nip >in ! ;
 : parse..| ( -- A ) atom"" begin replenish 0= if exit then eat| on|? until ;
+: skip| ( -- ) on|? need-refill? 0= and if 1 >in +! then ;
 
 
 atom" ~~~blackhole" constant blackhole
@@ -122,7 +123,7 @@ doc!
 : || ( escaped | ) atom" |" chunk+=$ feed ;
 : |; ( documentation ) doc? 0= if .d{ </pre><p>} then doc! feed ;
 : |$ ( paragraph ) .d{ </p><p>} feed ;
-: |\ ( whole line) parse-cr atom+=$ feed ;
+: |\ ( whole line) parse-cr dup chunk+=$ ?doc+=$ feed ;
 
 : |TeX
 .d{ <span style="font-family:cmr10, LMRoman10-Regular, Times, serif;">T<span style="text-transform:uppercase; vertical-align:-0.5ex; margin-left:-0.1667em; margin-right:-0.125em;">e</span>X</span>}
