@@ -68,6 +68,28 @@ We will also need to duplicate three items off the stack.
 
 |section: Atoms
 
+|: testing atoms
+\ Test using atoms.
+atom" foo" atom" foo" = assert
+atom" bar" atom" foo" <> assert
+|;
+
+|: testing atom+ 
+\ Test atom+.
+atom" testing" atom" 123" atom+ atom" testing123" = assert
+|;
+
+|: testing means
+\ Test means.
+atom" abc" atom" bar" atom+=$
+atom" def" atom" bar" atom+=$
+atom" 1234" atom" foo" atom+=$
+atom" bar" atom" foo" atom+=ref
+atom" 5678 9" atom" foo" atom+=$
+atom" bar" atom" foo" atom+=ref
+atom" foo" means atom" 1234abcdef5678 9abcdef" = assert
+|;
+
 |: implement atoms
 \ Atomic strings.
 \ Layout of an atom (in cells):
@@ -115,6 +137,9 @@ create atom-root  0 , 0 ,
 : atom+=ref ( A Ad -- ) 1 swap atom-append ;
 
 
+|@ testing atoms
+
+
 : ref-parts ( ref -- A ref? ) cell+ dup cell+ @ swap @ ;
 : atom-walk ( fn A -- )
      atom-head @ begin dup while
@@ -130,11 +155,16 @@ create atom-root  0 , 0 ,
 : means ( A -- A' ) dup atom-walk-length here swap 2dup >r >r allot align
                     atom-walk-gather r> r> $atom ;
 
+|@ testing means
+
 : atom, ( A -- ) atom-string@ dup here swap allot swap move ;
 : atom+ ( A A -- A ) swap here >r atom, atom, r> here over - align $atom ;
 : atom-ch ( ch -- A ) here c! here cell allot 1 atom ;
 10 atom-ch constant atom-cr
 : atom-cr+ ( A -- A ) atom-cr atom+ ;
+
+|@ testing atom+
+
 |;
 
 |section: html escaping
@@ -156,6 +186,17 @@ create atom-root  0 , 0 ,
 
 
 |section: parsing pipe
+
+|: testing parsing
+\ Test parsing.
+|\ : |halt! ;
+|\ parse..| testing
+|\ Hello there
+|\ 123|halt!
+|\ atom" testing" atom-cr+
+|\ atom" Hello there" atom+ atom-cr+
+|\ atom" 123" atom+ = assert
+|;
 
 |: pipe parsing
 |\ : source@ source drop >in @ + ;
@@ -501,30 +542,6 @@ create atom-root  0 , 0 ,
 |\     running? if run then ;
 |\ 
 |\ 
-|\ \ Test atoms.
-|\ atom" foo" atom" foo" = assert
-|\ atom" bar" atom" foo" <> assert
-|\ 
-|\ \ Test means.
-|\ atom" abc" atom" bar" atom+=$
-|\ atom" def" atom" bar" atom+=$
-|\ atom" 1234" atom" foo" atom+=$
-|\ atom" bar" atom" foo" atom+=ref
-|\ atom" 5678 9" atom" foo" atom+=$
-|\ atom" bar" atom" foo" atom+=ref
-|\ atom" foo" means atom" 1234abcdef5678 9abcdef" = assert
-|\ 
-|\ \ Test atom+.
-|\ atom" testing" atom" 123" atom+ atom" testing123" = assert
-|\ 
-|\ \ Test parse.
-|\ : |halt! ;
-|\ parse..| testing
-|\ Hello there
-|\ 123|halt!
-|\ atom" testing" atom-cr+
-|\ atom" Hello there" atom+ atom-cr+
-|\ atom" 123" atom+ = assert
 |\ 
 |; 
 
