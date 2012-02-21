@@ -160,11 +160,11 @@ doc!
 : .dcr   atom-cr doc+=$ ;
 : doc+=ref ( A -- ) documentation atom+=ref ;
 : ?doc+=$ ( A -- ) doc? 0= if escape doc+=$ else drop then ;
-: feed ( read into current chunk ) parse..| atom-cr atom+ dup chunk+=$ ?doc+=$ ;
+: feed ( read into current chunk ) parse..| dup ?atom-cr+ ?doc+=$ atom-cr atom+ chunk+=$ ;
 : doc+=use ( A -- ) .d{ <b>( } doc+=$ .d{  )</b>} ;
 : doc+=def ( A -- ) .d{ </p><tt><b>&lt; } doc+=$
-                    .d{  &gt;</b> +&equiv;</tt><div class="chunk"><pre> } .dcr ;
-: |@ ( use a chunk ) parse-cr dup chunk+=ref doc+=use feed ;
+                    .d{  &gt;</b> +&equiv;</tt><div class="chunk"><pre>} ;
+: |@ ( use a chunk ) parse-cr dup chunk+=ref doc+=use .dcr feed ;
 : |: ( add to a chunk ) parse-cr dup chunk ! doc+=def feed ;
 : || ( escaped | ) atom" |" chunk+=$ feed ;
 : |; ( documentation ) doc? 0= if .d{ </pre></div><p>} then doc! feed ;
@@ -202,7 +202,7 @@ parse..| <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"
 <head>
 <style type="text/css">
 div.chunk {
-  margin: 0em 0.5em
+  margin: 0em 0.5em;
 }
 </style>
 <title>|-constant chapter-pre1
