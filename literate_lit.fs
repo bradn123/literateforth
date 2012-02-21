@@ -30,6 +30,14 @@ literate-env s" " compare 0= constant running?
 weaving? tangling? or running? or assert
 |;
 
+|: apply literate mode
+|\ : |. ( exit literate mode )
+|\     chapter-finish
+|\     weaving? if weave bye then
+|\     tangling? if tangle bye then
+|\     running? if run then ;
+|;
+
 
 |section: Assertions
 We will often want to check if certain conditions are true,
@@ -430,6 +438,63 @@ create atom-root  0 , 0 ,
 |;
 
 
+|section: weaving
+|: weaving implementation
+|\ : weave-chapter ( chapter -- ) dup chapter-text swap chapter-filename file! ;
+|\ : weave-chapters
+|\    chapters @ begin dup while dup weave-chapter ->next repeat drop ;
+|\ 
+|\ : weave-toc-chapter ( chapter -- )
+|\    toc-chapter-pre1 doc+=$
+|\    dup chapter-filename doc+=$
+|\    toc-chapter-pre2 doc+=$
+|\    chapter-name doc+=$
+|\    toc-chapter-post doc+=$
+|\ ;
+|\ : weave-toc
+|\    atom-toc documentation-chunk ! doc!
+|\    toc-pre doc+=$
+|\    chapters @ begin dup while dup weave-toc-chapter ->next repeat drop
+|\    toc-post doc+=$
+|\    documentation means toc-filename file!
+|\ ;
+|\ 
+|\ : weave-ncx-chapter ( chapter -- )
+|\    ncx-chapter-pre1 doc+=$
+|\    dup chapter-filename doc+=$
+|\    ncx-chapter-pre2 doc+=$
+|\    dup chapter-filename doc+=$
+|\    ncx-chapter-pre3 doc+=$
+|\    dup chapter-name doc+=$
+|\    ncx-chapter-pre4 doc+=$
+|\    chapter-filename doc+=$
+|\    ncx-chapter-post doc+=$
+|\ ;
+|\ : weave-ncx
+|\    atom-ncx documentation-chunk ! doc!
+|\    ncx-pre1 doc+=$
+|\    chapters @ begin dup while dup weave-ncx-chapter ->next repeat drop
+|\    ncx-post doc+=$
+|\    documentation means ncx-filename file!
+|\ ;
+|\ 
+|\ : weave-opf
+|\    atom-opf documentation-chunk ! doc!
+|\    opf-pre1 doc+=$
+|\    chapters @ begin dup while dup chapter-filename opf-chapter ->next repeat drop
+|\    opf-pre2 doc+=$
+|\    chapters @ begin dup while dup chapter-filename opf-chapter' ->next repeat drop
+|\    opf-post doc+=$
+|\    documentation means opf-filename file!
+|\ ;
+|\ 
+|\ 
+|\ 
+|\ : weave    weave-chapters weave-toc weave-opf weave-ncx ;
+|;
+
+
+
 |section: program structure
 
 |: *
@@ -501,58 +566,9 @@ create atom-root  0 , 0 ,
 |\ atom" .html" constant .html
 |\ : chapter-filename ( chp -- A )
 |\     chapter-number [char] A + atom-ch .html atom+ ;
-|\ : weave-chapter ( chapter -- ) dup chapter-text swap chapter-filename file! ;
-|\ : weave-chapters
-|\    chapters @ begin dup while dup weave-chapter ->next repeat drop ;
-|\ 
-|\ : weave-toc-chapter ( chapter -- )
-|\    toc-chapter-pre1 doc+=$
-|\    dup chapter-filename doc+=$
-|\    toc-chapter-pre2 doc+=$
-|\    chapter-name doc+=$
-|\    toc-chapter-post doc+=$
-|\ ;
-|\ : weave-toc
-|\    atom-toc documentation-chunk ! doc!
-|\    toc-pre doc+=$
-|\    chapters @ begin dup while dup weave-toc-chapter ->next repeat drop
-|\    toc-post doc+=$
-|\    documentation means toc-filename file!
-|\ ;
-|\ 
-|\ : weave-ncx-chapter ( chapter -- )
-|\    ncx-chapter-pre1 doc+=$
-|\    dup chapter-filename doc+=$
-|\    ncx-chapter-pre2 doc+=$
-|\    dup chapter-filename doc+=$
-|\    ncx-chapter-pre3 doc+=$
-|\    dup chapter-name doc+=$
-|\    ncx-chapter-pre4 doc+=$
-|\    chapter-filename doc+=$
-|\    ncx-chapter-post doc+=$
-|\ ;
-|\ : weave-ncx
-|\    atom-ncx documentation-chunk ! doc!
-|\    ncx-pre1 doc+=$
-|\    chapters @ begin dup while dup weave-ncx-chapter ->next repeat drop
-|\    ncx-post doc+=$
-|\    documentation means ncx-filename file!
-|\ ;
-|\ 
-|\ : weave-opf
-|\    atom-opf documentation-chunk ! doc!
-|\    opf-pre1 doc+=$
-|\    chapters @ begin dup while dup chapter-filename opf-chapter ->next repeat drop
-|\    opf-pre2 doc+=$
-|\    chapters @ begin dup while dup chapter-filename opf-chapter' ->next repeat drop
-|\    opf-post doc+=$
-|\    documentation means opf-filename file!
-|\ ;
-|\ 
-|\ 
-|\ 
-|\ : weave    weave-chapters weave-toc weave-opf weave-ncx ;
-|\ 
+
+|@ weaving implementation
+
 |\ 
 |\ : tangle-file ( file -- ) cell+ @ dup means swap file! ;
 |\ : tangle   out-files @ begin dup while dup tangle-file ->next repeat drop ;
@@ -561,14 +577,7 @@ create atom-root  0 , 0 ,
 |\ : run   atom" *" means atom-string@ evaluate ;
 |\ 
 |\ 
-|\ : |. ( exit literate mode )
-|\     chapter-finish
-|\     weaving? if weave bye then
-|\     tangling? if tangle bye then
-|\     running? if run then ;
-|\ 
-|\ 
-|\ 
+|@ apply literate mode
 |; 
 
 |.

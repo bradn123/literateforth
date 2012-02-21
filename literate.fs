@@ -385,6 +385,8 @@ create chapters 0 , 0 ,
 atom" .html" constant .html
 : chapter-filename ( chp -- A )
     chapter-number [char] A + atom-ch .html atom+ ;
+
+
 : weave-chapter ( chapter -- ) dup chapter-text swap chapter-filename file! ;
 : weave-chapters
    chapters @ begin dup while dup weave-chapter ->next repeat drop ;
@@ -438,6 +440,7 @@ atom" .html" constant .html
 : weave    weave-chapters weave-toc weave-opf weave-ncx ;
 
 
+
 : tangle-file ( file -- ) cell+ @ dup means swap file! ;
 : tangle   out-files @ begin dup while dup tangle-file ->next repeat drop ;
 
@@ -445,12 +448,11 @@ atom" .html" constant .html
 : run   atom" *" means atom-string@ evaluate ;
 
 
+
 : |. ( exit literate mode )
     chapter-finish
     weaving? if weave bye then
     tangling? if tangle bye then
     running? if run then ;
-
-
 
 
