@@ -288,12 +288,12 @@ create atom-root  0 , 0 ,
 |\ : ?doc+=$ ( A -- ) doc? 0= if escape doc+=$ else drop then ;
 |\ : feed ( read into current chunk ) parse..| atom-cr atom+ dup chunk+=$ ?doc+=$ ;
 |\ : doc+=use ( A -- ) .d{ <b>( } doc+=$ .d{  )</b>} ;
-|\ : doc+=def ( A -- ) .d{ </div><div><b>&lt; } doc+=$
-|\                     .d{  &gt;</b> +&equiv;</div><pre> } .dcr ;
+|\ : doc+=def ( A -- ) .d{ </div><tt><b>&lt; } doc+=$
+|\                     .d{  &gt;</b> +&equiv;</tt><div class="code"><pre> } .dcr ;
 |\ : |@ ( use a chunk ) parse-cr dup chunk+=ref doc+=use feed ;
 |\ : |: ( add to a chunk ) parse-cr dup chunk ! doc+=def feed ;
 |\ : || ( escaped | ) atom" |" chunk+=$ feed ;
-|\ : |; ( documentation ) doc? 0= if .d{ </pre><div>} then doc! feed ;
+|\ : |; ( documentation ) doc? 0= if .d{ </pre></div><div>} then doc! feed ;
 |\ : |$ ( paragraph ) .d{ </div><div>} feed ;
 |\ : |\ ( whole line) parse-cr dup chunk+=$ ?doc+=$ feed ;
 |;
@@ -316,10 +316,13 @@ atom" .html" constant .html
 |\ <html>
 |\ <head>
 |\ <style type="text/css">
-|\ pre {
+|\ div.code {
 |\   margin: 0em 2em;
 |\   border-width: 1px;
 |\   border-left-style: solid;
+|\   border-right-style: none;
+|\   border-top-style: none;
+|\   border-bottom-style: none;
 |\   border-color: black;
 |\ }
 |\ </style>
