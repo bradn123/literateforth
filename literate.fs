@@ -119,7 +119,7 @@ create atom-root  0 , 0 ,
    dup [char] & = if [char] & c, [char] a c, [char] m c, [char] p c,
                      [char] ; c, drop exit then
    c, ;
-: escape-each ( A -- ) atom-string@ 0 do dup i + c@ escape-ch loop drop ;
+: escape-each ( A -- ) atom-string@ 0 ?do dup i + c@ escape-ch loop drop ;
 : escape ( A -- A ) here swap escape-each here over - align $atom-new ;
 
 
@@ -141,7 +141,7 @@ doc!
 : .d{ ( -- ) postpone atom{ postpone doc+=$ ; immediate
 : .dcr   atom-cr doc+=$ ;
 : doc+=ref ( A -- ) documentation atom+=ref ;
-: ?doc+=$ ( A -- ) doc? 0= if doc+=$ else drop then ;
+: ?doc+=$ ( A -- ) doc? 0= if escape doc+=$ else drop then ;
 : feed ( read into current chunk ) parse..| atom-cr atom+ dup chunk+=$ ?doc+=$ ;
 : doc+=use ( A -- ) .d{ <b>( } doc+=$ .d{  )</b>} ;
 : doc+=def ( A -- ) .d{ </p><p><b>&lt; } doc+=$
