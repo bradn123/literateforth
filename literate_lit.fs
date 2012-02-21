@@ -66,86 +66,81 @@ We will also need to duplicate three items off the stack.
 |;
 
 
-|: *
+|section: Atoms
 
-|\ \ Literate Programming Words
-|\ 
-|\ 
-|@ assertion support
-|@ setup mode flags
-|@ utility words
-|@ linked lists
-|\ 
-|\ \ Atomic strings.
-|\ \ Layout of an atom (in cells):
-|\ \   - next atom
-|\ \   - string length
-|\ \   - string start
-|\ \   - definition head
-|\ \   - definition tail
-|\ \ Layout of a definition link (in cells):
-|\ \   - next link
-|\ \   - is_reference?
-|\ \   - atom
-|\ : atom-length@ ( A -- n ) 1 cells + @ ;
-|\ : atom-data@ ( A -- a ) 2 cells + @ ;
-|\ : atom-string@ ( A -- $ ) dup atom-data@ swap atom-length@ ;
-|\ : atom-head ( A -- A[head] ) 3 cells + ;
-|\ 
-|\ create atom-root  0 , 0 ,
-|\ : $atom-new ( $ -- A ) atom-root chain , , 0 , 0 , atom-root cell+ @ ;
-|\ : atom-new ( $ -- A ) $clone $atom-new ;
-|\ 
-|\ : atom. ( A -- ) atom-string@ type ;
-|\ 
-|\ : atoms. ( -- ) atom-root @ begin dup while dup atom. cr ->next repeat drop ;
-|\ 
-|\ : atom= ( $ A -- f ) atom-string@ compare 0= ;
-|\ 
-|\ : atom-find' ( $ A -- A ) dup 0= if nip nip exit then
-|\                           3dup atom= if nip nip exit then
-|\                           ->next recurse ;
-|\ : atom-find ( $ -- A ) atom-root @ atom-find' ;
-|\ 
-|\ : atom ( $ -- A ) 2dup atom-find dup if nip nip else drop atom-new then ;
-|\ : $atom ( $ -- A ) 2dup atom-find dup if nip nip else drop $atom-new then ;
-|\ : atom" ( -- A ) [char] " parse
-|\                  state @ if postpone sliteral postpone atom
-|\                          else atom then ; immediate
-|\ : atom"" ( -- A ) 0 0 atom ;
-|\ : atom{ ( -- A ) [char] } parse
-|\                  state @ if postpone sliteral postpone atom
-|\                          else atom then ; immediate
-|\ 
-|\ : atom-append ( A n Ad -- ) atom-head chain , , ;
-|\ : atom+=$ ( A Ad -- ) 0 swap atom-append ;
-|\ : atom+=ref ( A Ad -- ) 1 swap atom-append ;
-|\ 
-|\ 
-|\ : ref-parts ( ref -- A ref? ) cell+ dup cell+ @ swap @ ;
-|\ : atom-walk ( fn A -- )
-|\     atom-head @ begin dup while
-|\         2dup >r >r
-|\         ref-parts if recurse else swap execute then
-|\         r> r>
-|\         ->next
-|\     repeat 2drop ;
-|\ : tally-length ( n A -- n ) atom-length@ + ;
-|\ : gather-string ( a A -- a' ) 2dup atom-string@ >r swap r> move tally-length ;
-|\ : atom-walk-length ( A -- n ) 0 swap ['] tally-length swap atom-walk ;
-|\ : atom-walk-gather ( a A -- ) swap ['] gather-string swap atom-walk drop ;
-|\ : means ( A -- A' ) dup atom-walk-length here swap 2dup >r >r allot align
-|\                     atom-walk-gather r> r> $atom ;
-|\ 
-|\ : atom, ( A -- ) atom-string@ dup here swap allot swap move ;
-|\ : atom+ ( A A -- A ) swap here >r atom, atom, r> here over - align $atom ;
-|\ : atom-ch ( ch -- A ) here c! here cell allot 1 atom ;
-|\ 10 atom-ch constant atom-cr
-|\ : atom-cr+ ( A -- A ) atom-cr atom+ ;
-|\                      
-|\ 
-|\ 
-|\ 
+|: implement atoms
+\ Atomic strings.
+\ Layout of an atom (in cells):
+\   - next atom
+\   - string length
+\   - string start
+\   - definition head
+\   - definition tail
+\ Layout of a definition link (in cells):
+\   - next link
+\   - is_reference?
+\   - atom
+: atom-length@ ( A -- n ) 1 cells + @ ;
+: atom-data@ ( A -- a ) 2 cells + @ ;
+: atom-string@ ( A -- $ ) dup atom-data@ swap atom-length@ ;
+: atom-head ( A -- A[head] ) 3 cells + ;
+
+create atom-root  0 , 0 ,
+: $atom-new ( $ -- A ) atom-root chain , , 0 , 0 , atom-root cell+ @ ;
+: atom-new ( $ -- A ) $clone $atom-new ;
+
+: atom. ( A -- ) atom-string@ type ;
+
+: atoms. ( -- ) atom-root @ begin dup while dup atom. cr ->next repeat drop ;
+
+: atom= ( $ A -- f ) atom-string@ compare 0= ;
+
+: atom-find' ( $ A -- A ) dup 0= if nip nip exit then
+                          3dup atom= if nip nip exit then
+                          ->next recurse ;
+: atom-find ( $ -- A ) atom-root @ atom-find' ;
+
+: atom ( $ -- A ) 2dup atom-find dup if nip nip else drop atom-new then ;
+: $atom ( $ -- A ) 2dup atom-find dup if nip nip else drop $atom-new then ;
+: atom" ( -- A ) [char] " parse
+                  state @ if postpone sliteral postpone atom
+                          else atom then ; immediate
+: atom"" ( -- A ) 0 0 atom ;
+: atom{ ( -- A ) [char] } parse
+                 state @ if postpone sliteral postpone atom
+                         else atom then ; immediate
+ 
+: atom-append ( A n Ad -- ) atom-head chain , , ;
+: atom+=$ ( A Ad -- ) 0 swap atom-append ;
+: atom+=ref ( A Ad -- ) 1 swap atom-append ;
+
+
+: ref-parts ( ref -- A ref? ) cell+ dup cell+ @ swap @ ;
+: atom-walk ( fn A -- )
+     atom-head @ begin dup while
+         2dup >r >r
+         ref-parts if recurse else swap execute then
+         r> r>
+         ->next
+     repeat 2drop ;
+: tally-length ( n A -- n ) atom-length@ + ;
+: gather-string ( a A -- a' ) 2dup atom-string@ >r swap r> move tally-length ;
+: atom-walk-length ( A -- n ) 0 swap ['] tally-length swap atom-walk ;
+: atom-walk-gather ( a A -- ) swap ['] gather-string swap atom-walk drop ;
+: means ( A -- A' ) dup atom-walk-length here swap 2dup >r >r allot align
+                    atom-walk-gather r> r> $atom ;
+
+: atom, ( A -- ) atom-string@ dup here swap allot swap move ;
+: atom+ ( A A -- A ) swap here >r atom, atom, r> here over - align $atom ;
+: atom-ch ( ch -- A ) here c! here cell allot 1 atom ;
+10 atom-ch constant atom-cr
+: atom-cr+ ( A -- A ) atom-cr atom+ ;
+|;
+
+
+|section: parsing pipe
+
+|: pipe parsing
 |\ : source@ source drop >in @ + ;
 |\ : source-remaining source nip >in @ - ;
 |\ : drop| ( -- ) source@ 1- c@ [char] | = if -1 >in +! then ;
@@ -155,8 +150,24 @@ We will also need to duplicate three items off the stack.
 |\ : ?atom-cr+ ( A -- A ) on|? 0= if atom-cr+ then ;
 |\ : eat| ( -- ) [char] | parse drop| atom atom+ ?atom-cr+ ;
 |\ : parse-cr ( -- A ) source@ source-remaining atom   source nip >in ! ;
-|\ : parse..| ( -- A ) atom"" begin replenish 0= if exit then eat| on|? until ;
-|\ : skip| ( -- ) on|? need-refill? 0= and if 1 >in +! then ;
+|\ : parse..| ( -- A ) atom"" begin replenish 0=
+|\                     if exit then eat| on|? until ;
+|\ : skip| ( -- ) on|?  need-refill? 0= and if 1 >in +! then ;
+|;
+
+
+|section: program structure
+
+|: *
+
+|@ assertion support
+|@ setup mode flags
+|@ utility words
+|@ linked lists
+|@ implement atoms
+|@ pipe parsing
+|\ 
+|\ 
 |\ 
 |\ 
 |\ atom" ~~~blackhole" constant blackhole

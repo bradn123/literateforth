@@ -1,9 +1,6 @@
 
 
 
-\ Literate Programming Words
-
-
 : assert ( n -- ) 0= if abort then ;
 
 : once! ( n a -- ) dup @ 0= assert ! ;
@@ -28,7 +25,6 @@ weaving? tangling? or running? or assert
 : chain-rest ( head[t] -- ) chain-link cell+ 2dup @ ! ! ;
 : chain ( head[t] -- ) dup @ if chain-rest else chain-first then ;
 : ->next ( a -- a' ) @ ;
-
 
 
 \ Atomic strings.
@@ -65,13 +61,13 @@ create atom-root  0 , 0 ,
 : atom ( $ -- A ) 2dup atom-find dup if nip nip else drop atom-new then ;
 : $atom ( $ -- A ) 2dup atom-find dup if nip nip else drop $atom-new then ;
 : atom" ( -- A ) [char] " parse
-                 state @ if postpone sliteral postpone atom
-                         else atom then ; immediate
+                  state @ if postpone sliteral postpone atom
+                          else atom then ; immediate
 : atom"" ( -- A ) 0 0 atom ;
 : atom{ ( -- A ) [char] } parse
                  state @ if postpone sliteral postpone atom
                          else atom then ; immediate
-
+ 
 : atom-append ( A n Ad -- ) atom-head chain , , ;
 : atom+=$ ( A Ad -- ) 0 swap atom-append ;
 : atom+=ref ( A Ad -- ) 1 swap atom-append ;
@@ -79,12 +75,12 @@ create atom-root  0 , 0 ,
 
 : ref-parts ( ref -- A ref? ) cell+ dup cell+ @ swap @ ;
 : atom-walk ( fn A -- )
-    atom-head @ begin dup while
-        2dup >r >r
-        ref-parts if recurse else swap execute then
-        r> r>
-        ->next
-    repeat 2drop ;
+     atom-head @ begin dup while
+         2dup >r >r
+         ref-parts if recurse else swap execute then
+         r> r>
+         ->next
+     repeat 2drop ;
 : tally-length ( n A -- n ) atom-length@ + ;
 : gather-string ( a A -- a' ) 2dup atom-string@ >r swap r> move tally-length ;
 : atom-walk-length ( A -- n ) 0 swap ['] tally-length swap atom-walk ;
@@ -97,7 +93,6 @@ create atom-root  0 , 0 ,
 : atom-ch ( ch -- A ) here c! here cell allot 1 atom ;
 10 atom-ch constant atom-cr
 : atom-cr+ ( A -- A ) atom-cr atom+ ;
-                     
 
 
 
@@ -110,8 +105,12 @@ create atom-root  0 , 0 ,
 : ?atom-cr+ ( A -- A ) on|? 0= if atom-cr+ then ;
 : eat| ( -- ) [char] | parse drop| atom atom+ ?atom-cr+ ;
 : parse-cr ( -- A ) source@ source-remaining atom   source nip >in ! ;
-: parse..| ( -- A ) atom"" begin replenish 0= if exit then eat| on|? until ;
-: skip| ( -- ) on|? need-refill? 0= and if 1 >in +! then ;
+: parse..| ( -- A ) atom"" begin replenish 0=
+                    if exit then eat| on|? until ;
+: skip| ( -- ) on|?  need-refill? 0= and if 1 >in +! then ;
+
+
+
 
 
 atom" ~~~blackhole" constant blackhole
