@@ -137,6 +137,23 @@ create atom-root  0 , 0 ,
 : atom-cr+ ( A -- A ) atom-cr atom+ ;
 |;
 
+|section: html escaping
+
+|: escaping atoms
+: escape-ch ( ch -- )
+   dup [char] < = if [char] & c, [char] l c, [char] t c,
+                     [char] ; c, drop exit then
+   dup [char] > = if [char] & c, [char] g c, [char] t c,
+                     [char] ; c, drop exit then
+   dup [char] " = if [char] & c, [char] q c, [char] u c, [char] o c,
+                     [char] t c, [char] ; c, drop exit then
+   dup [char] & = if [char] & c, [char] a c, [char] m c, [char] p c,
+                     [char] ; c, drop exit then
+   c, ;
+: escape-each ( A -- ) atom-string@ 0 do dup i + c@ escape-ch loop drop ;
+: escape ( A -- A ) here swap escape-each here over - align $atom-new ;
+|;
+
 
 |section: parsing pipe
 
@@ -166,6 +183,7 @@ create atom-root  0 , 0 ,
 |@ linked lists
 |@ implement atoms
 |@ pipe parsing
+|@ escaping atoms
 |\ 
 |\ 
 |\ 
