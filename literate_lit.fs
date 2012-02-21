@@ -11,6 +11,34 @@ s" literate.fs" included
 |@ *
 |;
 
+|section: program structure
+
+|: *
+|@ assertion support
+|@ setup mode flags
+|@ utility words
+|@ linked lists
+|@ implement atoms
+|@ pipe parsing
+|@ escaping atoms
+|@ chunks
+|@ tex and latex shortcuts
+|@ output files
+|@ global fields
+|@ chapters
+|@ opf
+|@ ncx
+|@ toc
+|@ chapters and sections
+|@ file writing implementation
+|@ chapter structure
+|@ weaving implementation
+|@ tangle implementation
+|@ run implementation
+|@ apply literate mode
+|; 
+
+
 |section: Modes of operation
 
 We will need to decide which mode in which to operate.
@@ -219,20 +247,21 @@ create atom-root  0 , 0 ,
 |\ : parse..| ( -- A ) atom"" begin replenish 0=
 |\                     if exit then eat| on|? until ;
 |\ : skip| ( -- ) on|?  need-refill? 0= and if 1 >in +! then ;
+|\ : |-constant ( create atom constant ) constant ;
 |;
 
 
 |section: tex and latex
 
 |: tex and latex shortcuts
-\|: |TeX
+|\ : |TeX
     .d{ <span style="font-family:cmr10, LMRoman10-Regular, Times, serif;">T<span style="text-transform:uppercase; vertical-align:-0.5ex; margin-left:-0.1667em; margin-right:-0.125em;">e</span>X</span>}
     feed
 ;
 |;
 
 |: tex and latex shortcuts
-\|: |LaTeX
+|\ : |LaTeX
     .d{ <span style="font-family:cmr10, LMRoman10-Regular, Times, serif;">L<span style="text-transform: uppercase; font-size: 70%; margin-left: -0.36em; vertical-align: 0.3em; line-height: 0; margin-right: -0.15em;">a</span>T<span style="text-transform: uppercase; margin-left: -0.1667em; vertical-align: -0.5ex; line-height: 0; margin-right: -0.125em;">e</span>X</span>}
     feed
 ;
@@ -553,47 +582,26 @@ atom" .html" constant .html
 |;
 
 
+|section: global fields
 
-|section: program structure
+|: global fields
+|\ variable title
+|\ : |title:   parse-cr title once! feed ;
+|;
 
-|: *
+|: global fields
+|\ variable author
+|\ : |author:   parse-cr author once! feed ;
+|;
 
-|@ assertion support
-|@ setup mode flags
-|@ utility words
-|@ linked lists
-|@ implement atoms
-|@ pipe parsing
-|@ escaping atoms
-|@ chunks
-|@ tex and latex shortcuts
-|\ 
+
+|section: output files
+
+|: output files
 |\ create out-files 0 , 0 ,
 |\ : |file: ( add a new output file )
 |\    parse-cr out-files chain dup ,
 |\    .d{ <div><i>} doc+=$ .d{ </i></div>} feed ;
-|\ 
-|\ 
-|\ : |-constant ( create atom constant ) constant ;
-|\ 
-|\ 
-|\ variable title
-|\ : |title:   parse-cr title once! feed ;
-|\ variable author
-|\ : |author:   parse-cr author once! feed ;
-|\ 
-|\ 
-|@ chapters
-|@ opf
-|@ ncx
-|@ toc
-|@ chapters and sections
-|@ file writing implementation
-|@ chapter structure
-|@ weaving implementation
-|@ tangle implementation
-|@ run implementation
-|@ apply literate mode
-|; 
+|;
 
 |.
