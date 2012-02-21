@@ -145,9 +145,6 @@ atom" foo" means atom" 1234abcdef5678 9abcdef" = assert
 
 
 
-
-
-
 atom" ~~~blackhole" constant blackhole
 variable documentation-chunk   blackhole documentation-chunk !
 : documentation ( -- A ) documentation-chunk @ ;
@@ -174,7 +171,6 @@ doc!
 : |$ ( paragraph ) .d{ </p><p>} feed ;
 : |\ ( whole line) parse-cr dup chunk+=$ ?doc+=$ feed ;
 
-
 \
 \
 
@@ -192,6 +188,7 @@ variable title
 : |title:   parse-cr title once! feed ;
 variable author
 : |author:   parse-cr author once! feed ;
+
 
 
 parse..| <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"
@@ -221,6 +218,8 @@ parse..|
 |-constant chapter-post
 
 
+atom" ~~~OPF" constant atom-opf
+atom" index.opf" constant opf-filename
 
 parse..| <?xml version="1.0" encoding="utf-8"?>
 <package xmlns="http://www.idpf.org/2007/opf" version="2.0"
@@ -282,7 +281,8 @@ parse..|
 |-constant opf-post
 
 
-
+atom" ~~~NCX" constant atom-ncx
+atom" index.ncx" constant ncx-filename
 
 parse..| <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE ncx PUBLIC "-//NISO//DTD ncx 2005-1//EN"
@@ -324,25 +324,8 @@ parse..|
 |-constant ncx-post
 
 
-
-
-
-variable chapter-count
-create chapters 0 , 0 ,
-: chapter-finish   chapter-post doc+=$ ;
-: |chapter:
-    chapter-finish
-    parse-cr chapters chain dup ,
-    chapter-count @ ,   1 chapter-count +!
-    dup documentation-chunk ! doc!
-    chapter-pre1 doc+=$
-    dup doc+=$
-    chapter-pre2 doc+=$
-    doc+=$
-    chapter-pre3 doc+=$
-    feed
-;
-
+atom" ~~~TOC" constant atom-toc
+atom" index.html" constant toc-filename
 
 parse..| <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"
 "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
@@ -364,14 +347,27 @@ parse..| ">|-constant toc-chapter-pre2
 parse..| </a></b></h3>
 |-constant toc-chapter-post
 
-atom" ~~~TOC" constant atom-toc
-atom" index.html" constant toc-filename
 
-atom" ~~~OPF" constant atom-opf
-atom" index.opf" constant opf-filename
+variable chapter-count
+create chapters 0 , 0 ,
+: chapter-finish   chapter-post doc+=$ ;
+: |chapter:
+    chapter-finish
+    parse-cr chapters chain dup ,
+    chapter-count @ ,   1 chapter-count +!
+    dup documentation-chunk ! doc!
+    chapter-pre1 doc+=$
+    dup doc+=$
+    chapter-pre2 doc+=$
+    doc+=$
+    chapter-pre3 doc+=$
+    feed
+;
 
-atom" ~~~NCX" constant atom-ncx
-atom" index.ncx" constant ncx-filename
+
+
+
+
 
 
 : |section:   parse-cr .d{ </p><h2>} doc+=$ .d{ </h2><p>} feed ;

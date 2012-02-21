@@ -231,21 +231,9 @@ create atom-root  0 , 0 ,
 |;
 
 
-|section: program structure
+|section: document chunks
 
-|: *
-
-|@ assertion support
-|@ setup mode flags
-|@ utility words
-|@ linked lists
-|@ implement atoms
-|@ pipe parsing
-|@ escaping atoms
-|\ 
-|\ 
-|\ 
-|\ 
+|: chunks
 |\ atom" ~~~blackhole" constant blackhole
 |\ variable documentation-chunk   blackhole documentation-chunk !
 |\ : documentation ( -- A ) documentation-chunk @ ;
@@ -271,25 +259,11 @@ create atom-root  0 , 0 ,
 |\ : |; ( documentation ) doc? 0= if .d{ </pre></p><p>} then doc! feed ;
 |\ : |$ ( paragraph ) .d{ </p><p>} feed ;
 |\ : |\ ( whole line) parse-cr dup chunk+=$ ?doc+=$ feed ;
-|\ 
-|\ 
-|@ tex and latex shortcuts
-|\ 
-|\ create out-files 0 , 0 ,
-|\ : |file: ( add a new output file )
-|\    parse-cr out-files chain dup ,
-|\    .d{ <div><i>} doc+=$ .d{ </i></div>} feed ;
-|\ 
-|\ 
-|\ : |-constant ( create atom constant ) constant ;
-|\ 
-|\ 
-|\ variable title
-|\ : |title:   parse-cr title once! feed ;
-|\ variable author
-|\ : |author:   parse-cr author once! feed ;
-|\ 
-|\ 
+|;
+
+
+|section: chapter handling
+|: chapters
 |\ parse..| <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"
 |\ "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
 |\ <html>
@@ -315,9 +289,13 @@ create atom-root  0 , 0 ,
 |\ </body>
 |\ </html>
 |\ |-constant chapter-post
-|\ 
-|\ 
-|\ 
+|;
+
+|section: OPF files
+|: opf
+|\ atom" ~~~OPF" constant atom-opf
+|\ atom" index.opf" constant opf-filename
+
 |\ parse..| <?xml version="1.0" encoding="utf-8"?>
 |\ <package xmlns="http://www.idpf.org/2007/opf" version="2.0"
 |\ unique-identifier="BookId">
@@ -376,10 +354,14 @@ create atom-root  0 , 0 ,
 |\ </guide>
 |\ </package>
 |\ |-constant opf-post
-|\ 
-|\ 
-|\ 
-|\ 
+|;
+
+
+|section: NCX files
+|: ncx
+|\ atom" ~~~NCX" constant atom-ncx
+|\ atom" index.ncx" constant ncx-filename
+
 |\ parse..| <?xml version="1.0" encoding="UTF-8"?>
 |\ <!DOCTYPE ncx PUBLIC "-//NISO//DTD ncx 2005-1//EN"
 |\ "http://www.daisy.org/z3986/2005/ncx-2005-1.dtd">
@@ -418,28 +400,14 @@ create atom-root  0 , 0 ,
 |\   </navMap>
 |\ </ncx>
 |\ |-constant ncx-post
-|\ 
-|\ 
-|\ 
-|\ 
-|\ 
-|\ variable chapter-count
-|\ create chapters 0 , 0 ,
-|\ : chapter-finish   chapter-post doc+=$ ;
-|\ : |chapter:
-|\     chapter-finish
-|\     parse-cr chapters chain dup ,
-|\     chapter-count @ ,   1 chapter-count +!
-|\     dup documentation-chunk ! doc!
-|\     chapter-pre1 doc+=$
-|\     dup doc+=$
-|\     chapter-pre2 doc+=$
-|\     doc+=$
-|\     chapter-pre3 doc+=$
-|\     feed
-|\ ;
-|\ 
-|\ 
+|;
+
+
+|section: table of contents
+|: toc
+|\ atom" ~~~TOC" constant atom-toc
+|\ atom" index.html" constant toc-filename
+
 |\ parse..| <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"
 |\ "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
 |\ <html xmlns="http://www.w3.org/1999/xhtml">
@@ -459,15 +427,63 @@ create atom-root  0 , 0 ,
 |\ parse..| ">|-constant toc-chapter-pre2
 |\ parse..| </a></b></h3>
 |\ |-constant toc-chapter-post
+|;
+
+
+|section: program structure
+
+|: *
+
+|@ assertion support
+|@ setup mode flags
+|@ utility words
+|@ linked lists
+|@ implement atoms
+|@ pipe parsing
+|@ escaping atoms
+|@ chunks
+|@ tex and latex shortcuts
 |\ 
-|\ atom" ~~~TOC" constant atom-toc
-|\ atom" index.html" constant toc-filename
+|\ create out-files 0 , 0 ,
+|\ : |file: ( add a new output file )
+|\    parse-cr out-files chain dup ,
+|\    .d{ <div><i>} doc+=$ .d{ </i></div>} feed ;
 |\ 
-|\ atom" ~~~OPF" constant atom-opf
-|\ atom" index.opf" constant opf-filename
 |\ 
-|\ atom" ~~~NCX" constant atom-ncx
-|\ atom" index.ncx" constant ncx-filename
+|\ : |-constant ( create atom constant ) constant ;
+|\ 
+|\ 
+|\ variable title
+|\ : |title:   parse-cr title once! feed ;
+|\ variable author
+|\ : |author:   parse-cr author once! feed ;
+|\ 
+|\ 
+|@ chapters
+|@ opf
+|@ ncx
+|@ toc
+
+|\ variable chapter-count
+|\ create chapters 0 , 0 ,
+|\ : chapter-finish   chapter-post doc+=$ ;
+|\ : |chapter:
+|\     chapter-finish
+|\     parse-cr chapters chain dup ,
+|\     chapter-count @ ,   1 chapter-count +!
+|\     dup documentation-chunk ! doc!
+|\     chapter-pre1 doc+=$
+|\     dup doc+=$
+|\     chapter-pre2 doc+=$
+|\     doc+=$
+|\     chapter-pre3 doc+=$
+|\     feed
+|\ ;
+|\ 
+|\ 
+|\ 
+|\ 
+|\ 
 |\ 
 |\ 
 |\ : |section:   parse-cr .d{ </p><h2>} doc+=$ .d{ </h2><p>} feed ;
