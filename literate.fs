@@ -162,13 +162,13 @@ doc!
 : ?doc+=$ ( A -- ) doc? 0= if escape doc+=$ else drop then ;
 : feed ( read into current chunk ) parse..| atom-cr atom+ dup chunk+=$ ?doc+=$ ;
 : doc+=use ( A -- ) .d{ <b>( } doc+=$ .d{  )</b>} ;
-: doc+=def ( A -- ) .d{ </div><tt><b>&lt; } doc+=$
-                    .d{  &gt;</b> +&equiv;</tt><div class="code"><pre> } .dcr ;
+: doc+=def ( A -- ) .d{ </p><tt><b>&lt; } doc+=$
+                    .d{  &gt;</b> +&equiv;</tt><div class="chunk"><pre> } .dcr ;
 : |@ ( use a chunk ) parse-cr dup chunk+=ref doc+=use feed ;
 : |: ( add to a chunk ) parse-cr dup chunk ! doc+=def feed ;
 : || ( escaped | ) atom" |" chunk+=$ feed ;
-: |; ( documentation ) doc? 0= if .d{ </pre></div><div>} then doc! feed ;
-: |$ ( paragraph ) .d{ </div><div>} feed ;
+: |; ( documentation ) doc? 0= if .d{ </pre></div><p>} then doc! feed ;
+: |$ ( paragraph ) .d{ </p><p>} feed ;
 : |\ ( whole line) parse-cr dup chunk+=$ ?doc+=$ feed ;
 
 
@@ -186,7 +186,7 @@ doc!
 create out-files 0 , 0 ,
 : |file: ( add a new output file )
    parse-cr out-files chain dup ,
-   .d{ <div><i>} doc+=$ .d{ </i></div>} feed ;
+   .d{ <tt><i>} doc+=$ .d{ </i></tt>} feed ;
 
 
 variable title
@@ -201,14 +201,8 @@ parse..| <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"
 <html>
 <head>
 <style type="text/css">
-div.code {
-  margin: 0em 2em;
-  border-width: 1px;
-  border-left-style: solid;
-  border-right-style: none;
-  border-top-style: none;
-  border-bottom-style: none;
-  border-color: black;
+div.chunk {
+  margin: 0em 0.5em
 }
 </style>
 <title>|-constant chapter-pre1
@@ -219,11 +213,11 @@ parse..| </title>
 <h1>|-constant chapter-pre2
 
 parse..| </h1>
-<div>
+<p>
 |-constant chapter-pre3
 
 parse..|
-</div>
+</p>
 </body>
 </html>
 |-constant chapter-post
@@ -375,7 +369,7 @@ create chapters 0 , 0 ,
     feed
 ;
 
-: |section:   parse-cr .d{ </div><h2>} doc+=$ .d{ </h2><div>} feed ;
+: |section:   parse-cr .d{ </p><h2>} doc+=$ .d{ </h2><p>} feed ;
 
 : file! ( A A -- )
     atom-string@ w/o bin create-file 0= assert

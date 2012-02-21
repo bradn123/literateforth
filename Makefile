@@ -12,5 +12,8 @@ lit:
 install:
 	cp literate_out.fs literate.fs
 
+deploy:
+	cp index.mobi /Volumes/Kindle/documents
+
 clean :
 	rm -f index.* power4.fs main.fs *.html literate_out.fs
