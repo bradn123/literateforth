@@ -494,6 +494,30 @@ create atom-root  0 , 0 ,
 |;
 
 
+|section: tangling
+
+|: tangle implementation
+: tangle-file ( file -- ) cell+ @ dup means swap file! ;
+: tangle   out-files @ begin dup while dup tangle-file ->next repeat drop ;
+|;
+
+
+|section: running
+
+|: run implementation
+: run   atom" *" means atom-string@ evaluate ;
+|;
+
+
+|section: file writing
+|: file writing implementation
+: file! ( A A -- )
+    atom-string@ w/o bin create-file 0= assert
+    swap over >r atom-string@ r> write-file 0= assert
+    close-file 0= assert
+;
+|;
+
 
 |section: program structure
 
@@ -547,18 +571,13 @@ create atom-root  0 , 0 ,
 |\ 
 |\ 
 |\ 
-|\ 
+|@ file writing implementation
 |\ 
 |\ 
 |\ 
 |\ : |section:   parse-cr .d{ </p><h2>} doc+=$ .d{ </h2><p>} feed ;
 |\ 
 |\ 
-|\ : file! ( A A -- )
-|\     atom-string@ w/o bin create-file 0= assert
-|\     swap over >r atom-string@ r> write-file 0= assert
-|\     close-file 0= assert
-|\ ;
 |\ 
 |\ : chapter-name ( chp -- A ) cell+ @ ;
 |\ : chapter-text ( chp -- A ) cell+ @ means ;
@@ -568,15 +587,8 @@ create atom-root  0 , 0 ,
 |\     chapter-number [char] A + atom-ch .html atom+ ;
 
 |@ weaving implementation
-
-|\ 
-|\ : tangle-file ( file -- ) cell+ @ dup means swap file! ;
-|\ : tangle   out-files @ begin dup while dup tangle-file ->next repeat drop ;
-|\ 
-|\ 
-|\ : run   atom" *" means atom-string@ evaluate ;
-|\ 
-|\ 
+|@ tangle implementation
+|@ run implementation
 |@ apply literate mode
 |; 
 

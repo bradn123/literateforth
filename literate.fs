@@ -366,6 +366,12 @@ create chapters 0 , 0 ,
 
 
 
+: file! ( A A -- )
+    atom-string@ w/o bin create-file 0= assert
+    swap over >r atom-string@ r> write-file 0= assert
+    close-file 0= assert
+;
+
 
 
 
@@ -373,11 +379,6 @@ create chapters 0 , 0 ,
 : |section:   parse-cr .d{ </p><h2>} doc+=$ .d{ </h2><p>} feed ;
 
 
-: file! ( A A -- )
-    atom-string@ w/o bin create-file 0= assert
-    swap over >r atom-string@ r> write-file 0= assert
-    close-file 0= assert
-;
 
 : chapter-name ( chp -- A ) cell+ @ ;
 : chapter-text ( chp -- A ) cell+ @ means ;
@@ -438,8 +439,6 @@ atom" .html" constant .html
 
 
 : weave    weave-chapters weave-toc weave-opf weave-ncx ;
-
-
 
 : tangle-file ( file -- ) cell+ @ dup means swap file! ;
 : tangle   out-files @ begin dup while dup tangle-file ->next repeat drop ;
