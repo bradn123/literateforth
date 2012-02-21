@@ -174,14 +174,9 @@ doc!
 : |$ ( paragraph ) .d{ </p><p>} feed ;
 : |\ ( whole line) parse-cr dup chunk+=$ ?doc+=$ feed ;
 
-: |TeX
-.d{ <span style="font-family:cmr10, LMRoman10-Regular, Times, serif;">T<span style="text-transform:uppercase; vertical-align:-0.5ex; margin-left:-0.1667em; margin-right:-0.125em;">e</span>X</span>}
-feed
-;
-: |LaTeX
-.d{ <span style="font-family:cmr10, LMRoman10-Regular, Times, serif;">L<span style="text-transform: uppercase; font-size: 70%; margin-left: -0.36em; vertical-align: 0.3em; line-height: 0; margin-right: -0.15em;">a</span>T<span style="text-transform: uppercase; margin-left: -0.1667em; vertical-align: -0.5ex; line-height: 0; margin-right: -0.125em;">e</span>X</span>}
-feed
-;
+
+\
+\
 
 
 create out-files 0 , 0 ,
