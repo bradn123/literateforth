@@ -271,6 +271,16 @@ create atom-root  0 , 0 ,
 
 
 |section: chapter handling
+|: chapter structure
+: chapter-name ( chp -- A ) cell+ @ ;
+: chapter-text ( chp -- A ) cell+ @ means ;
+: chapter-number ( chp -- n ) 2 cells + @ ;
+atom" .html" constant .html
+: chapter-filename ( chp -- A )
+     chapter-number [char] A + atom-ch .html atom+ ;
+|;
+
+
 |: chapters
 |\ parse..| <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"
 |\ "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
@@ -519,6 +529,31 @@ create atom-root  0 , 0 ,
 |;
 
 
+|section: chapters and sections
+|: chapters and sections
+|\ variable chapter-count
+|\ create chapters 0 , 0 ,
+|\ : chapter-finish   chapter-post doc+=$ ;
+|\ : |chapter:
+|\     chapter-finish
+|\     parse-cr chapters chain dup ,
+|\     chapter-count @ ,   1 chapter-count +!
+|\     dup documentation-chunk ! doc!
+|\     chapter-pre1 doc+=$
+|\     dup doc+=$
+|\     chapter-pre2 doc+=$
+|\     doc+=$
+|\     chapter-pre3 doc+=$
+|\     feed
+|\ ;
+|;
+
+|: chapters and sections
+|\ : |section:   parse-cr .d{ </p><h2>} doc+=$ .d{ </h2><p>} feed ;
+|;
+
+
+
 |section: program structure
 
 |: *
@@ -552,40 +587,9 @@ create atom-root  0 , 0 ,
 |@ opf
 |@ ncx
 |@ toc
-
-|\ variable chapter-count
-|\ create chapters 0 , 0 ,
-|\ : chapter-finish   chapter-post doc+=$ ;
-|\ : |chapter:
-|\     chapter-finish
-|\     parse-cr chapters chain dup ,
-|\     chapter-count @ ,   1 chapter-count +!
-|\     dup documentation-chunk ! doc!
-|\     chapter-pre1 doc+=$
-|\     dup doc+=$
-|\     chapter-pre2 doc+=$
-|\     doc+=$
-|\     chapter-pre3 doc+=$
-|\     feed
-|\ ;
-|\ 
-|\ 
-|\ 
+|@ chapters and sections
 |@ file writing implementation
-|\ 
-|\ 
-|\ 
-|\ : |section:   parse-cr .d{ </p><h2>} doc+=$ .d{ </h2><p>} feed ;
-|\ 
-|\ 
-|\ 
-|\ : chapter-name ( chp -- A ) cell+ @ ;
-|\ : chapter-text ( chp -- A ) cell+ @ means ;
-|\ : chapter-number ( chp -- n ) 2 cells + @ ;
-|\ atom" .html" constant .html
-|\ : chapter-filename ( chp -- A )
-|\     chapter-number [char] A + atom-ch .html atom+ ;
-
+|@ chapter structure
 |@ weaving implementation
 |@ tangle implementation
 |@ run implementation

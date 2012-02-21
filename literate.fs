@@ -364,7 +364,7 @@ create chapters 0 , 0 ,
     feed
 ;
 
-
+: |section:   parse-cr .d{ </p><h2>} doc+=$ .d{ </h2><p>} feed ;
 
 : file! ( A A -- )
     atom-string@ w/o bin create-file 0= assert
@@ -373,19 +373,13 @@ create chapters 0 , 0 ,
 ;
 
 
-
-
-
-: |section:   parse-cr .d{ </p><h2>} doc+=$ .d{ </h2><p>} feed ;
-
-
-
 : chapter-name ( chp -- A ) cell+ @ ;
 : chapter-text ( chp -- A ) cell+ @ means ;
 : chapter-number ( chp -- n ) 2 cells + @ ;
 atom" .html" constant .html
 : chapter-filename ( chp -- A )
-    chapter-number [char] A + atom-ch .html atom+ ;
+     chapter-number [char] A + atom-ch .html atom+ ;
+
 
 
 : weave-chapter ( chapter -- ) dup chapter-text swap chapter-filename file! ;
