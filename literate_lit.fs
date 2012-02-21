@@ -288,13 +288,13 @@ create atom-root  0 , 0 ,
 |\ : ?doc+=$ ( A -- ) doc? 0= if escape doc+=$ else drop then ;
 |\ : feed ( read into current chunk ) parse..| atom-cr atom+ dup chunk+=$ ?doc+=$ ;
 |\ : doc+=use ( A -- ) .d{ <b>( } doc+=$ .d{  )</b>} ;
-|\ : doc+=def ( A -- ) .d{ </p><p><b>&lt; } doc+=$
-|\                     .d{  &gt;</b> +&equiv;</p><pre> } .dcr ;
+|\ : doc+=def ( A -- ) .d{ </div><div><b>&lt; } doc+=$
+|\                     .d{  &gt;</b> +&equiv;</div><pre> } .dcr ;
 |\ : |@ ( use a chunk ) parse-cr dup chunk+=ref doc+=use feed ;
 |\ : |: ( add to a chunk ) parse-cr dup chunk ! doc+=def feed ;
 |\ : || ( escaped | ) atom" |" chunk+=$ feed ;
-|\ : |; ( documentation ) doc? 0= if .d{ </pre><p>} then doc! feed ;
-|\ : |$ ( paragraph ) .d{ </p><p>} feed ;
+|\ : |; ( documentation ) doc? 0= if .d{ </pre><div>} then doc! feed ;
+|\ : |$ ( paragraph ) .d{ </div><div>} feed ;
 |\ : |\ ( whole line) parse-cr dup chunk+=$ ?doc+=$ feed ;
 |;
 
@@ -317,7 +317,10 @@ atom" .html" constant .html
 |\ <head>
 |\ <style type="text/css">
 |\ pre {
-|\   margin: 0em 1em;
+|\   margin: 0em 2em;
+|\   border-width: 1px;
+|\   border-left-style: solid;
+|\   border-color: black;
 |\ }
 |\ </style>
 |\ <title>|-constant chapter-pre1
@@ -328,11 +331,11 @@ atom" .html" constant .html
 |\ <h1>|-constant chapter-pre2
 |\ 
 |\ parse..| </h1>
-|\ <p>
+|\ <div>
 |\ |-constant chapter-pre3
 |\ 
 |\ parse..|
-|\ </p>
+|\ </div>
 |\ </body>
 |\ </html>
 |\ |-constant chapter-post
@@ -578,7 +581,7 @@ atom" .html" constant .html
 |;
 
 |: chapters and sections
-|\ : |section:   parse-cr .d{ </p><h2>} doc+=$ .d{ </h2><p>} feed ;
+|\ : |section:   parse-cr .d{ </div><h2>} doc+=$ .d{ </h2><div>} feed ;
 |;
 
 
