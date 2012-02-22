@@ -153,7 +153,7 @@ atom" foo" means atom" 1234abcdef5678 9abcdef" = assert
                      [char] ; c, drop exit then
    c, ;
 : escape-each ( A -- ) atom-string@ 0 ?do dup i + c@ escape-ch loop drop ;
-: escape ( A -- A ) here swap escape-each here over - align $atom-new ;
+: escape ( A -- A ) here swap escape-each here over - align $atom ;
 
 
 
