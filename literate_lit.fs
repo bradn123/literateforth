@@ -3,8 +3,8 @@ s" literate.fs" included
 |title: Literate Forth
 |author: Brad Nelson
 
-|chapter: Everthing
-|section: Overview
+|chapter: Overview
+|section: Major Structure
 
 |file: literate_out.fs
 |: literate_out.fs
@@ -67,6 +67,8 @@ weaving? tangling? or running? or assert
 |;
 
 
+|chapter: Foundations
+
 |section: Assertions
 We will often want to check if certain conditions are true,
 halting if they are not.
@@ -102,7 +104,9 @@ We will also need to duplicate three items off the stack.
 |;
 
 
-|section: Atoms
+|chapter: Atoms
+
+|section: Implementing Atoms
 
 |: testing atoms
 \ Test using atoms.
@@ -220,6 +224,8 @@ create atom-root  0 , 0 ,
 |;
 
 
+|chapter: Parsing
+
 |section: parsing pipe
 
 |: testing parsing
@@ -250,6 +256,8 @@ create atom-root  0 , 0 ,
 |\ : |-constant ( create atom constant ) constant ;
 |;
 
+
+|chapter: Tags
 
 |section: tex and latex
 
@@ -300,6 +308,8 @@ create atom-root  0 , 0 ,
 |;
 
 
+|chapter: Chapters
+
 |section: chapter handling
 |: chapter structure
 : chapter-name ( chp -- A ) cell+ @ ;
@@ -341,6 +351,9 @@ atom" .html" constant .html
 |\ </html>
 |\ |-constant chapter-post
 |;
+
+
+|chapter: MOBI Format
 
 |section: OPF files
 |: opf
@@ -481,7 +494,9 @@ atom" .html" constant .html
 |;
 
 
-|section: weaving
+|chapter: Weaving
+
+|section: weaving details
 |: weaving implementation
 |\ : weave-chapter ( chapter -- ) dup chapter-text swap chapter-filename file! ;
 |\ : weave-chapters
@@ -537,6 +552,8 @@ atom" .html" constant .html
 |;
 
 
+|chapter: Tangling and Runnning
+
 |section: tangling
 
 |: tangle implementation
@@ -551,6 +568,8 @@ atom" .html" constant .html
 : run   atom" *" means atom-string@ evaluate ;
 |;
 
+
+|chapter: Odds and Ends
 
 |section: file writing
 |: file writing implementation
