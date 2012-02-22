@@ -602,6 +602,7 @@ atom" .html" constant .html
 
 |: chapters and sections
 |\ : |section:   parse-cr .d{ </p><h2>} doc+=$ .d{ </h2><p>} feed ;
+|\ : |page   parse-cr .d{ </p><p style="page-break-before:always;">} feed ;
 |;
 
 
@@ -626,5 +627,26 @@ atom" .html" constant .html
 |\    parse-cr out-files chain dup ,
 |\    .d{ <tt><i>} doc+=$ .d{ </i></tt>} feed ;
 |;
+
+|chapter: Slides
+
+|section: testing section 1
+This is a test
+
+|page
+
+|section: And more
+More testing
+
+|page
+
+|section: Last one
+hello
+|section: And more
+hello
+
+|page
+
+really the last
 
 |.

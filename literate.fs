@@ -587,6 +587,8 @@ create chapters 0 , 0 ,
 
 : |section:   parse-cr .d{ </p><h2>} doc+=$ .d{ </h2><p>} feed ;
 
+: |page   parse-cr .d{ </p><p style="page-break-before:always;">} feed ;
+
 
 : file! ( A A -- )
     atom-string@ w/o bin create-file 0= assert
