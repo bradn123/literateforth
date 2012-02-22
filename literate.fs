@@ -115,20 +115,32 @@ atom" foo" means atom" 1234abcdef5678 9abcdef" = assert
 
 
 
-
 : source@ source drop >in @ + ;
+
 : source-remaining source nip >in @ - ;
+
 : drop| ( -- ) source@ 1- c@ [char] | = if -1 >in +! then ;
+
 : need-refill? ( -- f) source nip >in @ <= ;
+
 : on|? ( -- f ) need-refill? if false exit then source@ c@ [char] | = ;
+
 : replenish ( -- f ) need-refill? if refill else true then ;
+
 : ?atom-cr+ ( A -- A ) on|? 0= if atom-cr+ then ;
+
 : eat| ( -- ) [char] | parse drop| atom atom+ ?atom-cr+ ;
+
 : parse-cr ( -- A ) source@ source-remaining atom   source nip >in ! ;
+
 : parse..| ( -- A ) atom"" begin replenish 0=
+
                     if exit then eat| on|? until ;
+
 : skip| ( -- ) on|?  need-refill? 0= and if 1 >in +! then ;
+
 : |-constant ( create atom constant ) constant ;
+
 
 : escape-ch ( ch -- )
    dup [char] < = if [char] & c, [char] l c, [char] t c,
@@ -146,230 +158,435 @@ atom" foo" means atom" 1234abcdef5678 9abcdef" = assert
 
 
 atom" ~~~blackhole" constant blackhole
+
 variable documentation-chunk   blackhole documentation-chunk !
+
 : documentation ( -- A ) documentation-chunk @ ;
 
+
+
 variable chunk
+
 : doc! ( back to documentation) documentation chunk ! ;
+
 doc!
+
 : doc? ( -- f) documentation chunk @ = ;
+
 : chunk+=$ ( A -- ) chunk @ atom+=$ ;
+
 : chunk+=ref ( A -- ) chunk @ atom+=ref ;
+
 : doc+=$ ( A -- ) documentation atom+=$ ;
+
 : .d{ ( -- ) postpone atom{ postpone doc+=$ ; immediate
+
 : .dcr   atom-cr doc+=$ ;
+
 : doc+=ref ( A -- ) documentation atom+=ref ;
+
 : ?doc+=$ ( A -- ) doc? 0= if escape doc+=$ else drop then ;
-: feed ( read into current chunk ) parse..| dup ?atom-cr+ ?doc+=$ atom-cr atom+ chunk+=$ ;
-: doc+=use ( A -- ) .d{ <b>( } doc+=$ .d{  )</b>} ;
-: doc+=def ( A -- ) .d{ </p><tt><b>&lt; } doc+=$
-                    .d{  &gt;</b> +&equiv;</tt><div class="chunk"><pre>} ;
+
+: feed ( read into current chunk ) parse..| dup ?atom-cr+ ?doc+=$ atom-cr+ chunk+=$ ;
+
+: doc+=use ( A -- ) .d{ <u><b>} doc+=$ .d{ </b></u>} ;
+
+: doc+=def ( A -- )
+
+    .d{ </p><tt><u><b>} doc+=$
+
+    .d{ </b></u> +&equiv;</tt><div class="chunk"><pre>} ;
+
 : |@ ( use a chunk ) parse-cr dup chunk+=ref doc+=use .dcr feed ;
+
 : |: ( add to a chunk ) parse-cr dup chunk ! doc+=def feed ;
+
 : || ( escaped | ) atom" |" chunk+=$ feed ;
+
 : |; ( documentation ) doc? 0= if .d{ </pre></div><p>} then doc! feed ;
+
 : |$ ( paragraph ) .d{ </p><p>} feed ;
-: |\ ( whole line) parse-cr dup chunk+=$ ?doc+=$ feed ;
+
+: |\ ( whole line) parse-cr atom-cr+ dup chunk+=$ ?doc+=$ feed ;
 
 
-: |TeX    .d{ <span style="font-family:cmr10, LMRoman10-Regular, Times, serif;">T<span style="text-transform:uppercase; vertical-align:-0.5ex; margin-left:-0.1667em; margin-right:-0.125em;">e</span>X</span>}
+
+: |TeX
+    .d{ <span style="font-family:cmr10, LMRoman10-Regular, Times, serif;">T<span style="text-transform:uppercase; vertical-align:-0.5ex; margin-left:-0.1667em; margin-right:-0.125em;">e</span>X</span>}
     feed
 ;
 
 
-: |LaTeX    .d{ <span style="font-family:cmr10, LMRoman10-Regular, Times, serif;">L<span style="text-transform: uppercase; font-size: 70%; margin-left: -0.36em; vertical-align: 0.3em; line-height: 0; margin-right: -0.15em;">a</span>T<span style="text-transform: uppercase; margin-left: -0.1667em; vertical-align: -0.5ex; line-height: 0; margin-right: -0.125em;">e</span>X</span>}
+: |LaTeX
+    .d{ <span style="font-family:cmr10, LMRoman10-Regular, Times, serif;">L<span style="text-transform: uppercase; font-size: 70%; margin-left: -0.36em; vertical-align: 0.3em; line-height: 0; margin-right: -0.15em;">a</span>T<span style="text-transform: uppercase; margin-left: -0.1667em; vertical-align: -0.5ex; line-height: 0; margin-right: -0.125em;">e</span>X</span>}
     feed
 ;
 
 
 
 create out-files 0 , 0 ,
+
 : |file: ( add a new output file )
+
    parse-cr out-files chain dup ,
+
    .d{ <tt><i>} doc+=$ .d{ </i></tt>} feed ;
 
 
+
 variable title
+
 : |title:   parse-cr title once! feed ;
 
+
 variable author
+
 : |author:   parse-cr author once! feed ;
 
 
+
 parse..| <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"
+
 "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+
 <html>
+
 <head>
+
 <style type="text/css">
+
 div.chunk {
+
   margin: 0em 0.5em;
+
 }
+
+pre {
+
+  margin: 0em 0em;
+
+}
+
 </style>
+
 <title>|-constant chapter-pre1
 
+
+
 parse..| </title>
+
 </head>
+
 <body>
+
 <h1>|-constant chapter-pre2
 
+
+
 parse..| </h1>
+
 <p>
+
 |-constant chapter-pre3
 
+
+
 parse..|
+
 </p>
+
 </body>
+
 </html>
+
 |-constant chapter-post
 
 
+
 atom" ~~~OPF" constant atom-opf
+
 atom" index.opf" constant opf-filename
 
+
 parse..| <?xml version="1.0" encoding="utf-8"?>
+
 <package xmlns="http://www.idpf.org/2007/opf" version="2.0"
+
 unique-identifier="BookId">
+
 <metadata xmlns:dc="http://purl.org/dc/elements/1.1/"
+
 xmlns:opf="http://www.idpf.org/2007/opf">
+
   <dc:title>Test1</dc:title>
+
   <dc:language>en-us</dc:language>
+
   <dc:identifier id="BookId" opf:scheme="ISBN">9999999999</dc:identifier>
+
   <dc:creator>me</dc:creator>
+
   <dc:publisher>Self</dc:publisher>
+
   <dc:subject>Article</dc:subject>
+
   <dc:date>2012-02-15</dc:date>
+
   <dc:description>My short description.</dc:description>
+
 </metadata>
 
+
+
 <manifest>
+
   <item id="My_Table_of_Contents" media-type="application/x-dtbncx+xml"
+
    href="index.ncx"/>
+
   <item id="toc" media-type="application/xhtml+xml" href="index.html"></item>
+
 |-constant opf-pre1
 
+
+
 parse..| <item id="|-constant opf-chapter-pre1
+
 parse..| " media-type="application/xhtml+xml" href="|-constant opf-chapter-pre2
+
 parse..| "></item>
+
 |-constant opf-chapter-post
+
 : opf-chapter ( A -- )
+
   opf-chapter-pre1 doc+=$ 
+
   dup doc+=$
+
   opf-chapter-pre2 doc+=$ 
+
   doc+=$
+
   opf-chapter-post doc+=$ 
+
 ;
 
+
+
 parse..|
+
 </manifest>
+
 <spine toc="My_Table_of_Contents">
+
   <itemref idref="toc"/>
+
 |-constant opf-pre2
 
+
+
 parse..| <itemref idref="|-constant opf-chapter'-pre1
+
 parse..| "/>
+
 |-constant opf-chapter'-post
+
 : opf-chapter' ( A -- )
+
   opf-chapter'-pre1 doc+=$ 
+
   doc+=$
+
   opf-chapter'-post doc+=$ 
+
 ;
 
 
 
+
+
+
+
 parse..|
+
 </spine>
+
 <guide>
+
   <reference type="toc" title="Table of Contents"
+
    href="index.html"></reference>
+
 </guide>
+
 </package>
+
 |-constant opf-post
 
 
+
 atom" ~~~NCX" constant atom-ncx
+
 atom" index.ncx" constant ncx-filename
 
+
 parse..| <?xml version="1.0" encoding="UTF-8"?>
+
 <!DOCTYPE ncx PUBLIC "-//NISO//DTD ncx 2005-1//EN"
+
 "http://www.daisy.org/z3986/2005/ncx-2005-1.dtd">
+
 <ncx xmlns="http://www.daisy.org/z3986/2005/ncx/"
+
  version="2005-1" xml:lang="en-US">
+
 <head>
+
 <meta name="dtb:uid" content="BookId"/>
+
 <meta name="dtb:depth" content="2"/>
+
 <meta name="dtb:totalPageCount" content="0"/>
+
 <meta name="dtb:maxPageNumber" content="0"/>
+
 </head>
+
 <docTitle><text>Test1</text></docTitle>
+
 <docAuthor><text>me</text></docAuthor>
+
   <navMap>
+
     <navPoint class="toc" id="toc" playOrder="1">
+
       <navLabel>
+
         <text>Table of Contents</text>
+
       </navLabel>
+
       <content src="index.html"/>
+
     </navPoint>
+
 |-constant ncx-pre1
 
+
+
 parse..| <navPoint class="chapter" id="|-constant ncx-chapter-pre1
+
 parse..| " playOrder="|-constant ncx-chapter-pre2
+
 parse..| ">
+
       <navLabel>
+
         <text>|-constant ncx-chapter-pre3
+
 parse..| </text>
+
       </navLabel>
+
       <content src="|-constant ncx-chapter-pre4
+
 parse..| "/>
+
     </navPoint>
+
 |-constant ncx-chapter-post
 
+
+
 parse..|
+
   </navMap>
+
 </ncx>
+
 |-constant ncx-post
 
 
+
 atom" ~~~TOC" constant atom-toc
+
 atom" index.html" constant toc-filename
 
+
 parse..| <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"
+
 "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+
 <html xmlns="http://www.w3.org/1999/xhtml">
+
 <head><title>Table of Contents</title></head>
+
 <body>
+
 <div>
+
  <h1><b>TABLE OF CONTENTS</b></h1>
+
 |-constant toc-pre
 
+
+
 parse..|
+
 </div>
+
 </body>
+
 </html>
+
 |-constant toc-post
 
+
+
 parse..| <h3><b><a href="|-constant toc-chapter-pre1
+
 parse..| ">|-constant toc-chapter-pre2
+
 parse..| </a></b></h3>
+
 |-constant toc-chapter-post
 
 
+
 variable chapter-count
+
 create chapters 0 , 0 ,
+
 : chapter-finish   chapter-post doc+=$ ;
+
 : |chapter:
+
     chapter-finish
+
     parse-cr chapters chain dup ,
+
     chapter-count @ ,   1 chapter-count +!
+
     dup documentation-chunk ! doc!
+
     chapter-pre1 doc+=$
+
     dup doc+=$
+
     chapter-pre2 doc+=$
+
     doc+=$
+
     chapter-pre3 doc+=$
+
     feed
+
 ;
 
+
 : |section:   parse-cr .d{ </p><h2>} doc+=$ .d{ </h2><p>} feed ;
+
 
 : file! ( A A -- )
     atom-string@ w/o bin create-file 0= assert
@@ -388,56 +605,107 @@ atom" .html" constant .html
 
 
 : weave-chapter ( chapter -- ) dup chapter-text swap chapter-filename file! ;
+
 : weave-chapters
+
    chapters @ begin dup while dup weave-chapter ->next repeat drop ;
 
+
+
 : weave-toc-chapter ( chapter -- )
+
    toc-chapter-pre1 doc+=$
+
    dup chapter-filename doc+=$
+
    toc-chapter-pre2 doc+=$
+
    chapter-name doc+=$
+
    toc-chapter-post doc+=$
+
 ;
+
 : weave-toc
+
    atom-toc documentation-chunk ! doc!
+
    toc-pre doc+=$
+
    chapters @ begin dup while dup weave-toc-chapter ->next repeat drop
+
    toc-post doc+=$
+
    documentation means toc-filename file!
+
 ;
+
+
 
 : weave-ncx-chapter ( chapter -- )
+
    ncx-chapter-pre1 doc+=$
+
    dup chapter-filename doc+=$
+
    ncx-chapter-pre2 doc+=$
+
    dup chapter-filename doc+=$
+
    ncx-chapter-pre3 doc+=$
+
    dup chapter-name doc+=$
+
    ncx-chapter-pre4 doc+=$
+
    chapter-filename doc+=$
+
    ncx-chapter-post doc+=$
-;
-: weave-ncx
-   atom-ncx documentation-chunk ! doc!
-   ncx-pre1 doc+=$
-   chapters @ begin dup while dup weave-ncx-chapter ->next repeat drop
-   ncx-post doc+=$
-   documentation means ncx-filename file!
+
 ;
 
-: weave-opf
-   atom-opf documentation-chunk ! doc!
-   opf-pre1 doc+=$
-   chapters @ begin dup while dup chapter-filename opf-chapter ->next repeat drop
-   opf-pre2 doc+=$
-   chapters @ begin dup while dup chapter-filename opf-chapter' ->next repeat drop
-   opf-post doc+=$
-   documentation means opf-filename file!
+: weave-ncx
+
+   atom-ncx documentation-chunk ! doc!
+
+   ncx-pre1 doc+=$
+
+   chapters @ begin dup while dup weave-ncx-chapter ->next repeat drop
+
+   ncx-post doc+=$
+
+   documentation means ncx-filename file!
+
 ;
+
+
+
+: weave-opf
+
+   atom-opf documentation-chunk ! doc!
+
+   opf-pre1 doc+=$
+
+   chapters @ begin dup while dup chapter-filename opf-chapter ->next repeat drop
+
+   opf-pre2 doc+=$
+
+   chapters @ begin dup while dup chapter-filename opf-chapter' ->next repeat drop
+
+   opf-post doc+=$
+
+   documentation means opf-filename file!
+
+;
+
+
+
+
 
 
 
 : weave    weave-chapters weave-toc weave-opf weave-ncx ;
+
 
 : tangle-file ( file -- ) cell+ @ dup means swap file! ;
 : tangle   out-files @ begin dup while dup tangle-file ->next repeat drop ;
@@ -448,9 +716,14 @@ atom" .html" constant .html
 
 
 : |. ( exit literate mode )
+
     chapter-finish
+
     weaving? if weave bye then
+
     tangling? if tangle bye then
+
     running? if run then ;
+
 
 

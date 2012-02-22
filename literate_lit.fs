@@ -200,7 +200,6 @@ create atom-root  0 , 0 ,
 : atom-cr+ ( A -- A ) atom-cr atom+ ;
 
 |@ testing atom+
-
 |;
 
 |section: html escaping
@@ -233,6 +232,7 @@ create atom-root  0 , 0 ,
 |\ atom" Hello there" atom+ atom-cr+
 |\ atom" 123" atom+ = assert
 |;
+
 
 |: pipe parsing
 |\ : source@ source drop >in @ + ;
@@ -286,16 +286,17 @@ create atom-root  0 , 0 ,
 |\ : .dcr   atom-cr doc+=$ ;
 |\ : doc+=ref ( A -- ) documentation atom+=ref ;
 |\ : ?doc+=$ ( A -- ) doc? 0= if escape doc+=$ else drop then ;
-|\ : feed ( read into current chunk ) parse..| dup ?atom-cr+ ?doc+=$ atom-cr atom+ chunk+=$ ;
-|\ : doc+=use ( A -- ) .d{ <b>( } doc+=$ .d{  )</b>} ;
-|\ : doc+=def ( A -- ) .d{ </p><tt><b>&lt; } doc+=$
-|\                     .d{  &gt;</b> +&equiv;</tt><div class="chunk"><pre>} ;
+|\ : feed ( read into current chunk ) parse..| dup ?atom-cr+ ?doc+=$ atom-cr+ chunk+=$ ;
+|\ : doc+=use ( A -- ) .d{ <u><b>} doc+=$ .d{ </b></u>} ;
+|\ : doc+=def ( A -- )
+|\     .d{ </p><tt><u><b>} doc+=$
+|\     .d{ </b></u> +&equiv;</tt><div class="chunk"><pre>} ;
 |\ : |@ ( use a chunk ) parse-cr dup chunk+=ref doc+=use .dcr feed ;
 |\ : |: ( add to a chunk ) parse-cr dup chunk ! doc+=def feed ;
 |\ : || ( escaped | ) atom" |" chunk+=$ feed ;
 |\ : |; ( documentation ) doc? 0= if .d{ </pre></div><p>} then doc! feed ;
 |\ : |$ ( paragraph ) .d{ </p><p>} feed ;
-|\ : |\ ( whole line) parse-cr dup chunk+=$ ?doc+=$ feed ;
+|\ : |\ ( whole line) parse-cr atom-cr+ dup chunk+=$ ?doc+=$ feed ;
 |;
 
 
@@ -318,6 +319,9 @@ atom" .html" constant .html
 |\ <style type="text/css">
 |\ div.chunk {
 |\   margin: 0em 0.5em;
+|\ }
+|\ pre {
+|\   margin: 0em 0em;
 |\ }
 |\ </style>
 |\ <title>|-constant chapter-pre1
@@ -558,7 +562,7 @@ atom" .html" constant .html
 |;
 
 
-|section: chapters and sections
+|section: Chapters and Sections
 |: chapters and sections
 |\ variable chapter-count
 |\ create chapters 0 , 0 ,
@@ -582,7 +586,7 @@ atom" .html" constant .html
 |;
 
 
-|section: global fields
+|section: Global Fields
 
 |: global fields
 |\ variable title
