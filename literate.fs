@@ -590,6 +590,13 @@ create chapters 0 , 0 ,
 : |page   parse-cr .d{ </p><p style="page-break-before:always;">} feed ;
 
 
+: |{-   .d{ <ul><li>} feed ;
+
+: |--   .d{ </li><li>} feed ;
+
+: |-}   .d{ </li></ul>} feed ;
+
+
 : file! ( A A -- )
     atom-string@ w/o bin create-file 0= assert
     swap over >r atom-string@ r> write-file 0= assert

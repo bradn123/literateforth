@@ -605,6 +605,12 @@ atom" .html" constant .html
 |\ : |page   parse-cr .d{ </p><p style="page-break-before:always;">} feed ;
 |;
 
+|: chapters and sections
+|\ : |{-   .d{ <ul><li>} feed ;
+|\ : |--   .d{ </li><li>} feed ;
+|\ : |-}   .d{ </li></ul>} feed ;
+|;
+
 
 |section: Global Fields
 
@@ -630,23 +636,35 @@ atom" .html" constant .html
 
 |chapter: Slides
 
-|section: testing section 1
-This is a test
+The follow are slides from an SVFIG presentation.
 
 |page
 
-|section: And more
-More testing
+|section: Literate Programming in Forth
+Brad Nelson
 
 |page
 
-|section: Last one
-hello
-|section: And more
-hello
+Motivations:
+|{- Literate programming is cool
+|-- Forth is cool
+|-- ebooks are cool
+|-}
 
 |page
 
-really the last
+How:
+|{- Use the Forth parser
+|-- Generate MOBI files
+   |{- table of contents
+   |-- ncx file
+   |-- opf file
+   |-}
+|-- Other cool stuff.
+|-}
+
+|page
+
+The last slide.
 
 |.
