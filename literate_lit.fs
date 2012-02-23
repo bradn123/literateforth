@@ -209,7 +209,7 @@ linked-list atom-root
 
 : atom, ( A -- ) atom-string@ dup here swap allot swap move ;
 : atom+ ( A A -- A ) swap here >r atom, atom, r> here over - align $atom ;
-: atom-ch ( ch -- A ) here c! here cell allot align 1 atom ;
+: atom-ch ( ch -- A ) 1 allocate 0= assert 2dup c! nip 1 atom ;
 10 atom-ch constant atom-cr
 : atom-cr+ ( A -- A ) atom-cr atom+ ;
 
