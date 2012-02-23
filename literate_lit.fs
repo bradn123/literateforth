@@ -105,7 +105,7 @@ ensuring that this happens only once.
 |section: Odds and ends
 We will need to clone strings occasionally.
 |: utility words
-: $clone ( $ - $ ) here over 1+ allot align swap 2dup >r >r cmove r> r> ;
+: $clone ( $ - $ ) dup allocate 0= assert swap 2dup >r >r move r> r> ;
 |;
 We will also need to duplicate three items off the stack.
 |: utility words

@@ -17,7 +17,7 @@ literate-env s" " compare 0= constant running?
 weaving? tangling? or running? or assert
 
 
-: $clone ( $ - $ ) here over 1+ allot align swap 2dup >r >r cmove r> r> ;
+: $clone ( $ - $ ) dup allocate 0= assert swap 2dup >r >r move r> r> ;
 
 : 3dup ( xyz -- xyzxyz ) >r 2dup r> dup >r swap >r swap r> r> ;
 
