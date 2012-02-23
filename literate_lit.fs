@@ -14,6 +14,7 @@ s" literate.fs" included
 |section: program structure
 
 |: *
+|@ isolate in wordlist
 |@ assertion support
 |@ setup mode flags
 |@ utility words
@@ -37,6 +38,12 @@ s" literate.fs" included
 |@ run implementation
 |@ apply literate mode
 |; 
+
+
+|section: isolate in wordlist
+
+|: isolate in wordlist
+|;
 
 
 |section: Modes of operation
@@ -565,7 +572,14 @@ atom" .html" constant .html
 |section: running
 
 |: run implementation
-: run   atom" *" means atom-string@ evaluate ;
+atom" literate_running.tmp" constant run-filename
+: run-cleanup   run-filename atom-string@ delete-file drop ;
+: bye   run-cleanup bye ;
+: run   atom" *" means run-filename file!
+        only forth
+        run-filename atom-string@ included
+        run-cleanup
+;
 |;
 
 

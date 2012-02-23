@@ -1,5 +1,7 @@
 
 
+
+
 : assert ( n -- ) 0= if abort then ;
 
 : once! ( n a -- ) dup @ 0= assert ! ;
@@ -720,7 +722,14 @@ atom" .html" constant .html
 : tangle   out-files @ begin dup while dup tangle-file ->next repeat drop ;
 
 
-: run   atom" *" means atom-string@ evaluate ;
+atom" literate_running.tmp" constant run-filename
+: run-cleanup   run-filename atom-string@ delete-file drop ;
+: bye   run-cleanup bye ;
+: run   atom" *" means run-filename file!
+        only forth
+        run-filename atom-string@ included
+        run-cleanup
+;
 
 
 
