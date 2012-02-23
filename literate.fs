@@ -111,7 +111,10 @@ atom" foo" means atom" 1234abcdef5678 9abcdef" = assert
 
 
 : atom, ( A -- ) atom-string@ dup here swap allot swap move ;
-: atom+ ( A A -- A ) swap here >r atom, atom, r> here over - align $atom ;
+: atom>>$ ( A d -- d' ) 2dup >r atom-string@ r> swap move swap atom-length@ + ;
+: atom+ ( A A -- A ) swap 2dup atom-length@ swap atom-length@ + dup >r
+                     allocate 0= assert dup >r
+                     atom>>$ atom>>$ drop r> r> $atom ;
 : atom-ch ( ch -- A ) 1 allocate 0= assert 2dup c! nip 1 atom ;
 10 atom-ch constant atom-cr
 : atom-cr+ ( A -- A ) atom-cr atom+ ;
