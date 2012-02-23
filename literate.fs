@@ -612,7 +612,7 @@ create chapters 0 , 0 ,
 : chapter-number ( chp -- n ) 2 cells + @ ;
 atom" .html" constant .html
 : chapter-filename ( chp -- A )
-     chapter-number [char] A + atom-ch .html atom+ ;
+     chapter-number s>d <# # # # #s #> atom .html atom+ ;
 
 
 
