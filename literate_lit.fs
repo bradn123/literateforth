@@ -154,7 +154,7 @@ atom" foo" means atom" 1234abcdef5678 9abcdef" = assert
 : atom-length@ ( A -- n ) 1 cells + @ ;
 : atom-data@ ( A -- a ) 2 cells + @ ;
 : atom-string@ ( A -- $ ) dup atom-data@ swap atom-length@ ;
-: atom-head ( A -- A[head] ) 3 cells + ;
+: atom-def-head ( A -- A[head] ) 3 cells + ;
 
 linked-list atom-root
 : $atom-new ( $ -- A ) atom-root chain , , 0 , 0 , atom-root cell+ @ ;
@@ -181,7 +181,7 @@ linked-list atom-root
                  state @ if postpone sliteral postpone atom
                          else atom then ; immediate
  
-: atom-append ( A n Ad -- ) atom-head chain , , ;
+: atom-append ( A n Ad -- ) atom-def-head chain , , ;
 : atom+=$ ( A Ad -- ) 0 swap atom-append ;
 : atom+=ref ( A Ad -- ) 1 swap atom-append ;
 
@@ -191,7 +191,7 @@ linked-list atom-root
 
 : ref-parts ( ref -- A ref? ) cell+ dup cell+ @ swap @ ;
 : atom-walk ( fn A -- )
-     atom-head @ begin dup while
+     atom-def-head @ begin dup while
          2dup >r >r
          ref-parts if recurse else swap execute then
          r> r>
