@@ -1,5 +1,6 @@
 
 
+vocabulary literate also literate definitions
 
 
 : assert ( n -- ) 0= if abort then ;
@@ -726,7 +727,6 @@ atom" literate_running.tmp" constant run-filename
 : run-cleanup   run-filename atom-string@ delete-file drop ;
 : bye   run-cleanup bye ;
 : run   atom" *" means run-filename file!
-        only forth
         run-filename atom-string@ included
         run-cleanup
 ;

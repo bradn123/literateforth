@@ -43,6 +43,7 @@ s" literate.fs" included
 |section: isolate in wordlist
 
 |: isolate in wordlist
+vocabulary literate also literate definitions
 |;
 
 
@@ -576,7 +577,6 @@ atom" literate_running.tmp" constant run-filename
 : run-cleanup   run-filename atom-string@ delete-file drop ;
 : bye   run-cleanup bye ;
 : run   atom" *" means run-filename file!
-        only forth
         run-filename atom-string@ included
         run-cleanup
 ;
