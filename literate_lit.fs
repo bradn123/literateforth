@@ -98,6 +98,7 @@ ensuring that this happens only once.
 : chain-rest ( head[t] -- ) chain-link cell+ 2dup @ ! ! ;
 : chain ( head[t] -- ) dup @ if chain-rest else chain-first then ;
 : ->next ( a -- a' ) @ ;
+: linked-list   create 0 , 0 , ;
 |;
 
 
@@ -155,7 +156,7 @@ atom" foo" means atom" 1234abcdef5678 9abcdef" = assert
 : atom-string@ ( A -- $ ) dup atom-data@ swap atom-length@ ;
 : atom-head ( A -- A[head] ) 3 cells + ;
 
-create atom-root  0 , 0 ,
+linked-list atom-root
 : $atom-new ( $ -- A ) atom-root chain , , 0 , 0 , atom-root cell+ @ ;
 : atom-new ( $ -- A ) $clone $atom-new ;
 
@@ -598,7 +599,7 @@ atom" literate_running.tmp" constant run-filename
 |section: Chapters and Sections
 |: chapters and sections
 |\ variable chapter-count
-|\ create chapters 0 , 0 ,
+|\ linked-list chapters
 |\ : chapter-finish   chapter-post doc+=$ ;
 |\ : |chapter:
 |\     chapter-finish
@@ -642,7 +643,7 @@ atom" literate_running.tmp" constant run-filename
 |section: output files
 
 |: output files
-|\ create out-files 0 , 0 ,
+|\ linked-list out-files
 |\ : |file: ( add a new output file )
 |\    parse-cr out-files chain dup ,
 |\    .d{ <tt><i>} doc+=$ .d{ </i></tt>} feed ;
