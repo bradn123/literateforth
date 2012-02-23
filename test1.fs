@@ -1,4 +1,4 @@
-s" literate_lit.fs" included
+s" literate.fs" included
 
 |title: fun^4
 |author: me

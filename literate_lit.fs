@@ -201,7 +201,8 @@ linked-list atom-root
 : gather-string ( a A -- a' ) 2dup atom-string@ >r swap r> move tally-length ;
 : atom-walk-length ( A -- n ) 0 swap ['] tally-length swap atom-walk ;
 : atom-walk-gather ( a A -- ) swap ['] gather-string swap atom-walk drop ;
-: means ( A -- A' ) dup atom-walk-length here swap 2dup >r >r allot align
+: means ( A -- A' ) dup atom-walk-length dup allocate 0= assert
+                    swap 2dup >r >r drop
                     atom-walk-gather r> r> $atom ;
 
 |@ testing means
