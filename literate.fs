@@ -119,7 +119,6 @@ atom" bar" atom" foo" atom+=ref
 atom" foo" means atom" 1234abcdef5678 9abcdef" = assert
 
 
-: atom, ( A -- ) atom-string@ dup here swap allot swap move ;
 : atom>>$ ( A d -- d' ) 2dup >r atom-string@ r> swap move swap atom-length@ + ;
 : atom+ ( A A -- A ) swap 2dup atom-length@ swap atom-length@ + dup >r
                      allocate 0= assert dup >r
@@ -170,7 +169,8 @@ atom" foo" means atom" 1234abcdef5678 9abcdef" = assert
                      [char] ; c, drop exit then
    c, ;
 : escape-each ( A -- ) atom-string@ 0 ?do dup i + c@ escape-ch loop drop ;
-: escape ( A -- A ) here swap escape-each here over - align $atom ;
+: here! ( a -- ) here - allot ;
+: escape ( A -- A ) here dup >r swap escape-each here over - atom r> here! ;
 
 
 

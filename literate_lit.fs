@@ -216,7 +216,6 @@ linked-list atom-root
 
 |@ testing means
 
-: atom, ( A -- ) atom-string@ dup here swap allot swap move ;
 : atom>>$ ( A d -- d' ) 2dup >r atom-string@ r> swap move swap atom-length@ + ;
 : atom+ ( A A -- A ) swap 2dup atom-length@ swap atom-length@ + dup >r
                      allocate 0= assert dup >r
@@ -242,7 +241,8 @@ linked-list atom-root
                      [char] ; c, drop exit then
    c, ;
 : escape-each ( A -- ) atom-string@ 0 ?do dup i + c@ escape-ch loop drop ;
-: escape ( A -- A ) here swap escape-each here over - align $atom ;
+: here! ( a -- ) here - allot ;
+: escape ( A -- A ) here dup >r swap escape-each here over - atom r> here! ;
 |;
 
 
