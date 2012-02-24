@@ -579,11 +579,12 @@ vocabulary literate also literate definitions
 |section: Chapters and Sections
 
 |: chapters and sections
+variable slide-chapter
 variable chapter-count
 linked-list chapters
 : chapter-finish   .d{ </p></div></body></html>} ;
 
-: raw-chapter ( slides? -- )
+: raw-chapter ( -- )
      chapter-finish
      parse-cr 
      chapter-count @   1 chapter-count +!
@@ -596,7 +597,7 @@ linked-list chapters
 |\ <head>
 |\ |.d
 
-over if
+slide-chapter @ if
 |@ slide show logic
 then
 
@@ -605,6 +606,17 @@ then
 |\ div.chunk {
 |\   margin: 0em 0.5em;
 |\ }
+|\ |.d
+
+slide-chapter @ if
+|\ .d|
+|\ div.section {
+|\   page-break-before: always;
+|\ }
+|\ |.d
+then
+
+|\ .d|
 |\ pre {
 |\   margin: 0em 0em;
 |\ }
@@ -613,7 +625,7 @@ then
 
     dup doc+=$
     .d{ </title></head>}
-    swap if .d{ <body onload="Load()">} else .d{ <body>} then
+    slide-chapter @ if .d{ <body onload="Load()">} else .d{ <body>} then
     .d{ <div class="section"><h1>}
     doc+=$
     .d{ </h1><p>}
@@ -621,8 +633,8 @@ then
     feed
 ;
 
-|\ : |chapter:   false raw-chapter ;
-|\ : |slide-chapter:   true raw-chapter ;
+|\ : |chapter:   false slide-chapter !  raw-chapter ;
+|\ : |slide-chapter:   true slide-chapter !  raw-chapter ;
 |;
 
 |: chapters and sections
@@ -750,13 +762,14 @@ atom" No description available." description !
 The follow are slides from an SVFIG presentation on
 February 25, 2012.
 |$
-Press |<-|  and |->|  to move through the slides.
-|^|  and |v|  can be used to jump to the begining and end.
+On ebooks readers, browse normally.
+On full browsers, |<-|  and |->|  move through the slides,
+|^|  and |v|  jump to the begining and end.
+
 
 |section: Literate Programming in Forth
 Brad Nelson
 
-|page
 
 |section: Motivations
 |{- Literate programming is cool
@@ -764,7 +777,6 @@ Brad Nelson
 |-- ebooks are cool
 |-}
 
-|page
 
 |section: Approach
 |{- Use the Forth parser
@@ -775,7 +787,5 @@ Brad Nelson
    |-}
 |-- Other cool stuff.
 |-}
-
-|page
 
 |.

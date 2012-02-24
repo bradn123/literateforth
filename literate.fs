@@ -294,11 +294,12 @@ linked-list out-files
 
 
 
+variable slide-chapter
 variable chapter-count
 linked-list chapters
 : chapter-finish   .d{ </p></div></body></html>} ;
 
-: raw-chapter ( slides? -- )
+: raw-chapter ( -- )
      chapter-finish
      parse-cr 
      chapter-count @   1 chapter-count +!
@@ -316,7 +317,7 @@ linked-list chapters
 
 |.d
 
-over if
+slide-chapter @ if
 
 
 .d|
@@ -368,6 +369,24 @@ div.chunk {
 
 }
 
+|.d
+
+slide-chapter @ if
+
+.d|
+
+div.section {
+
+  page-break-before: always;
+
+}
+
+|.d
+then
+
+
+.d|
+
 pre {
 
   margin: 0em 0em;
@@ -380,7 +399,7 @@ pre {
 
     dup doc+=$
     .d{ </title></head>}
-    swap if .d{ <body onload="Load()">} else .d{ <body>} then
+    slide-chapter @ if .d{ <body onload="Load()">} else .d{ <body>} then
     .d{ <div class="section"><h1>}
     doc+=$
     .d{ </h1><p>}
@@ -389,9 +408,9 @@ pre {
 ;
 
 
-: |chapter:   false raw-chapter ;
+: |chapter:   false slide-chapter !  raw-chapter ;
 
-: |slide-chapter:   true raw-chapter ;
+: |slide-chapter:   true slide-chapter !  raw-chapter ;
 
 
 : |section:   parse-cr .d{ </p></div><div class="section"><h2>} doc+=$
