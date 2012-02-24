@@ -347,8 +347,8 @@ atom" testing" atom" 123" atom+ atom" testing123" = assert
 |;
 
 Atoms can have a meaning assigned to them using
-atom+=$ (to append a literal string)
-or atom+=ref (to append a reference to the meaning of another atom).
+|tt{ atom+=$|}tt  (to append a literal string)
+or |tt{ atom+=ref|}tt  (to append a reference to the meaning of another atom).
 |: testing atoms
 atom" abc" atom" bar" atom+=$
 atom" def" atom" bar" atom+=$
@@ -402,7 +402,7 @@ The format of the meaning links is:
 
 |section: Implementing Atoms
 
-A list of all atoms will be kept chained off |ttb{ atom-root |}ttb .
+A list of all atoms will be kept chained off |tt{ atom-root |}tt .
 Whenever an atom is needed, this list should be consulted before a
 new atoms is created (as an existing one may exist and
 |b{ must |}b  be used).
@@ -444,13 +444,13 @@ We then need a way to look through all atoms for a match.
 |;
 
 Now we can implement two versions of atom lookup.
-|ttb{ $atom |}ttb  for atoms based on persistent strings.
+|tt{ $atom |}tt  for atoms based on persistent strings.
 |: implement atoms
 : $atom ( $ -- A )
     2dup atom-find dup if nip nip else drop $atom-new then ;
 |;
 
-And |ttb{ atom |}ttb  for atoms based on non-persistent strings.
+And |tt{ atom |}tt  for atoms based on non-persistent strings.
 |: implement atoms
 : atom ( $ -- A )
     2dup atom-find dup if nip nip else drop atom-new then ;
@@ -596,10 +596,18 @@ atom" 123" atom+ = assert
 
 |section: TeX and LaTeX
 
+As |TeX  and |LaTex  are widely referenced in material related to
+literate programming, we will want to be able to mention them in
+way that has some semblance of typographical accuracy.
+Unfortunately, precise duplication would require images
+(which don't scale).
+|$
+Use of subscript and big text gives use this for |TeX :
 |: tex and latex shortcuts
 |\ : |TeX .d{ <span>T<sub><big>E</big></sub>X</span>} feed ;
 |;
-
+|$
+Adding in small text and superscript then brings us to this for |LaTeX :
 |: tex and latex shortcuts
 |\ : |LaTeX
     .d{ <span>L<sup><small>A</small></sup>T<sub><big>E</big></sub>X</span>}
@@ -651,10 +659,10 @@ doc!
 : feed ( read into current chunk )
 |\     parse..| dup ?atom-cr+ ?doc+=$ atom-cr+ chunk+=$ ;
 : doc+=use
-    ( A -- ) .d{ <u><b>} doc+=$ .d{ </b></u>} ;
+    ( A -- ) .d{ <b>} doc+=$ .d{ </b>} ;
 : doc+=def ( A -- )
-    .d{ </p><tt><u><b>} doc+=$
-    .d{ </b></u> +&equiv;</tt><div class="chunk"><pre>} ;
+    .d{ </p><tt><b>} doc+=$
+    .d{ </b> +&equiv;</tt><div class="chunk"><pre>} ;
 
 
 |\ : |@ ( use a chunk )
@@ -948,8 +956,6 @@ variable bullet-depth
 |\ : |}u   .d{ </u} feed ;
 |\ : |tt{   .d{ <tt>} feed ;
 |\ : |}tt   .d{ </tt>} feed ;
-|\ : |ttb{   .d{ <tt><b>} feed ;
-|\ : |}ttb   .d{ </b></tt>} feed ;
 |\ : |sup{   .d{ <sup>} feed ;
 |\ : |}sup   .d{ </sup>} feed ;
 |\ : |sub{   .d{ <sub>} feed ;

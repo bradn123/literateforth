@@ -252,10 +252,10 @@ doc!
 
     parse..| dup ?atom-cr+ ?doc+=$ atom-cr+ chunk+=$ ;
 : doc+=use
-    ( A -- ) .d{ <u><b>} doc+=$ .d{ </b></u>} ;
+    ( A -- ) .d{ <b>} doc+=$ .d{ </b>} ;
 : doc+=def ( A -- )
-    .d{ </p><tt><u><b>} doc+=$
-    .d{ </b></u> +&equiv;</tt><div class="chunk"><pre>} ;
+    .d{ </p><tt><b>} doc+=$
+    .d{ </b> +&equiv;</tt><div class="chunk"><pre>} ;
 
 
 
@@ -458,10 +458,6 @@ variable bullet-depth
 : |tt{   .d{ <tt>} feed ;
 
 : |}tt   .d{ </tt>} feed ;
-
-: |ttb{   .d{ <tt><b>} feed ;
-
-: |}ttb   .d{ </b></tt>} feed ;
 
 : |sup{   .d{ <sup>} feed ;
 
