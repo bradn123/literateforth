@@ -307,7 +307,7 @@ linked-list atom-root
 
 |chapter: Tags
 
-|section: tex and latex
+|section: TeX and LaTeX
 
 |: tex and latex shortcuts
 |\ : |TeX .d{ <span>T<sub><big>E</big></sub>X</span>} feed ;
