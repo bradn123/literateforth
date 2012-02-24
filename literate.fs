@@ -597,187 +597,103 @@ atom" ~~~TOC" constant atom-toc
 ;
 
 
-
 atom" ~~~NCX" constant atom-ncx
-
-: ncx-filename   doc-base @ atom" .ncx" atom+ ;
-
+: ncx-filename ( -- A )
+    doc-base @ atom" .ncx" atom+ ;
 
 : weave-ncx-chapter ( chapter -- )
-
    .d{ <navPoint class="chapter" id="}
-
-   dup chapter-filename doc+=$
-
-   .d{ " playOrder="}
-
-   dup chapter-filename doc+=$
-
-   .d| ">
-
-      <navLabel>
-
-        <text>|.d
-
-   dup chapter-name doc+=$
-
-   .d| </text>
-
-      </navLabel>
-
-      <content src="|.d
-
-   chapter-filename doc+=$
-
-   .d| "/>
-
-    </navPoint>
-
-|.d
-
+    dup chapter-filename doc+=$
+    .d{ " playOrder="}
+    dup chapter-filename doc+=$
+    .d{ "><navLabel><text>}
+    dup chapter-name doc+=$
+    .d{ </text></navLabel><content src="}
+    chapter-filename doc+=$
+    .d{ "/></navPoint>}
 ;
 
-
 : weave-ncx
-
-   atom-ncx documentation-chunk ! doc!
+    atom-ncx documentation-chunk ! doc!
 
 
 .d| <?xml version="1.0" encoding="UTF-8"?>
-
 <!DOCTYPE ncx PUBLIC "-//NISO//DTD ncx 2005-1//EN"
-
 "http://www.daisy.org/z3986/2005/ncx-2005-1.dtd">
-
 <ncx xmlns="http://www.daisy.org/z3986/2005/ncx/"
-
  version="2005-1" xml:lang="en-US">
-
 <head>
-
 <meta name="dtb:uid" content="BookId"/>
-
 <meta name="dtb:depth" content="2"/>
-
 <meta name="dtb:totalPageCount" content="0"/>
-
 <meta name="dtb:maxPageNumber" content="0"/>
-
 </head>
 
-<docTitle><text>Test1</text></docTitle>
+|.d
+.d{ <docTitle><text>} title @ doc+=$
 
+.d| </text></docTitle>
 <docAuthor><text>me</text></docAuthor>
-
   <navMap>
-
     <navPoint class="toc" id="toc" playOrder="1">
-
       <navLabel>
-
         <text>Table of Contents</text>
-
       </navLabel>
 
-      <content src="|.d toc-filename doc+=$ .d| "/>
-
-    </navPoint>
-
-|.d
-
-
-   chapters @ begin dup while dup weave-ncx-chapter ->next repeat drop
-
-
-.d|
-
-  </navMap>
-
-</ncx>
+     <content src="|.d toc-filename doc+=$ .d| "/>
+     </navPoint>
 
 |.d
 
+    chapters @ begin dup while dup weave-ncx-chapter ->next repeat drop
 
-   documentation means ncx-filename file!
-
+    .d{ </navMap></ncx>}
+    documentation means ncx-filename file!
 ;
-
-
 
 
 atom" ~~~OPF" constant atom-opf
-
-: opf-filename   doc-base @ atom" .opf" atom+ ;
-
+: opf-filename ( -- A )
+    doc-base @ atom" .opf" atom+ ;
 
 : opf-chapter ( A -- )
-
-  .d{ <item id="}
-
-  dup doc+=$
-
-  .d{ " media-type="application/xhtml+xml" href="}
-
-  doc+=$
-
-  .d{ "></item>} .dcr
-
+    .d{ <item id="}
+    dup doc+=$
+    .d{ " media-type="application/xhtml+xml" href="}
+    doc+=$
+    .d{ "></item>} .dcr
 ;
-
 
 : opf-chapter' ( A -- )
-
-  .d{ <itemref idref="} doc+=$ .d{ "/>} .dcr
-
-;
-
-
-
+    .d{ <itemref idref="} doc+=$ .d{ "/>} .dcr
+ ;
 
 : weave-opf
-
-   atom-opf documentation-chunk ! doc!
+    atom-opf documentation-chunk ! doc!
 
 
 .d| <?xml version="1.0" encoding="utf-8"?>
-
 <package xmlns="http://www.idpf.org/2007/opf" version="2.0"
-
 unique-identifier="BookId">
-
 <metadata xmlns:dc="http://purl.org/dc/elements/1.1/"
-
 xmlns:opf="http://www.idpf.org/2007/opf">
 
 |.d
-
-  .d{ <dc:title>} title @ doc+=$ .d{ </dc:title>} .dcr
-
-  .d{ <dc:language>en-us</dc:language>} .dcr
-
-  .d{ <dc:identifier id="BookId" opf:scheme="ISBN">}
-
-  isbn @ doc+=$ .d{ </dc:identifier>} .dcr
-
-  .d{ <dc:creator>} author @ doc+=$ .d{ </dc:creator>} .dcr
-
-  .d{ <dc:publisher>} author @ doc+=$ .d{ </dc:publisher>} .dcr
-
-  .d{ <dc:subject>} subject @ doc+=$ .d{ </dc:subject>} .dcr
-
-  .d{ <dc:date>} doc-date @ doc+=$ .d{ </dc:date>} .dcr
-
-  .d{ <dc:description>} description @ doc+=$ .d{ </dc:description>} .dcr
+    .d{ <dc:title>} title @ doc+=$ .d{ </dc:title>} .dcr
+    .d{ <dc:language>en-us</dc:language>} .dcr
+    .d{ <dc:identifier id="BookId" opf:scheme="ISBN">}
+    isbn @ doc+=$ .d{ </dc:identifier>} .dcr
+    .d{ <dc:creator>} author @ doc+=$ .d{ </dc:creator>} .dcr
+    .d{ <dc:publisher>} author @ doc+=$ .d{ </dc:publisher>} .dcr
+    .d{ <dc:subject>} subject @ doc+=$ .d{ </dc:subject>} .dcr
+    .d{ <dc:date>} doc-date @ doc+=$ .d{ </dc:date>} .dcr
+    .d{ <dc:description>} description @ doc+=$ .d{ </dc:description>} .dcr
 
 .d|
-
 </metadata>
 
-
-
 <manifest>
-
-  <item id="My_Table_of_Contents" media-type="application/x-dtbncx+xml"
+   <item id="My_Table_of_Contents" media-type="application/x-dtbncx+xml"
 
    href="|.d ncx-filename doc+=$ .d| "/>
 
@@ -787,18 +703,13 @@ xmlns:opf="http://www.idpf.org/2007/opf">
 
 |.d
 
-
-   chapters @ begin dup while
-
+    chapters @ begin dup while
         dup chapter-filename opf-chapter ->next repeat drop
 
 
 .d|
-
 </manifest>
-
 <spine toc="My_Table_of_Contents">
-
   <itemref idref="toc"/>
 
 |.d
@@ -808,24 +719,17 @@ xmlns:opf="http://www.idpf.org/2007/opf">
 
 
 .d|
-
 </spine>
-
 <guide>
-
   <reference type="toc" title="Table of Contents"
 
    href="|.d toc-filename doc+=$ .d| "></reference>
-
 </guide>
-
 </package>
 
 |.d
 
-
    documentation means opf-filename file!
-
 ;
 
 
