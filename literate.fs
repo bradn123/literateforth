@@ -273,13 +273,13 @@ atom" No description available." description !
 ;
 
 
-: |<-| .d{ &larr;} ;
+: |<-| .d{ &larr;} feed ;
 
-: |->| .d{ &rarr;} ;
+: |->| .d{ &rarr;} feed ;
 
-: |^| .d{ &uarr;} ;
+: |^| .d{ &uarr;} feed ;
 
-: |v| .d{ &darr;} ;
+: |v| .d{ &darr;} feed ;
 
 
 
@@ -391,7 +391,7 @@ pre {
 
 : |chapter:   false raw-chapter ;
 
-: |slides:   true raw-chapter ;
+: |slide-chapter:   true raw-chapter ;
 
 
 : |section:   parse-cr .d{ </p></div><div class="section"><h2>} doc+=$

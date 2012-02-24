@@ -330,10 +330,10 @@ linked-list atom-root
 |;
 
 |: tex and latex shortcuts
-|\ : |<-| .d{ &larr;} ;
-|\ : |->| .d{ &rarr;} ;
-|\ : |^| .d{ &uarr;} ;
-|\ : |v| .d{ &darr;} ;
+|\ : |<-| .d{ &larr;} feed ;
+|\ : |->| .d{ &rarr;} feed ;
+|\ : |^| .d{ &uarr;} feed ;
+|\ : |v| .d{ &darr;} feed ;
 |;
 
 
@@ -622,7 +622,7 @@ then
 ;
 
 |\ : |chapter:   false raw-chapter ;
-|\ : |slides:   true raw-chapter ;
+|\ : |slide-chapter:   true raw-chapter ;
 |;
 
 |: chapters and sections
@@ -745,10 +745,13 @@ atom" No description available." description !
 |\    .d{ <tt><i>} doc+=$ .d{ </i></tt>} feed ;
 |;
 
-|chapter: Appendix A - Slides
+|slide-chapter: Appendix A - Slides
 
 The follow are slides from an SVFIG presentation on
 February 25, 2012.
+|$
+Press |<-|  and |->|  to move through the slides.
+|^|  and |v|  can be used to jump to the begining and end.
 
 |section: Literate Programming in Forth
 Brad Nelson
