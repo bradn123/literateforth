@@ -80,10 +80,25 @@ document.
 
 
 |section: Program Overview
-
 This is the basic structure of the literate programming parser:
 |: *
 |@ isolate in wordlist
+|@ define data structures and tools
+|@ define user facing tags
+|@ primary program flow
+|;
+
+
+|section: Tags
+|: define user facing tags
+|@ tex and latex shortcuts
+|@ chapters
+|@ chapter structure
+|;
+
+|section: Data structures and Tools
+
+|: define data structures and tools
 |@ assertion support
 |@ utility words
 |@ implement atoms
@@ -91,15 +106,10 @@ This is the basic structure of the literate programming parser:
 |@ escaping atoms
 |@ chunks
 |@ global fields
-|@ tex and latex shortcuts
 |@ output files
 |@ file writing implementation
-|@ chapters
 |@ chapters and sections
-|@ chapter structure
-|@ primary program flow
 |;
-
 
 
 |chapter: Weaving, Tangling, and Running

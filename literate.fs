@@ -3,6 +3,7 @@
 vocabulary literate also literate definitions
 
 
+
 : assert ( n -- )
     0= if abort then ;
 
@@ -311,25 +312,6 @@ atom" No description available." description !
 
 
 
-: |TeX .d{ <span>T<sub><big>E</big></sub>X</span>} feed ;
-
-
-: |LaTeX
-    .d{ <span>L<sup><small>A</small></sup>T<sub><big>E</big></sub>X</span>}
-    feed
-;
-
-
-: |<-| .d{ &larr;} feed ;
-
-: |->| .d{ &rarr;} feed ;
-
-: |^| .d{ &uarr;} feed ;
-
-: |v| .d{ &darr;} feed ;
-
-
-
 linked-list out-files
 
 : |file: ( add a new output file )
@@ -337,7 +319,6 @@ linked-list out-files
     .d{ <tt><i>} doc+=$ .d{ </i></tt>} feed ;
 : file-name@ ( file -- A )
     cell+ @ ;
-
 
 
 
@@ -500,6 +481,29 @@ atom" .html" constant .html
 : chapter-filename ( chp -- A )
      chapter-number s>d <# # # # #s #> atom
      doc-base @ atom" _" atom+ swap .html atom+ atom+ ;
+
+
+
+
+
+: |TeX .d{ <span>T<sub><big>E</big></sub>X</span>} feed ;
+
+
+: |LaTeX
+    .d{ <span>L<sup><small>A</small></sup>T<sub><big>E</big></sub>X</span>}
+    feed
+;
+
+
+: |<-| .d{ &larr;} feed ;
+
+: |->| .d{ &rarr;} feed ;
+
+: |^| .d{ &uarr;} feed ;
+
+: |v| .d{ &darr;} feed ;
+
+
 
 
 
