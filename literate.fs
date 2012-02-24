@@ -319,9 +319,12 @@ linked-list out-files
 
 
 
+
 variable slide-chapter
 variable chapter-count
 linked-list chapters
+
+
 : chapter-finish   .d{ </p></div></body></html>} ;
 
 : raw-chapter ( -- )
@@ -385,6 +388,9 @@ then
   div.chunk {
     margin: 0em 0.5em;
   }
+  pre {
+    margin: 0em 0em;
+  }
 
 |.d
 
@@ -400,13 +406,9 @@ then
 
 
 .d|
-  pre {
-    margin: 0em 0em;
-  }
 </style>
 
 <title>|.d
-
     dup doc+=$
     .d{ </title></head>}
     slide-chapter @ if .d{ <body onload="Load()">} else .d{ <body>} then

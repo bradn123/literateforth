@@ -787,60 +787,7 @@ We provide some tags for arrow symbols.
 |section: Chapters and Sections
 
 |: chapters and sections
-variable slide-chapter
-variable chapter-count
-linked-list chapters
-: chapter-finish   .d{ </p></div></body></html>} ;
-
-: raw-chapter ( -- )
-     chapter-finish
-     parse-cr
-     chapter-count @   1 chapter-count +!
-     over 2 chapters chain
-     dup documentation-chunk ! doc!
-
-|\ .d| <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"
- "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
-<html>
-<head>
-|\ |.d
-
-slide-chapter @ if
-|@ slide show logic
-then
-
-|\ .d|
-<style type="text/css">
-  div.chunk {
-    margin: 0em 0.5em;
-  }
-|\ |.d
-
-slide-chapter @ if
-|\ .d|
-  div.section {
-    page-break-before: always;
-  }
-|\ |.d
-then
-
-|\ .d|
-  pre {
-    margin: 0em 0em;
-  }
-</style>
-|\ <title>|.d
-
-    dup doc+=$
-    .d{ </title></head>}
-    slide-chapter @ if .d{ <body onload="Load()">} else .d{ <body>} then
-    .d{ <div class="section"><h1>}
-    doc+=$
-    .d{ </h1><p>}
-
-    feed
-;
-
+|@ chapter implementation
 |\ : |chapter:   false slide-chapter !  raw-chapter ;
 |\ : |slide-chapter:   true slide-chapter !  raw-chapter ;
 |;
@@ -1232,6 +1179,87 @@ Then close out the TOC and write it out.
 
 |section: Chapter HTML
 
+Each chapter is accumulated into a link list of chapters.
+|: chapter implementation
+variable slide-chapter
+variable chapter-count
+linked-list chapters
+|;
+
+A raw chapter can be either normal or for slides.
+It is added to the list of chapters.
+|: chapter implementation
+|@ chapter implementation finish
+: raw-chapter ( -- )
+     chapter-finish
+     parse-cr
+     chapter-count @   1 chapter-count +!
+     over 2 chapters chain
+     dup documentation-chunk ! doc!
+|;
+
+Then a the xhtml header is written.
+|: chapter implementation
+|\ .d| <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"
+ "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+<html>
+<head>
+|\ |.d
+|;
+
+Then potentially slide show javascript.
+|: chapter implementation
+slide-chapter @ if
+|@ slide show logic
+then
+|;
+
+Then some CSS.
+|: chapter implementation
+|\ .d|
+<style type="text/css">
+  div.chunk {
+    margin: 0em 0.5em;
+  }
+  pre {
+    margin: 0em 0em;
+  }
+|\ |.d
+|;
+
+Potentially with a page break for slide shows.
+|: chapter implementation
+slide-chapter @ if
+|\ .d|
+  div.section {
+    page-break-before: always;
+  }
+|\ |.d
+then
+|;
+
+Finally chapter headings.
+|: chapter implementation
+|\ .d|
+</style>
+|\ <title>|.d
+    dup doc+=$
+    .d{ </title></head>}
+    slide-chapter @ if .d{ <body onload="Load()">} else .d{ <body>} then
+    .d{ <div class="section"><h1>}
+    doc+=$
+    .d{ </h1><p>}
+
+    feed
+;
+|;
+
+Each chapter also has a short footer.
+|: chapter implementation finish
+: chapter-finish   .d{ </p></div></body></html>} ;
+|;
+
+This allows us to construct each chapter.
 |: weaving chapter xhtml
 : weave-chapter ( chapter -- )
     dup chapter-text swap chapter-filename file! ;
