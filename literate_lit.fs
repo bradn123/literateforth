@@ -93,21 +93,16 @@ ensuring that this happens only once.
 |section: Linked lists
 
 |: linked lists
-: chain-link ( head[t] -- a head[t] ) here 0 , swap ;
-: chain-first ( head[t] -- ) chain-link 2dup ! cell+ ! ;
-: chain-rest ( head[t] -- ) chain-link cell+ 2dup @ ! ! ;
-: chain ( head[t] -- ) dup @ if chain-rest else chain-first then ;
-
 : allocate' ( n -- a ) allocate 0= assert ;
 : zero ( a n -- ) 0 fill ;
 : allocate0 ( n -- a ) dup allocate' swap 2dup zero drop ;
 
-: nchain-new ( n -- a ) 1+ cells allocate0 ;
-: nchain-fillout ( .. a n -- a ) 0 do dup i 1+ cells + swap >r ! r> loop ;
-: nchain-link ( ..n -- a ) dup nchain-new swap nchain-fillout ;
-: nchain-first ( ..n head[t] -- ) >r nchain-link r> 2dup ! cell+ ! ;
-: nchain-rest ( ..n head[t] -- ) >r nchain-link r> 2dup cell+ @ ! cell+ ! ;
-: nchain ( ..n head[t] -- ) dup @ if nchain-rest else nchain-first then ;
+: chain-new ( n -- a ) 1+ cells allocate0 ;
+: chain-fillout ( .. a n -- a ) 0 do dup i 1+ cells + swap >r ! r> loop ;
+: chain-link ( ..n -- a ) dup chain-new swap chain-fillout ;
+: chain-first ( ..n head[t] -- ) >r chain-link r> 2dup ! cell+ ! ;
+: chain-rest ( ..n head[t] -- ) >r chain-link r> 2dup cell+ @ ! cell+ ! ;
+: chain ( ..n head[t] -- ) dup @ if chain-rest else chain-first then ;
 
 : ->next ( a -- a' ) @ ;
 : linked-list   create 0 , 0 , ;
@@ -170,7 +165,7 @@ atom" foo" means atom" 1234abcdef5678 9abcdef" = assert
 : atom-def-head ( A -- A[head] ) 3 cells + ;
 
 linked-list atom-root
-: $atom-new ( $ -- A ) >r >r 0 0 r> r> 4 atom-root nchain
+: $atom-new ( $ -- A ) >r >r 0 0 r> r> 4 atom-root chain
                        atom-root cell+ @ ;
 : atom-new ( $ -- A ) $clone $atom-new ;
 
@@ -195,7 +190,7 @@ linked-list atom-root
                  state @ if postpone sliteral postpone atom
                          else atom then ; immediate
  
-: atom-append ( A n Ad -- ) atom-def-head chain , , ;
+: atom-append ( A n Ad -- ) atom-def-head 2 swap chain ;
 : atom+=$ ( A Ad -- ) 0 swap atom-append ;
 : atom+=ref ( A Ad -- ) 1 swap atom-append ;
 
@@ -623,7 +618,7 @@ atom" literate_running.tmp" constant run-filename
 |\     chapter-finish
 |\     parse-cr 
 |\     chapter-count @   1 chapter-count +!
-|\     over 2 chapters nchain
+|\     over 2 chapters chain
 |\     dup documentation-chunk ! doc!
 |\     chapter-pre1 doc+=$
 |\     dup doc+=$
@@ -664,7 +659,7 @@ atom" literate_running.tmp" constant run-filename
 |: output files
 |\ linked-list out-files
 |\ : |file: ( add a new output file )
-|\    parse-cr dup 1 out-files nchain
+|\    parse-cr dup 1 out-files chain
 |\    .d{ <tt><i>} doc+=$ .d{ </i></tt>} feed ;
 |;
 
