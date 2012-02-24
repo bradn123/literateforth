@@ -90,6 +90,7 @@ This is the basic structure of the literate programming parser:
 
 
 |section: Tags
+A variety of user facing formatting tags are provided.
 |: user facing tags
 |@ chapters
 |@ chapter structure
@@ -101,6 +102,7 @@ This is the basic structure of the literate programming parser:
 
 
 |section: Data structures and Tools
+The data structures and tools needed to put this together are detailed.
 |: data structures and tools
 |@ assertion support
 |@ utility words
@@ -804,23 +806,8 @@ And page breaks.
 |;
 
 
-|section: Output Files
 
-Tangled output can be directed to multile files using a special tag.
-A linked list of output files is kept.
-Their "meaning" is consulted to know what to emit.
-|: output files
-|\ linked-list out-files
-|\ : |file: ( add a new output file )
-    parse-cr dup 1 out-files chain
-    .d{ <tt><i>} doc+=$ .d{ </i></tt>} feed ;
-: file-name@ ( file -- A )
-    cell+ @ ;
-|;
-
-
-
-|section: Document Chunks
+|section: Documentation and  Chunks
 
 |: chunks
 atom" ~~~blackhole" constant blackhole
@@ -869,6 +856,20 @@ variable chunk
     parse-cr atom-cr+ dup chunk+=$ escape doc+=$ feed ;
 |;
 
+
+|section: Output Files
+
+Tangled output can be directed to multile files using a special tag.
+A linked list of output files is kept.
+Their "meaning" is consulted to know what to emit.
+|: output files
+|\ linked-list out-files
+|\ : |file: ( add a new output file )
+    parse-cr dup 1 out-files chain
+    .d{ <tt><i>} doc+=$ .d{ </i></tt>} feed ;
+: file-name@ ( file -- A )
+    cell+ @ ;
+|;
 
 
 
