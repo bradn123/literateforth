@@ -97,8 +97,21 @@ ensuring that this happens only once.
 : chain-first ( head[t] -- ) chain-link 2dup ! cell+ ! ;
 : chain-rest ( head[t] -- ) chain-link cell+ 2dup @ ! ! ;
 : chain ( head[t] -- ) dup @ if chain-rest else chain-first then ;
+
+: allocate' ( n -- a ) allocate 0= assert ;
+: zero ( a n -- ) 0 fill ;
+: allocate0 ( n -- a ) dup allocate' swap 2dup zero drop ;
+
+: nchain-new ( n -- a ) 1+ cells allocate0 ;
+: nchain-fillout ( .. a n -- a ) 0 do dup i 1+ cells + swap >r ! r> loop ;
+: nchain-link ( ..n -- a ) dup nchain-new swap nchain-fillout ;
+: nchain-first ( ..n head[t] -- ) >r nchain-link r> 2dup ! cell+ ! ;
+: nchain-rest ( ..n head[t] -- ) >r nchain-link r> 2dup cell+ @ ! cell+ ! ;
+: nchain ( ..n head[t] -- ) dup @ if nchain-rest else nchain-first then ;
+
 : ->next ( a -- a' ) @ ;
 : linked-list   create 0 , 0 , ;
+
 |;
 
 
@@ -157,7 +170,8 @@ atom" foo" means atom" 1234abcdef5678 9abcdef" = assert
 : atom-def-head ( A -- A[head] ) 3 cells + ;
 
 linked-list atom-root
-: $atom-new ( $ -- A ) atom-root chain , , 0 , 0 , atom-root cell+ @ ;
+: $atom-new ( $ -- A ) >r >r 0 0 r> r> 4 atom-root nchain
+                       atom-root cell+ @ ;
 : atom-new ( $ -- A ) $clone $atom-new ;
 
 : atom. ( A -- ) atom-string@ type ;
