@@ -808,6 +808,19 @@ then
 |\ : |{-   bullet+ .d{ <ul><li>} feed ;
 |\ : |--   .d{ </li><li>} feed ;
 |\ : |-}   .d{ </li></ul>} bullet- feed ;
+
+|\ : |b{   .d{ <b>} feed ;
+|\ : |}b   .d{ </b>} feed ;
+|\ : |i{   .d{ <i>} feed ;
+|\ : |}i   .d{ </i>} feed ;
+|\ : |u{   .d{ <u>} feed ;
+|\ : |}u   .d{ </u} feed ;
+|\ : |tt{   .d{ <tt>} feed ;
+|\ : |}tt   .d{ </tt>} feed ;
+|\ : |sup{   .d{ <sup>} feed ;
+|\ : |}sup   .d{ </sup>} feed ;
+|\ : |sub{   .d{ <sub>} feed ;
+|\ : |}sub   .d{ </sub>} feed ;
 |;
 
 |: slide show logic

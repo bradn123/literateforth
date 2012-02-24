@@ -420,6 +420,31 @@ variable bullet-depth
 
 : |-}   .d{ </li></ul>} bullet- feed ;
 
+
+: |b{   .d{ <b>} feed ;
+
+: |}b   .d{ </b>} feed ;
+
+: |i{   .d{ <i>} feed ;
+
+: |}i   .d{ </i>} feed ;
+
+: |u{   .d{ <u>} feed ;
+
+: |}u   .d{ </u} feed ;
+
+: |tt{   .d{ <tt>} feed ;
+
+: |}tt   .d{ </tt>} feed ;
+
+: |sup{   .d{ <sup>} feed ;
+
+: |}sup   .d{ </sup>} feed ;
+
+: |sub{   .d{ <sub>} feed ;
+
+: |}sub   .d{ </sub>} feed ;
+
 : chapter-name ( chp -- A ) cell+ @ ;
 : chapter-text ( chp -- A ) cell+ @ means ;
 : chapter-number ( chp -- n ) 2 cells + @ ;
