@@ -333,10 +333,8 @@ atom" No description available." description !
 linked-list out-files
 
 : |file: ( add a new output file )
-
-   parse-cr dup 1 out-files chain
-
-   .d{ <tt><i>} doc+=$ .d{ </i></tt>} feed ;
+    parse-cr dup 1 out-files chain
+    .d{ <tt><i>} doc+=$ .d{ </i></tt>} feed ;
 : file-name@ ( file -- A )
     cell+ @ ;
 
@@ -357,11 +355,8 @@ linked-list chapters
 
 
 .d| <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"
-
-"http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
-
+ "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
 <html>
-
 <head>
 
 |.d
@@ -409,39 +404,28 @@ then
 
 
 .d|
-
 <style type="text/css">
-
-div.chunk {
-
-  margin: 0em 0.5em;
-
-}
+  div.chunk {
+    margin: 0em 0.5em;
+  }
 
 |.d
 
 slide-chapter @ if
 
 .d|
-
-div.section {
-
-  page-break-before: always;
-
-}
+  div.section {
+    page-break-before: always;
+  }
 
 |.d
 then
 
 
 .d|
-
-pre {
-
-  margin: 0em 0em;
-
-}
-
+  pre {
+    margin: 0em 0em;
+  }
 </style>
 
 <title>|.d
@@ -467,11 +451,8 @@ pre {
 
 : |page   parse-cr .d{ </p><p style="page-break-before:always;">} feed ;
 
-
 variable bullet-depth
-
 : bullet+   1 bullet-depth +!   bullet-depth @ 1 = if .d{ </p>} then ;
-
 : bullet-   -1 bullet-depth +!   bullet-depth @ 0 = if .d{ <p>} then ;
 
 : |{-   bullet+ .d{ <ul><li>} feed ;
@@ -535,65 +516,36 @@ weaving? tangling? or running? or assert
 
 
 
-
 atom" ~~~TOC" constant atom-toc
-
 : toc-filename doc-base @ atom" .html" atom+ ;
 
-
 : weave-toc-chapter ( chapter -- )
-
-   .d{ <h4><b><a href="}
-
-   dup chapter-filename doc+=$
-
-   .d{ ">}
-
-   chapter-name doc+=$
-
-   .d{ </a></b></h4>} .dcr
-
-;
-
+    .d{ <h4><b><a href="}
+    dup chapter-filename doc+=$
+    .d{ ">}
+    chapter-name doc+=$
+    .d{ </a></b></h4>} .dcr
+ ;
 
 : weave-toc
-
-   atom-toc documentation-chunk ! doc!
+    atom-toc documentation-chunk ! doc!
 
 
 .d| <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"
-
 "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
-
 <html xmlns="http://www.w3.org/1999/xhtml">
-
 <head><title>Table of Contents</title></head>
-
 <body>
-
 <div>
-
- <h1><b>TABLE OF CONTENTS</b></h1>
-
-|.d
-
-
-   chapters @ begin dup while dup weave-toc-chapter ->next repeat drop
-
-
-.d|
-
-</div>
-
-</body>
-
-</html>
+  <h1><b>TABLE OF CONTENTS</b></h1>
 
 |.d
 
+    chapters @ begin dup while dup weave-toc-chapter ->next repeat drop
 
-   documentation means toc-filename file!
+    .d{ </div></body></html>} .dcr
 
+    documentation means toc-filename file!
 ;
 
 

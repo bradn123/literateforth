@@ -803,39 +803,35 @@ atom" ~~~NCX" constant atom-ncx
 
 |section: table of contents
 |: weaving toc
-|\ atom" ~~~TOC" constant atom-toc
-|\ : toc-filename doc-base @ atom" .html" atom+ ;
+atom" ~~~TOC" constant atom-toc
+: toc-filename doc-base @ atom" .html" atom+ ;
 
-|\ : weave-toc-chapter ( chapter -- )
-|\    .d{ <h4><b><a href="}
-|\    dup chapter-filename doc+=$
-|\    .d{ ">}
-|\    chapter-name doc+=$
-|\    .d{ </a></b></h4>} .dcr
-|\ ;
+: weave-toc-chapter ( chapter -- )
+    .d{ <h4><b><a href="}
+    dup chapter-filename doc+=$
+    .d{ ">}
+    chapter-name doc+=$
+    .d{ </a></b></h4>} .dcr
+ ;
 
-|\ : weave-toc
-|\    atom-toc documentation-chunk ! doc!
+: weave-toc
+    atom-toc documentation-chunk ! doc!
 
 |\ .d| <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"
-|\ "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
-|\ <html xmlns="http://www.w3.org/1999/xhtml">
-|\ <head><title>Table of Contents</title></head>
-|\ <body>
-|\ <div>
-|\  <h1><b>TABLE OF CONTENTS</b></h1>
+"http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head><title>Table of Contents</title></head>
+<body>
+<div>
+  <h1><b>TABLE OF CONTENTS</b></h1>
 |\ |.d
 
-|\    chapters @ begin dup while dup weave-toc-chapter ->next repeat drop
+    chapters @ begin dup while dup weave-toc-chapter ->next repeat drop
 
-|\ .d|
-|\ </div>
-|\ </body>
-|\ </html>
-|\ |.d
+    .d{ </div></body></html>} .dcr
 
-|\    documentation means toc-filename file!
-|\ ;
+    documentation means toc-filename file!
+;
 |;
 
 
@@ -875,9 +871,9 @@ linked-list chapters
      dup documentation-chunk ! doc!
 
 |\ .d| <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"
-|\ "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
-|\ <html>
-|\ <head>
+ "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+<html>
+<head>
 |\ |.d
 
 slide-chapter @ if
@@ -885,25 +881,25 @@ slide-chapter @ if
 then
 
 |\ .d|
-|\ <style type="text/css">
-|\ div.chunk {
-|\   margin: 0em 0.5em;
-|\ }
+<style type="text/css">
+  div.chunk {
+    margin: 0em 0.5em;
+  }
 |\ |.d
 
 slide-chapter @ if
 |\ .d|
-|\ div.section {
-|\   page-break-before: always;
-|\ }
+  div.section {
+    page-break-before: always;
+  }
 |\ |.d
 then
 
 |\ .d|
-|\ pre {
-|\   margin: 0em 0em;
-|\ }
-|\ </style>
+  pre {
+    margin: 0em 0em;
+  }
+</style>
 |\ <title>|.d
 
     dup doc+=$
@@ -927,9 +923,9 @@ then
 |;
 
 |: chapters and sections
-|\ variable bullet-depth
-|\ : bullet+   1 bullet-depth +!   bullet-depth @ 1 = if .d{ </p>} then ;
-|\ : bullet-   -1 bullet-depth +!   bullet-depth @ 0 = if .d{ <p>} then ;
+variable bullet-depth
+: bullet+   1 bullet-depth +!   bullet-depth @ 1 = if .d{ </p>} then ;
+: bullet-   -1 bullet-depth +!   bullet-depth @ 0 = if .d{ <p>} then ;
 |\ : |{-   bullet+ .d{ <ul><li>} feed ;
 |\ : |--   .d{ </li><li>} feed ;
 |\ : |-}   .d{ </li></ul>} bullet- feed ;
@@ -1054,8 +1050,8 @@ atom" No description available." description !
 |: output files
 |\ linked-list out-files
 |\ : |file: ( add a new output file )
-|\    parse-cr dup 1 out-files chain
-|\    .d{ <tt><i>} doc+=$ .d{ </i></tt>} feed ;
+    parse-cr dup 1 out-files chain
+    .d{ <tt><i>} doc+=$ .d{ </i></tt>} feed ;
 : file-name@ ( file -- A )
     cell+ @ ;
 |;
