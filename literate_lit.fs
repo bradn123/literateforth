@@ -103,7 +103,6 @@ This is the basic structure of the literate programming parser:
 |@ utility words
 |@ implement atoms
 |@ pipe parsing
-|@ escaping atoms
 |@ chunks
 |@ global fields
 |@ output files
@@ -1248,26 +1247,39 @@ On full browsers, |<-|  and |->|  move through the slides,
 
 |section: Literate Programming in Forth
 Brad Nelson
+|$
+February 25, 2012.
 
 
-|section: Motivations
-|{- Literate programming is cool
-|-- Forth is cool
-|-- eBooks are cool
+|section: Literate Programming
+|{- Conceived of by Donald Knuth.
+|-- Emphasize documentation over code.
+|-- Pre-process source code to extract it from documentation
+    which may list it in narratively use order.
 |-}
 
 
-|section: Approach
-|{- Use the Forth parser
-|-- Generate MOBI files
-   |{- table of contents
-   |-- ncx file
-   |-- opf file
+|section: Use the Forth Parser
+|{- Forth allows words to parse input source in mostly arbitrary ways.
+|-- Indirection through an output file is unfortunately needed for ANSFORTH.
+|-- Careful use of escaping.
+|-- Use the pipe
+|\ (|)
+    character as the primary divider as it is rare in Forth.
+|-}
+
+
+|section: Target eBook readers
+|{- Embrace the limitations and strengths of eBook readers.
+|-- Use the MOBI format via kindlegen
+   |{- OPF file
+   |-- NCX file
+   |-- Table of contents
+   |-- Chapters in XHTML
    |-}
-|-- Other cool stuff.
 |-}
 
 |section: Questions?
-Questions?
+Document walk through
 
 |.
