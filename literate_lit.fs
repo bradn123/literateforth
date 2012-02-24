@@ -83,22 +83,22 @@ document.
 This is the basic structure of the literate programming parser:
 |: *
 |@ isolate in wordlist
-|@ define data structures and tools
-|@ define user facing tags
+|@ data structures and tools
+|@ user facing tags
 |@ primary program flow
 |;
 
 
 |section: Tags
-|: define user facing tags
+|: user facing tags
 |@ tex and latex shortcuts
 |@ chapters
 |@ chapter structure
 |;
 
-|section: Data structures and Tools
 
-|: define data structures and tools
+|section: Data structures and Tools
+|: data structures and tools
 |@ assertion support
 |@ utility words
 |@ implement atoms
