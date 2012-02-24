@@ -549,37 +549,6 @@ linked-list atom-root
 
 |section: Chapter HTML
 
-|: chapters
-|\ parse..| <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"
-|\ "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
-|\ <html>
-|\ <head>
-|\ <style type="text/css">
-|\ div.chunk {
-|\   margin: 0em 0.5em;
-|\ }
-|\ pre {
-|\   margin: 0em 0em;
-|\ }
-|\ </style>
-|\ <title>|-constant chapter-pre1
-|\ 
-|\ parse..| </title>
-|\ </head>
-|\ <body>
-|\ <h1>|-constant chapter-pre2
-|\ 
-|\ parse..| </h1>
-|\ <p>
-|\ |-constant chapter-pre3
-|\ 
-|\ parse..|
-|\ </p>
-|\ </body>
-|\ </html>
-|\ |-constant chapter-post
-|;
-
 |: weaving chapter html
 : weave-chapter ( chapter -- ) dup chapter-text swap chapter-filename file! ;
 : weave-chapters
@@ -598,21 +567,38 @@ vocabulary literate also literate definitions
 |chapter: Chapters
 
 |section: Chapters and Sections
+
 |: chapters and sections
-|\ variable chapter-count
-|\ linked-list chapters
-|\ : chapter-finish   chapter-post doc+=$ ;
+variable chapter-count
+linked-list chapters
+: chapter-finish   .d{ </p></body></html>} ;
+
 |\ : |chapter:
 |\     chapter-finish
 |\     parse-cr 
 |\     chapter-count @   1 chapter-count +!
 |\     over 2 chapters chain
 |\     dup documentation-chunk ! doc!
-|\     chapter-pre1 doc+=$
+
+|\ .d| <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"
+|\ "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+|\ <html>
+|\ <head>
+|\ <style type="text/css">
+|\ div.chunk {
+|\   margin: 0em 0.5em;
+|\ }
+|\ pre {
+|\   margin: 0em 0em;
+|\ }
+|\ </style>
+|\ <title>|.d
+
 |\     dup doc+=$
-|\     chapter-pre2 doc+=$
+|\     .d{ </title></head><body><h1>}
 |\     doc+=$
-|\     chapter-pre3 doc+=$
+|\     .d{ </h1><p>}
+
 |\     feed
 |\ ;
 |;

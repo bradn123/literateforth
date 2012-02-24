@@ -262,7 +262,25 @@ variable author
 
 
 
-parse..| <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"
+variable chapter-count
+linked-list chapters
+: chapter-finish   .d{ </p></body></html>} ;
+
+
+: |chapter:
+
+    chapter-finish
+
+    parse-cr 
+
+    chapter-count @   1 chapter-count +!
+
+    over 2 chapters chain
+
+    dup documentation-chunk ! doc!
+
+
+.d| <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"
 
 "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
 
@@ -286,67 +304,17 @@ pre {
 
 </style>
 
-<title>|-constant chapter-pre1
+<title>|.d
 
-
-
-parse..| </title>
-
-</head>
-
-<body>
-
-<h1>|-constant chapter-pre2
-
-
-
-parse..| </h1>
-
-<p>
-
-|-constant chapter-pre3
-
-
-
-parse..|
-
-</p>
-
-</body>
-
-</html>
-
-|-constant chapter-post
-
-
-
-variable chapter-count
-
-linked-list chapters
-
-: chapter-finish   chapter-post doc+=$ ;
-
-: |chapter:
-
-    chapter-finish
-
-    parse-cr 
-
-    chapter-count @   1 chapter-count +!
-
-    over 2 chapters chain
-
-    dup documentation-chunk ! doc!
-
-    chapter-pre1 doc+=$
 
     dup doc+=$
 
-    chapter-pre2 doc+=$
+    .d{ </title></head><body><h1>}
 
     doc+=$
 
-    chapter-pre3 doc+=$
+    .d{ </h1><p>}
+
 
     feed
 
