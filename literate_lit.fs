@@ -91,9 +91,12 @@ This is the basic structure of the literate programming parser:
 
 |section: Tags
 |: user facing tags
-|@ tex and latex shortcuts
 |@ chapters
 |@ chapter structure
+|@ formatting tags
+|@ bullet lists
+|@ tex and latex shortcuts
+|@ arrow symbols
 |;
 
 
@@ -654,9 +657,101 @@ We'll also have some words that grab input until the end of the line.
 
 |chapter: Tags
 
+|section: Overview
+|\ All tags are preceded by the pipe (|) character.
+They are cataloged herein.
+
+|section: Global Fields
+Most documents will begin with a number of document wide field
+tags.
+|$
+
+The document base is the prefix put in front of each output file in weaving
+mode.
+|: global fields
+variable doc-base
+atom" index" doc-base !
+|\ : |document-base:   parse-cr doc-base ! feed ;
+|;
+
+The document has a title.
+|: global fields
+variable title
+atom" Untitled" title !
+|\ : |title:   parse-cr title ! feed ;
+|;
+
+And an author (used for the publisher for now too).
+|: global fields
+variable author
+atom" Anonymous" author !
+|\ : |author:   parse-cr author ! feed ;
+|;
+
+A frivolous ISBN number
+|: global fields
+variable isbn
+atom" 9999999999" isbn !
+|\ : |isbn:   parse-cr isbn ! feed ;
+|;
+
+A subject.
+|: global fields
+variable subject
+atom" Article" subject !
+|\ : |subject:   parse-cr subject ! feed ;
+|;
+
+A date of authorship.
+|: global fields
+variable doc-date
+atom" Unknown" doc-date !
+|\ : |date:   parse-cr doc-date ! feed ;
+|;
+
+And a description.
+|: global fields
+variable description
+atom" No description available." description !
+|\ : |description:   parse-cr description ! feed ;
+|;
+
+|section: Formatting Tags
+
+Tags are provided for bold, italics, underline, fixed width (teletype),
+superscript, and subscript.
+|: formatting tags
+|\ : |b{   .d{ <b>} feed ;
+|\ : |}b   .d{ </b>} feed ;
+|\ : |i{   .d{ <i>} feed ;
+|\ : |}i   .d{ </i>} feed ;
+|\ : |u{   .d{ <u>} feed ;
+|\ : |}u   .d{ </u} feed ;
+|\ : |tt{   .d{ <tt>} feed ;
+|\ : |}tt   .d{ </tt>} feed ;
+|\ : |sup{   .d{ <sup>} feed ;
+|\ : |}sup   .d{ </sup>} feed ;
+|\ : |sub{   .d{ <sub>} feed ;
+|\ : |}sub   .d{ </sub>} feed ;
+|;
+
+
+|section: Bullet Lists
+
+Tags are provided for bullet lists.
+|: bullet lists
+variable bullet-depth
+: bullet+   1 bullet-depth +!   bullet-depth @ 1 = if .d{ </p>} then ;
+: bullet-   -1 bullet-depth +!   bullet-depth @ 0 = if .d{ <p>} then ;
+|\ : |{-   bullet+ .d{ <ul><li>} feed ;
+|\ : |--   .d{ </li><li>} feed ;
+|\ : |-}   .d{ </li></ul>} bullet- feed ;
+|;
+
+
 |section: TeX and LaTeX
 
-As |TeX  and |LaTex  are widely referenced in material related to
+As |TeX  and |LaTeX  are widely referenced in material related to
 literate programming, we will want to be able to mention them in
 way that has some semblance of typographical accuracy.
 Unfortunately, precise duplication would require images
@@ -675,7 +770,11 @@ Adding in small text and superscript then brings us to this for |LaTeX :
 ;
 |;
 
-|: tex and latex shortcuts
+
+|section: Symbols
+
+We provide some tags for arrow symbols.
+|: arrow symbols
 |\ : |<-| .d{ &larr;} feed ;
 |\ : |->| .d{ &rarr;} feed ;
 |\ : |^| .d{ &uarr;} feed ;
@@ -683,7 +782,108 @@ Adding in small text and superscript then brings us to this for |LaTeX :
 |;
 
 
-|section: document chunks
+
+
+|section: Chapters and Sections
+
+|: chapters and sections
+variable slide-chapter
+variable chapter-count
+linked-list chapters
+: chapter-finish   .d{ </p></div></body></html>} ;
+
+: raw-chapter ( -- )
+     chapter-finish
+     parse-cr
+     chapter-count @   1 chapter-count +!
+     over 2 chapters chain
+     dup documentation-chunk ! doc!
+
+|\ .d| <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"
+ "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+<html>
+<head>
+|\ |.d
+
+slide-chapter @ if
+|@ slide show logic
+then
+
+|\ .d|
+<style type="text/css">
+  div.chunk {
+    margin: 0em 0.5em;
+  }
+|\ |.d
+
+slide-chapter @ if
+|\ .d|
+  div.section {
+    page-break-before: always;
+  }
+|\ |.d
+then
+
+|\ .d|
+  pre {
+    margin: 0em 0em;
+  }
+</style>
+|\ <title>|.d
+
+    dup doc+=$
+    .d{ </title></head>}
+    slide-chapter @ if .d{ <body onload="Load()">} else .d{ <body>} then
+    .d{ <div class="section"><h1>}
+    doc+=$
+    .d{ </h1><p>}
+
+    feed
+;
+
+|\ : |chapter:   false slide-chapter !  raw-chapter ;
+|\ : |slide-chapter:   true slide-chapter !  raw-chapter ;
+|;
+
+|: chapters and sections
+|\ : |section:   parse-cr .d{ </p></div><div class="section"><h2>} doc+=$
+                 .d{ </h2><p>} feed ;
+|\ : |page   parse-cr .d{ </p><p style="page-break-before:always;">} feed ;
+|;
+
+|section: chapter handling
+|: chapters and sections
+: chapter-name ( chp -- A )
+    cell+ @ ;
+: chapter-text ( chp -- A )
+    cell+ @ means ;
+: chapter-number ( chp -- n )
+    2 cells + @ ;
+atom" .html" constant .html
+: chapter-filename ( chp -- A )
+     chapter-number s>d <# # # # #s #> atom
+     doc-base @ atom" _" atom+ swap .html atom+ atom+ ;
+|;
+
+
+
+|section: Output Files
+
+Tangled output can be directed to multile files using a special tag.
+A linked list of output files is kept.
+Their "meaning" is consulted to know what to emit.
+|: output files
+|\ linked-list out-files
+|\ : |file: ( add a new output file )
+    parse-cr dup 1 out-files chain
+    .d{ <tt><i>} doc+=$ .d{ </i></tt>} feed ;
+: file-name@ ( file -- A )
+    cell+ @ ;
+|;
+
+
+
+|section: Document Chunks
 
 |: chunks
 atom" ~~~blackhole" constant blackhole
@@ -1048,170 +1248,6 @@ Then close out the TOC and write it out.
 vocabulary literate also literate definitions
 |;
 
-
-|chapter: Chapters
-
-|section: Chapters and Sections
-
-|: chapters and sections
-variable slide-chapter
-variable chapter-count
-linked-list chapters
-: chapter-finish   .d{ </p></div></body></html>} ;
-
-: raw-chapter ( -- )
-     chapter-finish
-     parse-cr
-     chapter-count @   1 chapter-count +!
-     over 2 chapters chain
-     dup documentation-chunk ! doc!
-
-|\ .d| <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"
- "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
-<html>
-<head>
-|\ |.d
-
-slide-chapter @ if
-|@ slide show logic
-then
-
-|\ .d|
-<style type="text/css">
-  div.chunk {
-    margin: 0em 0.5em;
-  }
-|\ |.d
-
-slide-chapter @ if
-|\ .d|
-  div.section {
-    page-break-before: always;
-  }
-|\ |.d
-then
-
-|\ .d|
-  pre {
-    margin: 0em 0em;
-  }
-</style>
-|\ <title>|.d
-
-    dup doc+=$
-    .d{ </title></head>}
-    slide-chapter @ if .d{ <body onload="Load()">} else .d{ <body>} then
-    .d{ <div class="section"><h1>}
-    doc+=$
-    .d{ </h1><p>}
-
-    feed
-;
-
-|\ : |chapter:   false slide-chapter !  raw-chapter ;
-|\ : |slide-chapter:   true slide-chapter !  raw-chapter ;
-|;
-
-|: chapters and sections
-|\ : |section:   parse-cr .d{ </p></div><div class="section"><h2>} doc+=$
-                 .d{ </h2><p>} feed ;
-|\ : |page   parse-cr .d{ </p><p style="page-break-before:always;">} feed ;
-|;
-
-|: chapters and sections
-variable bullet-depth
-: bullet+   1 bullet-depth +!   bullet-depth @ 1 = if .d{ </p>} then ;
-: bullet-   -1 bullet-depth +!   bullet-depth @ 0 = if .d{ <p>} then ;
-|\ : |{-   bullet+ .d{ <ul><li>} feed ;
-|\ : |--   .d{ </li><li>} feed ;
-|\ : |-}   .d{ </li></ul>} bullet- feed ;
-
-|\ : |b{   .d{ <b>} feed ;
-|\ : |}b   .d{ </b>} feed ;
-|\ : |i{   .d{ <i>} feed ;
-|\ : |}i   .d{ </i>} feed ;
-|\ : |u{   .d{ <u>} feed ;
-|\ : |}u   .d{ </u} feed ;
-|\ : |tt{   .d{ <tt>} feed ;
-|\ : |}tt   .d{ </tt>} feed ;
-|\ : |sup{   .d{ <sup>} feed ;
-|\ : |}sup   .d{ </sup>} feed ;
-|\ : |sub{   .d{ <sub>} feed ;
-|\ : |}sub   .d{ </sub>} feed ;
-|;
-
-|section: chapter handling
-|: chapters and sections
-: chapter-name ( chp -- A )
-    cell+ @ ;
-: chapter-text ( chp -- A )
-    cell+ @ means ;
-: chapter-number ( chp -- n )
-    2 cells + @ ;
-atom" .html" constant .html
-: chapter-filename ( chp -- A )
-     chapter-number s>d <# # # # #s #> atom
-     doc-base @ atom" _" atom+ swap .html atom+ atom+ ;
-|;
-
-
-
-
-|section: Global Fields
-
-|: global fields
-variable doc-base
-atom" index" doc-base !
-|\ : |document-base:   parse-cr doc-base ! feed ;
-|;
-
-|: global fields
-variable title
-atom" Untitled" title !
-|\ : |title:   parse-cr title ! feed ;
-|;
-
-|: global fields
-variable author
-atom" Anonymous" author !
-|\ : |author:   parse-cr author ! feed ;
-|;
-
-|: global fields
-variable isbn
-atom" 9999999999" isbn !
-|\ : |isbn:   parse-cr isbn ! feed ;
-|;
-
-|: global fields
-variable subject
-atom" Article" subject !
-|\ : |subject:   parse-cr subject ! feed ;
-|;
-
-|: global fields
-variable doc-date
-atom" Unknown" doc-date !
-|\ : |date:   parse-cr doc-date ! feed ;
-|;
-
-|: global fields
-variable description
-atom" No description available." description !
-|\ : |description:   parse-cr description ! feed ;
-|;
-
-
-|section: output files
-
-|: output files
-|\ linked-list out-files
-|\ : |file: ( add a new output file )
-    parse-cr dup 1 out-files chain
-    .d{ <tt><i>} doc+=$ .d{ </i></tt>} feed ;
-: file-name@ ( file -- A )
-    cell+ @ ;
-|;
 
 |chapter: Slide Show
 We would like to be able to support a slide show for some chapters.

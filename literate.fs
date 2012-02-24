@@ -428,15 +428,21 @@ then
 
 : |page   parse-cr .d{ </p><p style="page-break-before:always;">} feed ;
 
-variable bullet-depth
-: bullet+   1 bullet-depth +!   bullet-depth @ 1 = if .d{ </p>} then ;
-: bullet-   -1 bullet-depth +!   bullet-depth @ 0 = if .d{ <p>} then ;
+: chapter-name ( chp -- A )
+    cell+ @ ;
+: chapter-text ( chp -- A )
+    cell+ @ means ;
+: chapter-number ( chp -- n )
+    2 cells + @ ;
+atom" .html" constant .html
+: chapter-filename ( chp -- A )
+     chapter-number s>d <# # # # #s #> atom
+     doc-base @ atom" _" atom+ swap .html atom+ atom+ ;
 
-: |{-   bullet+ .d{ <ul><li>} feed ;
 
-: |--   .d{ </li><li>} feed ;
 
-: |-}   .d{ </li></ul>} bullet- feed ;
+
+
 
 
 : |b{   .d{ <b>} feed ;
@@ -463,18 +469,16 @@ variable bullet-depth
 
 : |}sub   .d{ </sub>} feed ;
 
-: chapter-name ( chp -- A )
-    cell+ @ ;
-: chapter-text ( chp -- A )
-    cell+ @ means ;
-: chapter-number ( chp -- n )
-    2 cells + @ ;
-atom" .html" constant .html
-: chapter-filename ( chp -- A )
-     chapter-number s>d <# # # # #s #> atom
-     doc-base @ atom" _" atom+ swap .html atom+ atom+ ;
 
+variable bullet-depth
+: bullet+   1 bullet-depth +!   bullet-depth @ 1 = if .d{ </p>} then ;
+: bullet-   -1 bullet-depth +!   bullet-depth @ 0 = if .d{ <p>} then ;
 
+: |{-   bullet+ .d{ <ul><li>} feed ;
+
+: |--   .d{ </li><li>} feed ;
+
+: |-}   .d{ </li></ul>} bullet- feed ;
 
 
 
@@ -487,6 +491,7 @@ atom" .html" constant .html
 ;
 
 
+
 : |<-| .d{ &larr;} feed ;
 
 : |->| .d{ &rarr;} feed ;
@@ -494,8 +499,6 @@ atom" .html" constant .html
 : |^| .d{ &uarr;} feed ;
 
 : |v| .d{ &darr;} feed ;
-
-
 
 
 
