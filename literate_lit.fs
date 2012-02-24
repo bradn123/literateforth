@@ -624,7 +624,8 @@ linked-list chapters
 : chapter-number ( chp -- n ) 2 cells + @ ;
 atom" .html" constant .html
 : chapter-filename ( chp -- A )
-     chapter-number s>d <# # # # #s #> atom doc-base @ swap .html atom+ atom+ ;
+     chapter-number s>d <# # # # #s #> atom
+     doc-base @ atom" _" atom+ swap .html atom+ atom+ ;
 |;
 
 
