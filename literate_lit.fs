@@ -229,11 +229,31 @@ halting if they are not.
 
 |section: Linked lists
 
+In several places in this program, singely linked lists are useful.
+As we are interested primarily in inserting in elements at the end of a
+list (or are indifferent as to the order). We will standardize on
+a list root with this structure:
+|{- pointer to the first element (head) of the list (0 on empty)
+|-- pointer to the last element (tail) of the list (0 on empty)
+|-}
+
+We will need a word to create list roots in a variable:
+|: utility words
+: linked-list   create 0 , 0 , ;
+|;
+
+In allocating memory for lists, we will assume sufficient memory is available.
 |: utility words
 : allocate' ( n -- a ) allocate 0= assert ;
+|;
+
+We will also the allocated memory for simplicity.
+|: utility words
 : zero ( a n -- ) 0 fill ;
 : allocate0 ( n -- a ) dup allocate' swap 2dup zero drop ;
+|;
 
+|: utility words
 : chain-new ( n -- a ) 1+ cells allocate0 ;
 : chain-fillout ( .. a n -- a ) 0 do dup i 1+ cells + swap >r ! r> loop ;
 : chain-link ( ..n -- a ) dup chain-new swap chain-fillout ;
@@ -242,7 +262,6 @@ halting if they are not.
 : chain ( ..n head[t] -- ) dup @ if chain-rest else chain-first then ;
 
 : ->next ( a -- a' ) @ ;
-: linked-list   create 0 , 0 , ;
 
 |;
 
@@ -357,8 +376,7 @@ The format of the meaning links is:
 
 |: implement atoms
 linked-list atom-root
-: $atom-new ( $ -- A ) >r >r 0 0 r> r> 4 atom-root chain
-                       atom-root cell+ @ ;
+: $atom-new ( $ -- A ) >r >r 0 0 r> r> 4 atom-root chain atom-root cell+ @ ;
 : atom-new ( $ -- A ) $clone $atom-new ;
 
 : atom. ( A -- ) atom-string@ type ;

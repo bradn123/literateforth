@@ -6,7 +6,10 @@ vocabulary literate also literate definitions
 : assert ( n -- ) 0= if abort then ;
 
 
+: linked-list   create 0 , 0 , ;
+
 : allocate' ( n -- a ) allocate 0= assert ;
+
 : zero ( a n -- ) 0 fill ;
 : allocate0 ( n -- a ) dup allocate' swap 2dup zero drop ;
 
@@ -18,7 +21,6 @@ vocabulary literate also literate definitions
 : chain ( ..n head[t] -- ) dup @ if chain-rest else chain-first then ;
 
 : ->next ( a -- a' ) @ ;
-: linked-list   create 0 , 0 , ;
 
 
 : $clone ( $ - $ ) dup allocate 0= assert swap 2dup >r >r move r> r> ;
@@ -32,8 +34,7 @@ vocabulary literate also literate definitions
 : atom-meaning-head ( A -- A[head] ) 3 cells + ;
 
 linked-list atom-root
-: $atom-new ( $ -- A ) >r >r 0 0 r> r> 4 atom-root chain
-                       atom-root cell+ @ ;
+: $atom-new ( $ -- A ) >r >r 0 0 r> r> 4 atom-root chain atom-root cell+ @ ;
 : atom-new ( $ -- A ) $clone $atom-new ;
 
 : atom. ( A -- ) atom-string@ type ;
