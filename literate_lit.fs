@@ -682,8 +682,22 @@ doc!
 
 |chapter: MOBI Format
 
-|section: MOBI files
+|section: Mobipocket file format
 
+The Mobipocket format (.mobi) files is a common format for eBook readers.
+In particular, it is the primary native format for Amazon's Kindle.
+Amazon uses a variant of the format with DRM (Digital Rights Management)
+features added. Amazon provides a tool called kindlegen which converts
+a human readable set of files into a single .mobi file.
+The inputs consist of:
+
+|{- an .opf file (an xml manifest listing all the other files)
+|-- an .ncx file (an xml index file listing document divisions)
+|-- an XHTML table of contents
+|-- One or more XHTML files, each containing a chapter of the book.
+|-}
+
+Thus the process of weaving to the MOBI format looks like this:
 |: weaving implementation
 |@ weaving toc
 |@ weaving ncx
@@ -1077,7 +1091,7 @@ atom" No description available." description !
 The follow are slides from an SVFIG presentation on
 February 25, 2012.
 |$
-On ebooks readers, browse normally.
+On eBook readers, browse normally.
 On full browsers, |<-|  and |->|  move through the slides,
 |^|  and |v|  jump to the begining and end.
 
@@ -1089,7 +1103,7 @@ Brad Nelson
 |section: Motivations
 |{- Literate programming is cool
 |-- Forth is cool
-|-- ebooks are cool
+|-- eBooks are cool
 |-}
 
 
