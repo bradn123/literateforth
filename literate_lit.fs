@@ -329,6 +329,13 @@ linked-list atom-root
 ;
 |;
 
+|: tex and latex shortcuts
+|\ : |<-| .d{ &larr;} ;
+|\ : |->| .d{ &rarr;} ;
+|\ : |^| .d{ &uarr;} ;
+|\ : |v| .d{ &darr;} ;
+|;
+
 
 |section: document chunks
 
@@ -576,17 +583,24 @@ variable chapter-count
 linked-list chapters
 : chapter-finish   .d{ </p></div></body></html>} ;
 
-|\ : |chapter:
-|\     chapter-finish
-|\     parse-cr 
-|\     chapter-count @   1 chapter-count +!
-|\     over 2 chapters chain
-|\     dup documentation-chunk ! doc!
+: raw-chapter ( slides? -- )
+     chapter-finish
+     parse-cr 
+     chapter-count @   1 chapter-count +!
+     over 2 chapters chain
+     dup documentation-chunk ! doc!
 
 |\ .d| <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"
 |\ "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
 |\ <html>
 |\ <head>
+|\ |.d
+
+over if
+|@ slide show logic
+then
+
+|\ .d|
 |\ <style type="text/css">
 |\ div.chunk {
 |\   margin: 0em 0.5em;
@@ -597,13 +611,18 @@ linked-list chapters
 |\ </style>
 |\ <title>|.d
 
-|\     dup doc+=$
-|\     .d{ </title></head><body><div class="section"><h1>}
-|\     doc+=$
-|\     .d{ </h1><p>}
+    dup doc+=$
+    .d{ </title></head>}
+    swap if .d{ <body onload="Load()">} else .d{ <body>} then
+    .d{ <div class="section"><h1>}
+    doc+=$
+    .d{ </h1><p>}
 
-|\     feed
-|\ ;
+    feed
+;
+
+|\ : |chapter:   false raw-chapter ;
+|\ : |slides:   true raw-chapter ;
 |;
 
 |: chapters and sections
@@ -619,6 +638,43 @@ linked-list chapters
 |\ : |{-   bullet+ .d{ <ul><li>} feed ;
 |\ : |--   .d{ </li><li>} feed ;
 |\ : |-}   .d{ </li></ul>} bullet- feed ;
+|;
+
+|: slide show logic
+|\ .d|
+<script type="text/javascript">
+function SlideCount() {
+  var sections = document.getElementsByClassName('section');
+  return sections.length;
+}
+
+function ShowSlide(index) {
+  var sections = document.getElementsByClassName('section');
+  for (var i = 0; i < sections.length; i++) {
+    sections[i].style.display = ((i == index) ? 'inline' : 'none');
+  }
+}
+
+var current_slide = 0;
+
+function Load() {
+  ShowSlide(0);
+  window.onkeydown = function(e) {
+    if (e.keyCode == 37) {  // left
+      current_slide = Math.max(0, current_slide - 1);
+    } else if (e.keyCode == 39) {  // right
+      current_slide = Math.min(SlideCount() - 1, current_slide + 1);
+    } else if (e.keyCode == 38) {  // up
+      current_slide = 0;
+    } else if (e.keyCode == 40) {  // down
+      current_slide = SlideCount() - 1;
+    }
+    ShowSlide(current_slide);
+  };
+}
+
+</script>
+|\ |.d
 |;
 
 |section: chapter handling
@@ -689,18 +745,17 @@ atom" No description available." description !
 |\    .d{ <tt><i>} doc+=$ .d{ </i></tt>} feed ;
 |;
 
-|chapter: Slides
+|chapter: Appendix A - Slides
 
-The follow are slides from an SVFIG presentation.
-
-|page
+The follow are slides from an SVFIG presentation on
+February 25, 2012.
 
 |section: Literate Programming in Forth
 Brad Nelson
 
 |page
 
-Motivations:
+|section: Motivations
 |{- Literate programming is cool
 |-- Forth is cool
 |-- ebooks are cool
@@ -708,7 +763,7 @@ Motivations:
 
 |page
 
-How:
+|section: Approach
 |{- Use the Forth parser
 |-- Generate MOBI files
    |{- table of contents
@@ -719,7 +774,5 @@ How:
 |-}
 
 |page
-
-The last slide.
 
 |.

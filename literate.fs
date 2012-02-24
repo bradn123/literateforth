@@ -273,6 +273,15 @@ atom" No description available." description !
 ;
 
 
+: |<-| .d{ &larr;} ;
+
+: |->| .d{ &rarr;} ;
+
+: |^| .d{ &uarr;} ;
+
+: |v| .d{ &darr;} ;
+
+
 
 linked-list out-files
 
@@ -289,18 +298,12 @@ variable chapter-count
 linked-list chapters
 : chapter-finish   .d{ </p></div></body></html>} ;
 
-
-: |chapter:
-
-    chapter-finish
-
-    parse-cr 
-
-    chapter-count @   1 chapter-count +!
-
-    over 2 chapters chain
-
-    dup documentation-chunk ! doc!
+: raw-chapter ( slides? -- )
+     chapter-finish
+     parse-cr 
+     chapter-count @   1 chapter-count +!
+     over 2 chapters chain
+     dup documentation-chunk ! doc!
 
 
 .d| <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"
@@ -310,6 +313,52 @@ linked-list chapters
 <html>
 
 <head>
+
+|.d
+
+over if
+
+
+.d|
+<script type="text/javascript">
+function SlideCount() {
+  var sections = document.getElementsByClassName('section');
+  return sections.length;
+}
+
+function ShowSlide(index) {
+  var sections = document.getElementsByClassName('section');
+  for (var i = 0; i < sections.length; i++) {
+    sections[i].style.display = ((i == index) ? 'inline' : 'none');
+  }
+}
+
+var current_slide = 0;
+
+function Load() {
+  ShowSlide(0);
+  window.onkeydown = function(e) {
+    if (e.keyCode == 37) {  // left
+      current_slide = Math.max(0, current_slide - 1);
+    } else if (e.keyCode == 39) {  // right
+      current_slide = Math.min(SlideCount() - 1, current_slide + 1);
+    } else if (e.keyCode == 38) {  // up
+      current_slide = 0;
+    } else if (e.keyCode == 40) {  // down
+      current_slide = SlideCount() - 1;
+    }
+    ShowSlide(current_slide);
+  };
+}
+
+</script>
+
+|.d
+
+then
+
+
+.d|
 
 <style type="text/css">
 
@@ -329,19 +378,20 @@ pre {
 
 <title>|.d
 
-
     dup doc+=$
-
-    .d{ </title></head><body><div class="section"><h1>}
-
+    .d{ </title></head>}
+    swap if .d{ <body onload="Load()">} else .d{ <body>} then
+    .d{ <div class="section"><h1>}
     doc+=$
-
     .d{ </h1><p>}
 
-
     feed
-
 ;
+
+
+: |chapter:   false raw-chapter ;
+
+: |slides:   true raw-chapter ;
 
 
 : |section:   parse-cr .d{ </p></div><div class="section"><h2>} doc+=$
