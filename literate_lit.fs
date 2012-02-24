@@ -16,7 +16,6 @@ s" literate.fs" included
 |: *
 |@ isolate in wordlist
 |@ assertion support
-|@ setup mode flags
 |@ utility words
 |@ linked lists
 |@ implement atoms
@@ -29,23 +28,27 @@ s" literate.fs" included
 |@ file writing implementation
 |@ chapters
 |@ chapters and sections
-|@ opf
-|@ ncx
-|@ toc
 |@ chapter structure
+|@ primary program flow
+|; 
+
+
+
+|chapter: Weaving, Tangling and Runnning
+
+|section: Overview
+
+There are three modes of operation: weave, tangle, running.
+Most of the plumbing to handle these modes is excuted on each run.
+The pieces look like this:
+
+|: primary program flow
+|@ setup mode flags
 |@ weaving implementation
 |@ tangle implementation
 |@ run implementation
 |@ apply literate mode
-|; 
-
-
-|section: isolate in wordlist
-
-|: isolate in wordlist
-vocabulary literate also literate definitions
 |;
-
 
 |section: Modes of operation
 
@@ -53,7 +56,6 @@ We will need to decide which mode in which to operate.
 For the moment we will use the value of the LITERATE
 environment variable to select which mode.
 |$
-Modes currently include: weave, tangle, running.
 Running is selected by having LITERATE unset or empty.
 Anything else is considered an error.
 |: setup mode flags
@@ -65,6 +67,28 @@ literate-env s" " compare 0= constant running?
 \ Require we are in one of the modes.
 weaving? tangling? or running? or assert
 |;
+
+|section: tangling
+
+|: tangle implementation
+: tangle-file ( file -- ) cell+ @ dup means swap file! ;
+: tangle   out-files @ begin dup while dup tangle-file ->next repeat drop ;
+|;
+
+
+|section: running
+
+|: run implementation
+atom" literate_running.tmp" constant run-filename
+: run-cleanup   run-filename atom-string@ delete-file drop ;
+: bye   run-cleanup bye ;
+: run   atom" *" means run-filename file!
+        run-filename atom-string@ included
+        run-cleanup
+;
+|;
+
+|section: Comence operation
 
 |: apply literate mode
 |\ : |. ( exit literate mode )
@@ -110,11 +134,13 @@ ensuring that this happens only once.
 |;
 
 
-|section: Odds and ends
+|section: strings
 We will need to clone strings occasionally.
 |: utility words
 : $clone ( $ - $ ) dup allocate 0= assert swap 2dup >r >r move r> r> ;
 |;
+
+|section: stack maneuvers
 We will also need to duplicate three items off the stack.
 |: utility words
 : 3dup ( xyz -- xyzxyz ) >r 2dup r> dup >r swap >r swap r> r> ;
@@ -369,8 +395,19 @@ linked-list atom-root
 
 |chapter: MOBI Format
 
+|section: MOBI files
+
+|: weaving implementation
+|@ weaving opf
+|@ weaving ncx
+|@ weaving toc
+|@ weaving chapter html
+: weave ( -- ) weave-chapters weave-toc weave-opf weave-ncx ;
+|;
+
 |section: OPF files
-|: opf
+
+|: weaving opf
 |\ atom" ~~~OPF" constant atom-opf
 |\ atom" index.opf" constant opf-filename
 
@@ -438,7 +475,7 @@ linked-list atom-root
 
 
 |section: NCX files
-|: ncx
+|: weaving ncx
 |\ atom" ~~~NCX" constant atom-ncx
 |\ atom" index.ncx" constant ncx-filename
 
@@ -499,7 +536,7 @@ linked-list atom-root
 
 
 |section: table of contents
-|: toc
+|: weaving toc
 |\ atom" ~~~TOC" constant atom-toc
 |\ atom" index.html" constant toc-filename
 
@@ -533,51 +570,25 @@ linked-list atom-root
 
 |\    documentation means toc-filename file!
 |\ ;
-
 |;
 
 
-|chapter: Weaving
+|section: Chapter HTML
 
-|section: weaving details
-|: weaving implementation
-|\ : weave-chapter ( chapter -- ) dup chapter-text swap chapter-filename file! ;
-|\ : weave-chapters
-|\    chapters @ begin dup while dup weave-chapter ->next repeat drop ;
-|\ 
-|\ 
-|\ 
-|\ 
-|\ 
-|\ 
-|\ : weave    weave-chapters weave-toc weave-opf weave-ncx ;
-|;
-
-
-|chapter: Tangling and Runnning
-
-|section: tangling
-
-|: tangle implementation
-: tangle-file ( file -- ) cell+ @ dup means swap file! ;
-: tangle   out-files @ begin dup while dup tangle-file ->next repeat drop ;
-|;
-
-
-|section: running
-
-|: run implementation
-atom" literate_running.tmp" constant run-filename
-: run-cleanup   run-filename atom-string@ delete-file drop ;
-: bye   run-cleanup bye ;
-: run   atom" *" means run-filename file!
-        run-filename atom-string@ included
-        run-cleanup
-;
+|: weaving chapter html
+: weave-chapter ( chapter -- ) dup chapter-text swap chapter-filename file! ;
+: weave-chapters
+    chapters @ begin dup while dup weave-chapter ->next repeat drop ;
 |;
 
 
 |chapter: Odds and Ends
+
+|section: isolate in wordlist
+|: isolate in wordlist
+vocabulary literate also literate definitions
+|;
+
 
 |section: file writing
 |: file writing implementation

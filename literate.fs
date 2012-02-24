@@ -8,15 +8,6 @@ vocabulary literate also literate definitions
 : once! ( n a -- ) dup @ 0= assert ! ;
 
 
-\ Decide if we're weaving or tangling.
-: literate-env ( -- $ ) s" LITERATE" getenv ;
-literate-env s" weave" compare 0= constant weaving?
-literate-env s" tangle" compare 0= constant tangling?
-literate-env s" " compare 0= constant running?
-\ Require we are in one of the modes.
-weaving? tangling? or running? or assert
-
-
 : $clone ( $ - $ ) dup allocate 0= assert swap 2dup >r >r move r> r> ;
 
 : 3dup ( xyz -- xyzxyz ) >r 2dup r> dup >r swap >r swap r> r> ;
@@ -384,6 +375,18 @@ atom" .html" constant .html
 
 
 
+
+\ Decide if we're weaving or tangling.
+: literate-env ( -- $ ) s" LITERATE" getenv ;
+literate-env s" weave" compare 0= constant weaving?
+literate-env s" tangle" compare 0= constant tangling?
+literate-env s" " compare 0= constant running?
+\ Require we are in one of the modes.
+weaving? tangling? or running? or assert
+
+
+
+
 atom" ~~~OPF" constant atom-opf
 
 atom" index.opf" constant opf-filename
@@ -670,28 +673,11 @@ atom" index.html" constant toc-filename
 ;
 
 
-
-
-
 : weave-chapter ( chapter -- ) dup chapter-text swap chapter-filename file! ;
-
 : weave-chapters
+    chapters @ begin dup while dup weave-chapter ->next repeat drop ;
 
-   chapters @ begin dup while dup weave-chapter ->next repeat drop ;
-
-
-
-
-
-
-
-
-
-
-
-
-
-: weave    weave-chapters weave-toc weave-opf weave-ncx ;
+: weave ( -- ) weave-chapters weave-toc weave-opf weave-ncx ;
 
 
 : tangle-file ( file -- ) cell+ @ dup means swap file! ;
@@ -717,6 +703,7 @@ atom" literate_running.tmp" constant run-filename
     tangling? if tangle bye then
 
     running? if run then ;
+
 
 
 
