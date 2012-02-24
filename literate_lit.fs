@@ -269,23 +269,66 @@ We will also need to duplicate three items off the stack.
 |;
 
 
-|chapter: Atoms
+|chapter: Atomic Strings
 
-|section: Implementing Atoms
+|section: Introduction
+We will devise a number of words to implement so called "atomic strings".
+This data type augments Forth's more machine level string handling with
+something higher level.
+|$
+The central idea is that atomic strings will:
+|{- occupy a single cell on the stack
+|-- have identical numerical value when equal (for one program run)
+|-- have a single associative "meaning"
+|-}
+|$
+Conveniently, by requiring atomic strings (atoms hereafter) to have a single
+numerical value, we can implement meaning without the need for a lookup
+data structure.
+Each atom's value will be the address of a structure:
+|{- address of next atom (in the set of atoms)
+|-- string length
+|-- address of string start
+|-- "meaning" head
+|-- "meaning" tail
+|-}
+|$
+Off of each atom's primary structure, a chain of "meaning" links.
+When determining the "meaning" of an atom, the expansion of each
+link in the chain is concatenated.
+There are two types of link:
+|{- raw strings (atom specifies the literal string)
+|-- reference links (atom specifies another atom who's
+    meaning should recursively be used)
+|-}
+|$
+The format of the meaning links is:
+|{- address of next link (in the meaning list)
+|-- flag indicating if this is a reference (rather than a raw string)
+|-- an atom (either raw string or a recursive reference)
+|-}
 
+|section: Using atoms
+
+As stated above, atoms with the same string are equal:
 |: testing atoms
-\ Test using atoms.
 atom" foo" atom" foo" = assert
+|;
+
+Atoms with different strings are of course, not equal:
+|: testing atoms
 atom" bar" atom" foo" <> assert
 |;
 
-|: testing atom+
-\ Test atom+.
+Atoms can be concatenated:
+|: testing atoms
 atom" testing" atom" 123" atom+ atom" testing123" = assert
 |;
 
-|: testing means
-\ Test means.
+Atoms can have a meaning assigned to them using
+atom+=$ (to append a literal string)
+or atom+=ref (to append a reference to the meaning of another atom).
+|: testing atoms
 atom" abc" atom" bar" atom+=$
 atom" def" atom" bar" atom+=$
 atom" 1234" atom" foo" atom+=$
@@ -295,18 +338,8 @@ atom" bar" atom" foo" atom+=ref
 atom" foo" means atom" 1234abcdef5678 9abcdef" = assert
 |;
 
+|section: Implementing Atoms
 |: implement atoms
-\ Atomic strings.
-\ Layout of an atom (in cells):
-\   - next atom
-\   - string length
-\   - string start
-\   - definition head
-\   - definition tail
-\ Layout of a definition link (in cells):
-\   - next link
-\   - is_reference?
-\   - atom
 : atom-length@ ( A -- n ) 1 cells + @ ;
 : atom-data@ ( A -- a ) 2 cells + @ ;
 : atom-string@ ( A -- $ ) dup atom-data@ swap atom-length@ ;
@@ -346,9 +379,6 @@ linked-list atom-root
 : atom+=ref ( A Ad -- ) 1 swap atom-append ;
 
 
-|@ testing atoms
-
-
 : ref-parts ( ref -- A ref? ) cell+ dup cell+ @ swap @ ;
 : atom-walk ( fn A -- )
      atom-def-head @ begin dup while
@@ -365,7 +395,6 @@ linked-list atom-root
                     swap 2dup >r >r drop
                     atom-walk-gather r> r> $atom ;
 
-|@ testing means
 
 : atom>>$ ( A d -- d' ) 2dup >r atom-string@ r> swap move swap atom-length@ + ;
 : atom+ ( A A -- A ) swap 2dup atom-length@ swap atom-length@ + dup >r
@@ -375,8 +404,7 @@ linked-list atom-root
 10 atom-ch constant atom-cr
 : atom-cr+ ( A -- A ) atom-cr atom+ ;
 
-|@ testing atom+
-
+|@ testing atoms
 |@ post atom utility words
 |;
 

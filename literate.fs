@@ -26,17 +26,6 @@ vocabulary literate also literate definitions
 : 3dup ( xyz -- xyzxyz ) >r 2dup r> dup >r swap >r swap r> r> ;
 
 
-\ Atomic strings.
-\ Layout of an atom (in cells):
-\   - next atom
-\   - string length
-\   - string start
-\   - definition head
-\   - definition tail
-\ Layout of a definition link (in cells):
-\   - next link
-\   - is_reference?
-\   - atom
 : atom-length@ ( A -- n ) 1 cells + @ ;
 : atom-data@ ( A -- a ) 2 cells + @ ;
 : atom-string@ ( A -- $ ) dup atom-data@ swap atom-length@ ;
@@ -76,13 +65,6 @@ linked-list atom-root
 : atom+=ref ( A Ad -- ) 1 swap atom-append ;
 
 
-
-\ Test using atoms.
-atom" foo" atom" foo" = assert
-atom" bar" atom" foo" <> assert
-
-
-
 : ref-parts ( ref -- A ref? ) cell+ dup cell+ @ swap @ ;
 : atom-walk ( fn A -- )
      atom-def-head @ begin dup while
@@ -100,16 +82,6 @@ atom" bar" atom" foo" <> assert
                     atom-walk-gather r> r> $atom ;
 
 
-\ Test means.
-atom" abc" atom" bar" atom+=$
-atom" def" atom" bar" atom+=$
-atom" 1234" atom" foo" atom+=$
-atom" bar" atom" foo" atom+=ref
-atom" 5678 9" atom" foo" atom+=$
-atom" bar" atom" foo" atom+=ref
-atom" foo" means atom" 1234abcdef5678 9abcdef" = assert
-
-
 : atom>>$ ( A d -- d' ) 2dup >r atom-string@ r> swap move swap atom-length@ + ;
 : atom+ ( A A -- A ) swap 2dup atom-length@ swap atom-length@ + dup >r
                      allocate 0= assert dup >r
@@ -119,9 +91,19 @@ atom" foo" means atom" 1234abcdef5678 9abcdef" = assert
 : atom-cr+ ( A -- A ) atom-cr atom+ ;
 
 
-\ Test atom+.
+atom" foo" atom" foo" = assert
+
+atom" bar" atom" foo" <> assert
+
 atom" testing" atom" 123" atom+ atom" testing123" = assert
 
+atom" abc" atom" bar" atom+=$
+atom" def" atom" bar" atom+=$
+atom" 1234" atom" foo" atom+=$
+atom" bar" atom" foo" atom+=ref
+atom" 5678 9" atom" foo" atom+=$
+atom" bar" atom" foo" atom+=ref
+atom" foo" means atom" 1234abcdef5678 9abcdef" = assert
 
 
 : file! ( A A -- )
