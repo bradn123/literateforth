@@ -214,62 +214,64 @@ atom" foo" means atom" 1234abcdef5678 9abcdef" = assert
     here dup >r swap escape-each here over - atom r> here! ;
 
 
-
 atom" ~~~blackhole" constant blackhole
+variable documentation-chunk
+blackhole documentation-chunk !
 
-variable documentation-chunk   blackhole documentation-chunk !
-
-: documentation ( -- A ) documentation-chunk @ ;
-
-
+: documentation ( -- A )
+    documentation-chunk @ ;
 
 variable chunk
-
-: doc! ( back to documentation) documentation chunk ! ;
-
+: doc! ( back to documentation)
+    documentation chunk ! ;
 doc!
+: doc? ( -- f)
+    documentation chunk @ = ;
+: chunk+=$ ( A -- )
+    chunk @ atom+=$ ;
+: chunk+=ref ( A -- )
+    chunk @ atom+=ref ;
+: doc+=$ ( A -- )
+    documentation atom+=$ ;
+: .d{ ( -- )
+    postpone atom{ postpone doc+=$ ; immediate
 
-: doc? ( -- f) documentation chunk @ = ;
+: .d| ( -- )
 
-: chunk+=$ ( A -- ) chunk @ atom+=$ ;
+    parse..| ; immediate
 
-: chunk+=ref ( A -- ) chunk @ atom+=ref ;
-
-: doc+=$ ( A -- ) documentation atom+=$ ;
-
-: .d{ ( -- ) postpone atom{ postpone doc+=$ ; immediate
-
-: .d| ( -- ) parse..| ; immediate
-
-: |.d ( -- ) postpone literal postpone doc+=$ ; immediate
-
+: |.d ( -- )
+    postpone literal postpone doc+=$ ; immediate
 : .dcr   atom-cr doc+=$ ;
+: doc+=ref ( A -- )
+    documentation atom+=ref ;
+: ?doc+=$ ( A -- )
+    doc? 0= if escape doc+=$ else drop then ;
+: feed ( read into current chunk )
 
-: doc+=ref ( A -- ) documentation atom+=ref ;
-
-: ?doc+=$ ( A -- ) doc? 0= if escape doc+=$ else drop then ;
-
-: feed ( read into current chunk ) parse..| dup ?atom-cr+ ?doc+=$ atom-cr+ chunk+=$ ;
-
-: doc+=use ( A -- ) .d{ <u><b>} doc+=$ .d{ </b></u>} ;
-
+    parse..| dup ?atom-cr+ ?doc+=$ atom-cr+ chunk+=$ ;
+: doc+=use
+    ( A -- ) .d{ <u><b>} doc+=$ .d{ </b></u>} ;
 : doc+=def ( A -- )
-
     .d{ </p><tt><u><b>} doc+=$
-
     .d{ </b></u> +&equiv;</tt><div class="chunk"><pre>} ;
 
-: |@ ( use a chunk ) parse-cr dup chunk+=ref doc+=use .dcr feed ;
 
-: |: ( add to a chunk ) parse-cr dup chunk ! doc+=def feed ;
 
-: || ( escaped | ) atom" |" chunk+=$ feed ;
+: |@ ( use a chunk )
+    parse-cr dup chunk+=ref doc+=use .dcr feed ;
 
-: |; ( documentation ) doc? 0= if .d{ </pre></div><p>} then doc! feed ;
+: |: ( add to a chunk )
+    parse-cr dup chunk ! doc+=def feed ;
 
-: |$ ( paragraph ) .d{ </p><p>} feed ;
+: |; ( documentation )
+    doc? 0= if .d{ </pre></div><p>} then doc! feed ;
 
-: |\ ( whole line) parse-cr atom-cr+ dup chunk+=$ ?doc+=$ feed ;
+: |$ ( paragraph )
+    .d{ </p><p>} feed ;
+
+: |\ ( whole line)
+    parse-cr atom-cr+ dup chunk+=$ ?doc+=$ feed ;
 
 
 variable doc-base
