@@ -389,51 +389,30 @@ atom" ~~~OPF" constant atom-opf
 atom" index.opf" constant opf-filename
 
 
-
-
-parse..| <item id="|-constant opf-chapter-pre1
-
-parse..| " media-type="application/xhtml+xml" href="|-constant opf-chapter-pre2
-
-parse..| "></item>
-
-|-constant opf-chapter-post
-
 : opf-chapter ( A -- )
 
-  opf-chapter-pre1 doc+=$ 
+  .d{ <item id="}
 
   dup doc+=$
 
-  opf-chapter-pre2 doc+=$ 
+  .d{ " media-type="application/xhtml+xml" href="}
 
   doc+=$
 
-  opf-chapter-post doc+=$ 
+  .d{ "></item>} .dcr
 
 ;
 
-
-
-
-
-parse..| <itemref idref="|-constant opf-chapter'-pre1
-
-parse..| "/>
-
-|-constant opf-chapter'-post
 
 : opf-chapter' ( A -- )
 
-  opf-chapter'-pre1 doc+=$ 
+  .d{ <itemref idref="}
 
   doc+=$
 
-  opf-chapter'-post doc+=$ 
+  .d{ "/>} .dcr
 
 ;
-
-
 
 
 
@@ -484,7 +463,9 @@ xmlns:opf="http://www.idpf.org/2007/opf">
 |.d
 
 
-   chapters @ begin dup while dup chapter-filename opf-chapter ->next repeat drop
+   chapters @ begin dup while
+
+        dup chapter-filename opf-chapter ->next repeat drop
 
 
 .d|
@@ -521,11 +502,6 @@ xmlns:opf="http://www.idpf.org/2007/opf">
    documentation means opf-filename file!
 
 ;
-
-
-
-
-
 
 
 

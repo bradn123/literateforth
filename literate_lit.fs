@@ -374,31 +374,20 @@ linked-list atom-root
 |\ atom" ~~~OPF" constant atom-opf
 |\ atom" index.opf" constant opf-filename
 
-|\ 
-|\ parse..| <item id="|-constant opf-chapter-pre1
-|\ parse..| " media-type="application/xhtml+xml" href="|-constant opf-chapter-pre2
-|\ parse..| "></item>
-|\ |-constant opf-chapter-post
 |\ : opf-chapter ( A -- )
-|\   opf-chapter-pre1 doc+=$ 
+|\   .d{ <item id="}
 |\   dup doc+=$
-|\   opf-chapter-pre2 doc+=$ 
+|\   .d{ " media-type="application/xhtml+xml" href="}
 |\   doc+=$
-|\   opf-chapter-post doc+=$ 
+|\   .d{ "></item>} .dcr
 |\ ;
-|\ 
-|\ 
-|\ parse..| <itemref idref="|-constant opf-chapter'-pre1
-|\ parse..| "/>
-|\ |-constant opf-chapter'-post
+
 |\ : opf-chapter' ( A -- )
-|\   opf-chapter'-pre1 doc+=$ 
+|\   .d{ <itemref idref="}
 |\   doc+=$
-|\   opf-chapter'-post doc+=$ 
+|\   .d{ "/>} .dcr
 |\ ;
 |\ 
-
-
 
 |\ : weave-opf
 |\    atom-opf documentation-chunk ! doc!
@@ -424,7 +413,8 @@ linked-list atom-root
 |\   <item id="toc" media-type="application/xhtml+xml" href="index.html"></item>
 |\ |.d
 
-|\    chapters @ begin dup while dup chapter-filename opf-chapter ->next repeat drop
+|\    chapters @ begin dup while
+|\         dup chapter-filename opf-chapter ->next repeat drop
 
 |\ .d|
 |\ </manifest>
@@ -446,9 +436,6 @@ linked-list atom-root
 |\    documentation means opf-filename file!
 |\ ;
 
-
-|\ 
-|\ 
 |;
 
 
