@@ -8,7 +8,8 @@ vocabulary literate also literate definitions
 
 : linked-list   create 0 , 0 , ;
 
-: allocate' ( n -- a ) allocate 0= assert ;
+: allocate' ( n -- a )
+    allocate 0= assert ;
 
 : zero ( a n -- ) 0 fill ;
 : allocate0 ( n -- a )
@@ -29,23 +30,30 @@ vocabulary literate also literate definitions
 
 : ->next ( a -- a' ) @ ;
 
-: $clone ( $ - $ ) dup allocate 0= assert swap 2dup >r >r move r> r> ;
+: $clone ( $ - $ )
+    dup allocate 0= assert swap 2dup >r >r move r> r> ;
 
-: 3dup ( xyz -- xyzxyz ) >r 2dup r> dup >r swap >r swap r> r> ;
+: 3dup ( xyz -- xyzxyz )
+    >r 2dup r> dup >r swap >r swap r> r> ;
 
 
 : atom-length@ ( A -- n ) 1 cells + @ ;
 : atom-data@ ( A -- a ) 2 cells + @ ;
-: atom-string@ ( A -- $ ) dup atom-data@ swap atom-length@ ;
-: atom-meaning-head ( A -- A[head] ) 3 cells + ;
+: atom-string@ ( A -- $ )
+    dup atom-data@ swap atom-length@ ;
+: atom-meaning-head ( A -- A[head] )
+    3 cells + ;
 
 linked-list atom-root
 
-: $atom-new ( $ -- A ) >r >r 0 0 r> r> 4 atom-root chain atom-root cell+ @ ;
+: $atom-new ( $ -- A )
+    >r >r 0 0 r> r> 4 atom-root chain atom-root cell+ @ ;
 
-: atom-new ( $ -- A ) $clone $atom-new ;
+: atom-new ( $ -- A )
+    $clone $atom-new ;
 
-: atom= ( $ A -- f ) atom-string@ compare 0= ;
+: atom= ( $ A -- f )
+    atom-string@ compare 0= ;
 
 : atom-find' ( $ A -- A )
     begin
@@ -53,30 +61,41 @@ linked-list atom-root
        3dup atom= if nip nip exit then
        ->next
     again ;
-: atom-find ( $ -- A ) atom-root @ atom-find' ;
+: atom-find ( $ -- A )
+    atom-root @ atom-find' ;
 
-: $atom ( $ -- A ) 2dup atom-find dup if nip nip else drop $atom-new then ;
+: $atom ( $ -- A )
+    2dup atom-find dup if nip nip else drop $atom-new then ;
 
-: atom ( $ -- A ) 2dup atom-find dup if nip nip else drop atom-new then ;
+: atom ( $ -- A )
+    2dup atom-find dup if nip nip else drop atom-new then ;
 
-: atom. ( A -- ) atom-string@ type ;
+: atom. ( A -- )
+    atom-string@ type ;
 
-: atoms. ( -- ) atom-root @ begin dup while dup atom. cr ->next repeat drop ;
+: atoms. ( -- )
+    atom-root @ begin dup while dup atom. cr ->next repeat drop ;
 
-: atom" ( -- A ) [char] " parse
-                  state @ if postpone sliteral postpone atom
-                          else atom then ; immediate
+: atom" ( -- A )
+    [char] " parse
+    state @ if postpone sliteral postpone atom
+    else atom then ; immediate
 : atom"" ( -- A ) 0 0 atom ;
-: atom{ ( -- A ) [char] } parse
-                 state @ if postpone sliteral postpone atom
-                         else atom then ; immediate
+: atom{ ( -- A )
+    [char] } parse
+    state @ if postpone sliteral postpone atom
+    else atom then ; immediate
 
-: atom-append ( A n Ad -- ) atom-meaning-head 2 swap chain ;
-: atom+=$ ( A Ad -- ) 0 swap atom-append ;
-: atom+=ref ( A Ad -- ) 1 swap atom-append ;
+: atom-append ( A n Ad -- )
+    atom-meaning-head 2 swap chain ;
+: atom+=$ ( A Ad -- )
+    0 swap atom-append ;
+: atom+=ref ( A Ad -- )
+    1 swap atom-append ;
 
 
-: ref-parts ( ref -- A ref? ) cell+ dup cell+ @ swap @ ;
+: ref-parts ( ref -- A ref? )
+    cell+ dup cell+ @ swap @ ;
 : atom-walk ( fn A -- )
      atom-meaning-head @ begin dup while
          2dup >r >r
@@ -84,22 +103,31 @@ linked-list atom-root
          r> r>
          ->next
      repeat 2drop ;
-: tally-length ( n A -- n ) atom-length@ + ;
-: gather-string ( a A -- a' ) 2dup atom-string@ >r swap r> move tally-length ;
-: atom-walk-length ( A -- n ) 0 swap ['] tally-length swap atom-walk ;
-: atom-walk-gather ( a A -- ) swap ['] gather-string swap atom-walk drop ;
-: means ( A -- A' ) dup atom-walk-length dup allocate 0= assert
-                    swap 2dup >r >r drop
-                    atom-walk-gather r> r> $atom ;
+: tally-length ( n A -- n )
+    atom-length@ + ;
+: gather-string ( a A -- a' )
+    2dup atom-string@ >r swap r> move tally-length ;
+: atom-walk-length ( A -- n )
+    0 swap ['] tally-length swap atom-walk ;
+: atom-walk-gather ( a A -- )
+    swap ['] gather-string swap atom-walk drop ;
+: means ( A -- A' )
+    dup atom-walk-length dup allocate 0= assert
+    swap 2dup >r >r drop
+    atom-walk-gather r> r> $atom ;
 
 
-: atom>>$ ( A d -- d' ) 2dup >r atom-string@ r> swap move swap atom-length@ + ;
-: atom+ ( A A -- A ) swap 2dup atom-length@ swap atom-length@ + dup >r
-                     allocate 0= assert dup >r
-                     atom>>$ atom>>$ drop r> r> $atom ;
-: atom-ch ( ch -- A ) 1 allocate 0= assert 2dup c! nip 1 atom ;
+: atom>>$ ( A d -- d' )
+    2dup >r atom-string@ r> swap move swap atom-length@ + ;
+: atom+ ( A A -- A )
+    swap 2dup atom-length@ swap atom-length@ + dup >r
+    allocate 0= assert dup >r
+    atom>>$ atom>>$ drop r> r> $atom ;
+: atom-ch ( ch -- A )
+    1 allocate 0= assert 2dup c! nip 1 atom ;
 10 atom-ch constant atom-cr
-: atom-cr+ ( A -- A ) atom-cr atom+ ;
+: atom-cr+ ( A -- A )
+    atom-cr atom+ ;
 
 
 atom" foo" atom" foo" = assert
@@ -163,9 +191,12 @@ atom" foo" means atom" 1234abcdef5678 9abcdef" = assert
    dup [char] & = if [char] & c, [char] a c, [char] m c, [char] p c,
                      [char] ; c, drop exit then
    c, ;
-: escape-each ( A -- ) atom-string@ 0 ?do dup i + c@ escape-ch loop drop ;
-: here! ( a -- ) here - allot ;
-: escape ( A -- A ) here dup >r swap escape-each here over - atom r> here! ;
+: escape-each ( A -- )
+    atom-string@ 0 ?do dup i + c@ escape-ch loop drop ;
+: here! ( a -- )
+    here - allot ;
+: escape ( A -- A )
+    here dup >r swap escape-each here over - atom r> here! ;
 
 
 
@@ -289,7 +320,8 @@ linked-list out-files
    parse-cr dup 1 out-files chain
 
    .d{ <tt><i>} doc+=$ .d{ </i></tt>} feed ;
-: file-name@ ( file -- A ) cell+ @ ;
+: file-name@ ( file -- A )
+    cell+ @ ;
 
 
 
@@ -460,9 +492,12 @@ variable bullet-depth
 
 : |}sub   .d{ </sub>} feed ;
 
-: chapter-name ( chp -- A ) cell+ @ ;
-: chapter-text ( chp -- A ) cell+ @ means ;
-: chapter-number ( chp -- n ) 2 cells + @ ;
+: chapter-name ( chp -- A )
+    cell+ @ ;
+: chapter-text ( chp -- A )
+    cell+ @ means ;
+: chapter-number ( chp -- n )
+    2 cells + @ ;
 atom" .html" constant .html
 : chapter-filename ( chp -- A )
      chapter-number s>d <# # # # #s #> atom
@@ -778,14 +813,17 @@ xmlns:opf="http://www.idpf.org/2007/opf">
 
 
 
-: weave-chapter ( chapter -- ) dup chapter-text swap chapter-filename file! ;
+: weave-chapter ( chapter -- )
+    dup chapter-text swap chapter-filename file! ;
 : weave-chapters
     chapters @ begin dup while dup weave-chapter ->next repeat drop ;
 
-: weave ( -- ) weave-chapters weave-toc weave-opf weave-ncx ;
+: weave ( -- )
+    weave-chapters weave-toc weave-opf weave-ncx ;
 
 
-: tangle-file ( file -- ) file-name@ dup means swap file! ;
+: tangle-file ( file -- )
+    file-name@ dup means swap file! ;
 
 : tangle   out-files @ begin dup while dup tangle-file ->next repeat drop ;
 
