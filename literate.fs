@@ -67,7 +67,7 @@ linked-list atom-root
 : atom{ ( -- A ) [char] } parse
                  state @ if postpone sliteral postpone atom
                          else atom then ; immediate
- 
+
 : atom-append ( A n Ad -- ) atom-def-head 2 swap chain ;
 : atom+=$ ( A Ad -- ) 0 swap atom-append ;
 : atom+=ref ( A Ad -- ) 1 swap atom-append ;
@@ -115,6 +115,9 @@ atom" foo" means atom" 1234abcdef5678 9abcdef" = assert
 10 atom-ch constant atom-cr
 : atom-cr+ ( A -- A ) atom-cr atom+ ;
 
+
+\ Test atom+.
+atom" testing" atom" 123" atom+ atom" testing123" = assert
 
 
 
@@ -290,6 +293,7 @@ linked-list out-files
    parse-cr dup 1 out-files chain
 
    .d{ <tt><i>} doc+=$ .d{ </i></tt>} feed ;
+: file-name@ ( file -- A ) cell+ @ ;
 
 
 
@@ -301,7 +305,7 @@ linked-list chapters
 
 : raw-chapter ( -- )
      chapter-finish
-     parse-cr 
+     parse-cr
      chapter-count @   1 chapter-count +!
      over 2 chapters chain
      dup documentation-chunk ! doc!
@@ -442,12 +446,11 @@ atom" .html" constant .html
 
 
 
-\ Decide if we're weaving or tangling.
 : literate-env ( -- $ ) s" LITERATE" getenv ;
 literate-env s" weave" compare 0= constant weaving?
 literate-env s" tangle" compare 0= constant tangling?
 literate-env s" " compare 0= constant running?
-\ Require we are in one of the modes.
+
 weaving? tangling? or running? or assert
 
 
@@ -460,7 +463,7 @@ atom" ~~~TOC" constant atom-toc
 
 : weave-toc-chapter ( chapter -- )
 
-   .d{ <h3><b><a href="}
+   .d{ <h4><b><a href="}
 
    dup chapter-filename doc+=$
 
@@ -468,7 +471,7 @@ atom" ~~~TOC" constant atom-toc
 
    chapter-name doc+=$
 
-   .d{ </a></b></h3>} .dcr
+   .d{ </a></b></h4>} .dcr
 
 ;
 
@@ -754,13 +757,17 @@ xmlns:opf="http://www.idpf.org/2007/opf">
 : weave ( -- ) weave-chapters weave-toc weave-opf weave-ncx ;
 
 
-: tangle-file ( file -- ) cell+ @ dup means swap file! ;
+: tangle-file ( file -- ) file-name@ dup means swap file! ;
+
 : tangle   out-files @ begin dup while dup tangle-file ->next repeat drop ;
 
 
 : run-filename doc-base @ atom" _running.tmp" atom+ ;
+
 : run-cleanup   run-filename atom-string@ delete-file drop ;
+
 : bye   run-cleanup bye ;
+
 : run   atom" *" means run-filename file!
         run-filename atom-string@ included
         run-cleanup

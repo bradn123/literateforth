@@ -3,20 +3,62 @@ s" literate.fs" included
 |title: Literate Forth
 |author: Brad Nelson
 |subject: Literate Programming in Forth
-|description: Literate programming implemention in Forth.
+|description: Literate programming implementation in Forth.
 |date: 2012-02-23
 |document-base: literate
 
 |chapter: Overview
-|section: Major Structure
+|section: Introduction
 
+This document is a literate programming exposition of a Forth program
+designed to allow literate programming directly in Forth.
+|$
+Literate programming is a technique, conceived of by Donald Knuth, in which the
+documentation of a program is emphasised in precedence over the code that
+implements it.
+Rather than being linearly presented, code is interspersed inside documentation.
+Prior to evaluation by the target language, a special pre-processor is used
+to "tangle" the source code into a machine readable form.
+|$
+The Forth programming language has the relatively unique flexibility of
+a dynamically re-definable parser. This allows the possibility of applying
+literate programming techniques to Forth, without the need of external
+pre-processors.
+|$
+eBook readers such as the Amazon Kindle are pleasant tools for reading
+documentation.
+Most literate programming tools such as WEB, CWEB, and noweb are
+designed to emit |TeX  and |LaTeX  output, targeting printed output.
+While these tools produce high quality printed output,
+they produce eBooks which badly matched the limited feature set of eBook
+formats.
+Thus, the system presented emits documents in a format ready for processing
+by the kindlegen MOBI document processor.
+The Kindle's native format (MOBI) restricts documents to a minimalistic
+format that emphasizes user text preferences over document designer layout.
+While the Adobe PDF format is also supported, such documents are second class
+citizens which hi-lite the wisdom of MOBI's restrictions, particularly on
+eInk devices.
+
+
+|section: Generated Files
+
+When generating runnable code (weaving),
 |file: literate_out.fs
+ is emitted. This file should typically be renamed to
+literate.fs and included in other literate programs to active the syntax
+described herein.
+|$
+It will contain a single file expansion of all the code described in this
+document.
 |: literate_out.fs
 |@ *
 |;
 
-|section: program structure
 
+|section: Program Overview
+
+This is the basic structure of the literate programming parser:
 |: *
 |@ isolate in wordlist
 |@ assertion support
@@ -33,16 +75,23 @@ s" literate.fs" included
 |@ chapters and sections
 |@ chapter structure
 |@ primary program flow
-|; 
+|;
 
 
 
-|chapter: Weaving, Tangling and Runnning
+|chapter: Weaving, Tangling, and Running
 
-|section: Overview
+|section: Modes of operation
 
-There are three modes of operation: weave, tangle, running.
-Most of the plumbing to handle these modes is excuted on each run.
+There are three actions typically taken on literate programs:
+weave, tangle, and running.
+Weaving is the generation of documentation from a literate program.
+Tangling is the generation of macro expanded source code from
+a literate program.
+Running is the act of tangling followed by evaluation of the tangled
+output.
+Most of the plumbing to handle these modes is executed on each run,
+for simplicity and to ensure failures are detected early.
 The pieces look like this:
 
 |: primary program flow
@@ -53,7 +102,8 @@ The pieces look like this:
 |@ apply literate mode
 |;
 
-|section: Modes of operation
+
+|section: Mode selection
 
 We will need to decide which mode in which to operate.
 For the moment we will use the value of the LITERATE
@@ -62,36 +112,73 @@ environment variable to select which mode.
 Running is selected by having LITERATE unset or empty.
 Anything else is considered an error.
 |: setup mode flags
-\ Decide if we're weaving or tangling.
 : literate-env ( -- $ ) s" LITERATE" getenv ;
 literate-env s" weave" compare 0= constant weaving?
 literate-env s" tangle" compare 0= constant tangling?
 literate-env s" " compare 0= constant running?
-\ Require we are in one of the modes.
+|;
+
+As a sanity check, we will insist we are in at least one mode.
+|: setup mode flags
 weaving? tangling? or running? or assert
 |;
 
-|section: tangling
+
+|section: Tangling
+
+The process of tangling can generate one or more files depending on user input.
+At the point we are doing final tangling, all filenames will have a
+"meaning" associated with them that is their desired content.
 
 |: tangle implementation
-: tangle-file ( file -- ) cell+ @ dup means swap file! ;
+: tangle-file ( file -- ) file-name@ dup means swap file! ;
+|;
+
+Each file is then iterated thru.
+
+|: tangle implementation
 : tangle   out-files @ begin dup while dup tangle-file ->next repeat drop ;
 |;
 
 
-|section: running
+|section: Running
 
+Running involves tangling followed by evaluation.
+Ideally, evaluation could happen in memory. Unfortunately,
+ANSFORTH's EVALUATE word can only be used to fill in one "line"
+in the input buffer. This precludes the use of multi-line parsing words
+which are line aware (such as \). Since we would like to support Forth's
+full syntax, we will instead output a temporary file and use INCLUDED.
+|$
+We will select a temporary filename based on the document base.
+This can cause problems if multiple instances are running at once from the
+same directory. However, pre-tangling can be used in this case.
 |: run implementation
 : run-filename doc-base @ atom" _running.tmp" atom+ ;
+|;
+
+After evaluation we will want to cleanup the temporary file.
+|: run implementation
 : run-cleanup   run-filename atom-string@ delete-file drop ;
+|;
+
+We will override bye to attempt to make sure cleanup happens even
+if the evaluated program exits early.
+|: run implementation
 : bye   run-cleanup bye ;
+|;
+
+When running, as there can be many tangled output files,
+we adopt noweb's convention that the root for evaluation is
+the chunk named "*".
+|: run implementation
 : run   atom" *" means run-filename file!
         run-filename atom-string@ included
         run-cleanup
 ;
 |;
 
-|section: Comence operation
+|section: Commence operation
 
 |: apply literate mode
 |\ : |. ( exit literate mode )
@@ -164,7 +251,7 @@ atom" foo" atom" foo" = assert
 atom" bar" atom" foo" <> assert
 |;
 
-|: testing atom+ 
+|: testing atom+
 \ Test atom+.
 atom" testing" atom" 123" atom+ atom" testing123" = assert
 |;
@@ -222,7 +309,7 @@ linked-list atom-root
 : atom{ ( -- A ) [char] } parse
                  state @ if postpone sliteral postpone atom
                          else atom then ; immediate
- 
+
 : atom-append ( A n Ad -- ) atom-def-head 2 swap chain ;
 : atom+=$ ( A Ad -- ) 0 swap atom-append ;
 : atom+=ref ( A Ad -- ) 1 swap atom-append ;
@@ -343,7 +430,7 @@ linked-list atom-root
 |\ atom" ~~~blackhole" constant blackhole
 |\ variable documentation-chunk   blackhole documentation-chunk !
 |\ : documentation ( -- A ) documentation-chunk @ ;
-|\ 
+|\
 |\ variable chunk
 |\ : doc! ( back to documentation) documentation chunk ! ;
 |\ doc!
@@ -402,7 +489,7 @@ linked-list atom-root
 |\ : opf-chapter' ( A -- )
 |\   .d{ <itemref idref="} doc+=$ .d{ "/>} .dcr
 |\ ;
-|\ 
+|\
 
 |\ : weave-opf
 |\    atom-opf documentation-chunk ! doc!
@@ -424,7 +511,7 @@ linked-list atom-root
 |\   .d{ <dc:description>} description @ doc+=$ .d{ </dc:description>} .dcr
 |\ .d|
 |\ </metadata>
-|\ 
+|\
 |\ <manifest>
 |\   <item id="My_Table_of_Contents" media-type="application/x-dtbncx+xml"
 |\    href="|.d ncx-filename doc+=$ .d| "/>
@@ -525,11 +612,11 @@ linked-list atom-root
 |\ : toc-filename doc-base @ atom" .html" atom+ ;
 
 |\ : weave-toc-chapter ( chapter -- )
-|\    .d{ <h3><b><a href="}
+|\    .d{ <h4><b><a href="}
 |\    dup chapter-filename doc+=$
 |\    .d{ ">}
 |\    chapter-name doc+=$
-|\    .d{ </a></b></h3>} .dcr
+|\    .d{ </a></b></h4>} .dcr
 |\ ;
 
 |\ : weave-toc
@@ -586,7 +673,7 @@ linked-list chapters
 
 : raw-chapter ( -- )
      chapter-finish
-     parse-cr 
+     parse-cr
      chapter-count @   1 chapter-count +!
      over 2 chapters chain
      dup documentation-chunk ! doc!
@@ -755,6 +842,7 @@ atom" No description available." description !
 |\ : |file: ( add a new output file )
 |\    parse-cr dup 1 out-files chain
 |\    .d{ <tt><i>} doc+=$ .d{ </i></tt>} feed ;
+: file-name@ ( file -- A ) cell+ @ ;
 |;
 
 |slide-chapter: Appendix A - Slides
@@ -787,5 +875,8 @@ Brad Nelson
    |-}
 |-- Other cool stuff.
 |-}
+
+|section: Questions?
+Questions?
 
 |.
