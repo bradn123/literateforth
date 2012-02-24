@@ -225,14 +225,11 @@ blackhole documentation-chunk !
 
 variable chunk
 : doc! ( back to documentation)
-    documentation chunk ! ;
-doc!
-: doc? ( -- f)
-    documentation chunk @ = ;
+    0 chunk ! ;
 : chunk+=$ ( A -- )
-    chunk @ atom+=$ ;
+    chunk @ dup if atom+=$ else drop then ;
 : chunk+=ref ( A -- )
-    chunk @ atom+=ref ;
+    chunk @ dup if atom+=ref else drop then ;
 : doc+=$ ( A -- )
     documentation atom+=$ ;
 : .d{ ( -- )
@@ -247,11 +244,9 @@ doc!
 : .dcr   atom-cr doc+=$ ;
 : doc+=ref ( A -- )
     documentation atom+=ref ;
-: ?doc+=$ ( A -- )
-    doc? 0= if escape doc+=$ else drop then ;
 : feed ( read into current chunk )
 
-    parse..| dup ?atom-cr+ ?doc+=$ atom-cr+ chunk+=$ ;
+    parse..| dup ?atom-cr+ escape doc+=$ atom-cr+ chunk+=$ ;
 : doc+=use
     ( A -- ) .d{ <b>} doc+=$ .d{ </b>} ;
 : doc+=def ( A -- )
@@ -267,13 +262,13 @@ doc!
     parse-cr dup chunk ! doc+=def feed ;
 
 : |; ( documentation )
-    doc? 0= if .d{ </pre></div><p>} then doc! feed ;
+    .d{ </pre></div><p>} doc! feed ;
 
 : |$ ( paragraph )
     .d{ </p><p>} feed ;
 
 : |\ ( whole line)
-    parse-cr atom-cr+ dup chunk+=$ ?doc+=$ feed ;
+    parse-cr atom-cr+ dup chunk+=$ escape doc+=$ feed ;
 
 
 variable doc-base
