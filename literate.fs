@@ -11,17 +11,23 @@ vocabulary literate also literate definitions
 : allocate' ( n -- a ) allocate 0= assert ;
 
 : zero ( a n -- ) 0 fill ;
-: allocate0 ( n -- a ) dup allocate' swap 2dup zero drop ;
+: allocate0 ( n -- a )
+    dup allocate' swap 2dup zero drop ;
 
-: chain-new ( n -- a ) 1+ cells allocate0 ;
-: chain-fillout ( .. a n -- a ) 0 do dup i 1+ cells + swap >r ! r> loop ;
-: chain-link ( ..n -- a ) dup chain-new swap chain-fillout ;
-: chain-first ( ..n head[t] -- ) >r chain-link r> 2dup ! cell+ ! ;
-: chain-rest ( ..n head[t] -- ) >r chain-link r> 2dup cell+ @ ! cell+ ! ;
-: chain ( ..n head[t] -- ) dup @ if chain-rest else chain-first then ;
+: chain-new ( n -- a )
+    1+ cells allocate0 ;
+: chain-fillout ( .. a n -- a )
+    0 do dup i 1+ cells + swap >r ! r> loop ;
+: chain-link ( ..n -- a )
+    dup chain-new swap chain-fillout ;
+: chain-first ( ..n head[t] -- )
+    >r chain-link r> 2dup ! cell+ ! ;
+: chain-rest ( ..n head[t] -- )
+    >r chain-link r> 2dup cell+ @ ! cell+ ! ;
+: chain ( ..n head[t] -- )
+    dup @ if chain-rest else chain-first then ;
 
 : ->next ( a -- a' ) @ ;
-
 
 : $clone ( $ - $ ) dup allocate 0= assert swap 2dup >r >r move r> r> ;
 
@@ -36,11 +42,8 @@ vocabulary literate also literate definitions
 linked-list atom-root
 
 : $atom-new ( $ -- A ) >r >r 0 0 r> r> 4 atom-root chain atom-root cell+ @ ;
+
 : atom-new ( $ -- A ) $clone $atom-new ;
-
-: atom. ( A -- ) atom-string@ type ;
-
-: atoms. ( -- ) atom-root @ begin dup while dup atom. cr ->next repeat drop ;
 
 : atom= ( $ A -- f ) atom-string@ compare 0= ;
 
@@ -52,8 +55,14 @@ linked-list atom-root
     again ;
 : atom-find ( $ -- A ) atom-root @ atom-find' ;
 
-: atom ( $ -- A ) 2dup atom-find dup if nip nip else drop atom-new then ;
 : $atom ( $ -- A ) 2dup atom-find dup if nip nip else drop $atom-new then ;
+
+: atom ( $ -- A ) 2dup atom-find dup if nip nip else drop atom-new then ;
+
+: atom. ( A -- ) atom-string@ type ;
+
+: atoms. ( -- ) atom-root @ begin dup while dup atom. cr ->next repeat drop ;
+
 : atom" ( -- A ) [char] " parse
                   state @ if postpone sliteral postpone atom
                           else atom then ; immediate

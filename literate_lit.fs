@@ -252,19 +252,27 @@ In allocating memory for lists, we will assume sufficient memory is available.
 We will also the allocated memory for simplicity.
 |: utility words
 : zero ( a n -- ) 0 fill ;
-: allocate0 ( n -- a ) dup allocate' swap 2dup zero drop ;
+: allocate0 ( n -- a )
+    dup allocate' swap 2dup zero drop ;
 |;
 
 |: utility words
-: chain-new ( n -- a ) 1+ cells allocate0 ;
-: chain-fillout ( .. a n -- a ) 0 do dup i 1+ cells + swap >r ! r> loop ;
-: chain-link ( ..n -- a ) dup chain-new swap chain-fillout ;
-: chain-first ( ..n head[t] -- ) >r chain-link r> 2dup ! cell+ ! ;
-: chain-rest ( ..n head[t] -- ) >r chain-link r> 2dup cell+ @ ! cell+ ! ;
-: chain ( ..n head[t] -- ) dup @ if chain-rest else chain-first then ;
+: chain-new ( n -- a )
+    1+ cells allocate0 ;
+: chain-fillout ( .. a n -- a )
+    0 do dup i 1+ cells + swap >r ! r> loop ;
+: chain-link ( ..n -- a )
+    dup chain-new swap chain-fillout ;
+: chain-first ( ..n head[t] -- )
+    >r chain-link r> 2dup ! cell+ ! ;
+: chain-rest ( ..n head[t] -- )
+    >r chain-link r> 2dup cell+ @ ! cell+ ! ;
+: chain ( ..n head[t] -- )
+    dup @ if chain-rest else chain-first then ;
+|;
 
+|: utility words
 : ->next ( a -- a' ) @ ;
-
 |;
 
 
@@ -377,20 +385,33 @@ The format of the meaning links is:
 |section: Implementing Atoms
 
 A list of all atoms will be kept chained off |ttb{ atom-root |}ttb .
+Whenever an atom is needed, this list should be consulted before a
+new atoms is created (as an existing one may exist and
+|b{ must |}b  be used).
 |: implement atoms
 linked-list atom-root
 |;
 
+We will create new unchained atoms either from a string that can safely
+be assumed to persist:
 |: implement atoms
 : $atom-new ( $ -- A ) >r >r 0 0 r> r> 4 atom-root chain atom-root cell+ @ ;
+|;
+
+Or from one that is transitory (parse region for example).
+|: implement atoms
 : atom-new ( $ -- A ) $clone $atom-new ;
+|;
 
-: atom. ( A -- ) atom-string@ type ;
-
-: atoms. ( -- ) atom-root @ begin dup while dup atom. cr ->next repeat drop ;
-
+Comparison for equality with a normal string is needed in order to seek
+out a match from the existing pool of atoms.
+|: implement atoms
 : atom= ( $ A -- f ) atom-string@ compare 0= ;
+|;
 
+We then need a way to look through all atoms for a match.
+
+|: implement atoms
 : atom-find' ( $ A -- A )
     begin
        dup 0= if nip nip exit then
@@ -398,9 +419,31 @@ linked-list atom-root
        ->next
     again ;
 : atom-find ( $ -- A ) atom-root @ atom-find' ;
+|;
 
-: atom ( $ -- A ) 2dup atom-find dup if nip nip else drop atom-new then ;
+Now we can implement two versions of atom lookup.
+|ttb{ $atom |}ttb  for atoms based on persistent strings.
+|: implement atoms
 : $atom ( $ -- A ) 2dup atom-find dup if nip nip else drop $atom-new then ;
+|;
+
+And |ttb{ atom |}ttb  for atoms based on non-persistent strings.
+|: implement atoms
+: atom ( $ -- A ) 2dup atom-find dup if nip nip else drop atom-new then ;
+|;
+
+Printing an atom is provided (mainly for debugging).
+|: implement atoms
+: atom. ( A -- ) atom-string@ type ;
+|;
+
+As is printing |b{ all |}b  atoms.
+|: implement atoms
+: atoms. ( -- ) atom-root @ begin dup while dup atom. cr ->next repeat drop ;
+|;
+
+
+|: implement atoms
 : atom" ( -- A ) [char] " parse
                   state @ if postpone sliteral postpone atom
                           else atom then ; immediate
