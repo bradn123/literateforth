@@ -87,11 +87,12 @@ linked-list atom-root
     [char] " parse
     state @ if postpone sliteral postpone atom
     else atom then ; immediate
-: atom"" ( -- A ) 0 0 atom ;
 : atom{ ( -- A )
     [char] } parse
     state @ if postpone sliteral postpone atom
     else atom then ; immediate
+
+: atom"" ( -- A ) 0 0 atom ;
 
 : atom-append ( A n Ad -- )
     atom-meaning-head 2 swap chain ;
@@ -118,11 +119,11 @@ linked-list atom-root
     0 swap ['] tally-length swap atom-walk ;
 : atom-walk-gather ( a A -- )
     swap ['] gather-string swap atom-walk drop ;
+
 : means ( A -- A' )
     dup atom-walk-length dup allocate 0= assert
     swap 2dup >r >r drop
     atom-walk-gather r> r> $atom ;
-
 
 : atom>>$ ( A d -- d' )
     2dup >r atom-string@ r> swap move swap atom-length@ + ;
@@ -130,8 +131,10 @@ linked-list atom-root
     swap 2dup atom-length@ swap atom-length@ + dup >r
     allocate 0= assert dup >r
     atom>>$ atom>>$ drop r> r> $atom ;
+
 : atom-ch ( ch -- A )
     1 allocate 0= assert 2dup c! nip 1 atom ;
+
 10 atom-ch constant atom-cr
 : atom-cr+ ( A -- A )
     atom-cr atom+ ;
@@ -152,12 +155,30 @@ atom" bar" atom" foo" atom+=ref
 atom" foo" means atom" 1234abcdef5678 9abcdef" = assert
 
 
+
 : file! ( A A -- )
     atom-string@ w/o bin create-file 0= assert
     swap over >r atom-string@ r> write-file 0= assert
     close-file 0= assert
 ;
 
+
+: escape-ch ( ch -- )
+   dup [char] < = if [char] & c, [char] l c, [char] t c,
+                     [char] ; c, drop exit then
+   dup [char] > = if [char] & c, [char] g c, [char] t c,
+                     [char] ; c, drop exit then
+   dup [char] " = if [char] & c, [char] q c, [char] u c, [char] o c,
+                     [char] t c, [char] ; c, drop exit then
+   dup [char] & = if [char] & c, [char] a c, [char] m c, [char] p c,
+                     [char] ; c, drop exit then
+   c, ;
+: escape-each ( A -- )
+    atom-string@ 0 ?do dup i + c@ escape-ch loop drop ;
+: here! ( a -- )
+    here - allot ;
+: escape ( A -- A )
+    here dup >r swap escape-each here over - atom r> here! ;
 
 
 : source@ source ( -- a )
@@ -197,23 +218,6 @@ atom" foo" means atom" 1234abcdef5678 9abcdef" = assert
 
     on|?  need-refill? 0= and if 1 >in +! then ;
 
-
-: escape-ch ( ch -- )
-   dup [char] < = if [char] & c, [char] l c, [char] t c,
-                     [char] ; c, drop exit then
-   dup [char] > = if [char] & c, [char] g c, [char] t c,
-                     [char] ; c, drop exit then
-   dup [char] " = if [char] & c, [char] q c, [char] u c, [char] o c,
-                     [char] t c, [char] ; c, drop exit then
-   dup [char] & = if [char] & c, [char] a c, [char] m c, [char] p c,
-                     [char] ; c, drop exit then
-   c, ;
-: escape-each ( A -- )
-    atom-string@ 0 ?do dup i + c@ escape-ch loop drop ;
-: here! ( a -- )
-    here - allot ;
-: escape ( A -- A )
-    here dup >r swap escape-each here over - atom r> here! ;
 
 
 atom" ~~~blackhole" constant blackhole
@@ -513,7 +517,9 @@ weaving? tangling? or running? or assert
 
 
 atom" ~~~TOC" constant atom-toc
+
 : toc-filename doc-base @ atom" .html" atom+ ;
+
 
 : weave-toc-chapter ( chapter -- )
     .d{ <h4><b><a href="}
@@ -690,7 +696,11 @@ xmlns:opf="http://www.idpf.org/2007/opf">
     dup weave-chapter ->next repeat drop ;
 
 : weave ( -- )
-    weave-chapters weave-toc weave-opf weave-ncx ;
+    weave-opf
+    weave-ncx
+    weave-toc
+    weave-chapters
+;
 
 
 : tangle-file ( file -- )

@@ -471,26 +471,48 @@ As is printing |b{ all |}b  atoms.
     dup atom. cr ->next repeat drop ;
 |;
 
-
+We provide two different stringing words for atoms.
+One based on quotes, the other braces.
 |: implement atoms
 : atom" ( -- A )
     [char] " parse
     state @ if postpone sliteral postpone atom
     else atom then ; immediate
-: atom"" ( -- A ) 0 0 atom ;
 : atom{ ( -- A )
     [char] } parse
     state @ if postpone sliteral postpone atom
     else atom then ; immediate
+|;
 
+As well as a word for an empty atom.
+|: implement atoms
+: atom"" ( -- A ) 0 0 atom ;
+|;
+
+While atoms a fixed, once created.
+Their "meanings" can be accumulated gradually.
+The two words for this are |tt{ atom+=$|}tt  and
+|tt{ atom+=ref|}tt .
+|: implement atoms
 : atom-append ( A n Ad -- )
     atom-meaning-head 2 swap chain ;
 : atom+=$ ( A Ad -- )
     0 swap atom-append ;
 : atom+=ref ( A Ad -- )
     1 swap atom-append ;
+|;
 
+We then provide a way to extract the "meaning" of an atom.
+|: implement atoms
+|@ implement means tools
+: means ( A -- A' )
+    dup atom-walk-length dup allocate 0= assert
+    swap 2dup >r >r drop
+    atom-walk-gather r> r> $atom ;
+|;
 
+Using this plumbing.
+|: implement means tools
 : ref-parts ( ref -- A ref? )
     cell+ dup cell+ @ swap @ ;
 : atom-walk ( fn A -- )
@@ -508,31 +530,52 @@ As is printing |b{ all |}b  atoms.
     0 swap ['] tally-length swap atom-walk ;
 : atom-walk-gather ( a A -- )
     swap ['] gather-string swap atom-walk drop ;
-: means ( A -- A' )
-    dup atom-walk-length dup allocate 0= assert
-    swap 2dup >r >r drop
-    atom-walk-gather r> r> $atom ;
+|;
 
-
+We provide atom concatenation.
+|: implement atoms
 : atom>>$ ( A d -- d' )
     2dup >r atom-string@ r> swap move swap atom-length@ + ;
 : atom+ ( A A -- A )
     swap 2dup atom-length@ swap atom-length@ + dup >r
     allocate 0= assert dup >r
     atom>>$ atom>>$ drop r> r> $atom ;
+|;
+
+And a way to get an atom from one character.
+|: implement atoms
 : atom-ch ( ch -- A )
     1 allocate 0= assert 2dup c! nip 1 atom ;
+|;
+
+This allows us to add a shorthand for carriage returns
+and concatenation of carriage returns.
+|: implement atoms
 10 atom-ch constant atom-cr
 : atom-cr+ ( A -- A )
     atom-cr atom+ ;
+|;
 
+We can then apply the tests above.
+|: implement atoms
 |@ testing atoms
+|;
+
+And some words that depend on atoms.
+|: implement atoms
 |@ post atom utility words
 |;
 
-|section: html escaping
+|section: HTML Escaping
 
-|: escaping atoms
+A critical feature is to be able to html escape an atom.
+We convert the following:
+|{- < |->|  &lt;
+|-- > |->|  &gt;
+|-- " |->|  &quot;
+|-- & |->|  &amp;
+|-}
+|: implement atoms
 : escape-ch ( ch -- )
    dup [char] < = if [char] & c, [char] l c, [char] t c,
                      [char] ; c, drop exit then
@@ -700,9 +743,13 @@ Thus the process of weaving to the MOBI format looks like this:
 |@ weaving toc
 |@ weaving ncx
 |@ weaving opf
-|@ weaving chapter html
+|@ weaving chapter xhtml
 : weave ( -- )
-    weave-chapters weave-toc weave-opf weave-ncx ;
+    weave-opf
+    weave-ncx
+    weave-toc
+    weave-chapters
+;
 |;
 
 |section: OPF files
@@ -908,21 +955,31 @@ Then close out the file and write it.
 
 
 |section: table of contents
+
+The table of contents is an XHTML file like the chapters.
+XHTML is like HTML but strictly XML like in format.
+We use a subset that is constrainted by MOBI's limitations.
+|$
+We will accumulate the table of contents to a reserved atom.
 |: weaving toc
 atom" ~~~TOC" constant atom-toc
+|;
+
+And write this to a filename based on the document base with
+the .html extension added.
+|: weaving toc
 : toc-filename doc-base @ atom" .html" atom+ ;
+|;
 
-: weave-toc-chapter ( chapter -- )
-    .d{ <h4><b><a href="}
-    dup chapter-filename doc+=$
-    .d{ ">}
-    chapter-name doc+=$
-    .d{ </a></b></h4>} .dcr
- ;
-
+We change the focus chunk to the TOC.
+|: weaving toc
+|@ weaving toc chapter
 : weave-toc
     atom-toc documentation-chunk ! doc!
+|;
 
+Then write out the header for the TOC.
+|: weaving toc
 |\ .d| <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"
 "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
@@ -931,10 +988,27 @@ atom" ~~~TOC" constant atom-toc
 <div>
   <h1><b>TABLE OF CONTENTS</b></h1>
 |\ |.d
+|;
 
+Then write out each chapter.
+|: weaving toc
     chapters @ begin dup while
     dup weave-toc-chapter ->next repeat drop
+|;
 
+Where a chapter looks like this.
+|: weaving toc chapter
+: weave-toc-chapter ( chapter -- )
+    .d{ <h4><b><a href="}
+    dup chapter-filename doc+=$
+    .d{ ">}
+    chapter-name doc+=$
+    .d{ </a></b></h4>} .dcr
+ ;
+|;
+
+Then close out the TOC and write it out.
+|: weaving toc
     .d{ </div></body></html>} .dcr
 
     documentation means toc-filename file!
@@ -944,7 +1018,7 @@ atom" ~~~TOC" constant atom-toc
 
 |section: Chapter HTML
 
-|: weaving chapter html
+|: weaving chapter xhtml
 : weave-chapter ( chapter -- )
     dup chapter-text swap chapter-filename file! ;
 : weave-chapters
