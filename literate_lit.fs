@@ -383,9 +383,7 @@ linked-list atom-root
 |\ ;
 
 |\ : opf-chapter' ( A -- )
-|\   .d{ <itemref idref="}
-|\   doc+=$
-|\   .d{ "/>} .dcr
+|\   .d{ <itemref idref="} doc+=$ .d{ "/>} .dcr
 |\ ;
 |\ 
 
@@ -444,7 +442,28 @@ linked-list atom-root
 |\ atom" ~~~NCX" constant atom-ncx
 |\ atom" index.ncx" constant ncx-filename
 
-|\ parse..| <?xml version="1.0" encoding="UTF-8"?>
+|\ : weave-ncx-chapter ( chapter -- )
+|\    .d{ <navPoint class="chapter" id="}
+|\    dup chapter-filename doc+=$
+|\    .d{ " playOrder="}
+|\    dup chapter-filename doc+=$
+|\    .d| ">
+|\       <navLabel>
+|\         <text>|.d
+|\    dup chapter-name doc+=$
+|\    .d| </text>
+|\       </navLabel>
+|\       <content src="|.d
+|\    chapter-filename doc+=$
+|\    .d| "/>
+|\     </navPoint>
+|\ |.d
+|\ ;
+
+|\ : weave-ncx
+|\    atom-ncx documentation-chunk ! doc!
+
+|\ .d| <?xml version="1.0" encoding="UTF-8"?>
 |\ <!DOCTYPE ncx PUBLIC "-//NISO//DTD ncx 2005-1//EN"
 |\ "http://www.daisy.org/z3986/2005/ncx-2005-1.dtd">
 |\ <ncx xmlns="http://www.daisy.org/z3986/2005/ncx/"
@@ -464,24 +483,18 @@ linked-list atom-root
 |\       </navLabel>
 |\       <content src="index.html"/>
 |\     </navPoint>
-|\ |-constant ncx-pre1
-|\ 
-|\ parse..| <navPoint class="chapter" id="|-constant ncx-chapter-pre1
-|\ parse..| " playOrder="|-constant ncx-chapter-pre2
-|\ parse..| ">
-|\       <navLabel>
-|\         <text>|-constant ncx-chapter-pre3
-|\ parse..| </text>
-|\       </navLabel>
-|\       <content src="|-constant ncx-chapter-pre4
-|\ parse..| "/>
-|\     </navPoint>
-|\ |-constant ncx-chapter-post
-|\ 
-|\ parse..|
+|\ |.d
+
+|\    chapters @ begin dup while dup weave-ncx-chapter ->next repeat drop
+
+|\ .d|
 |\   </navMap>
 |\ </ncx>
-|\ |-constant ncx-post
+|\ |.d
+
+|\    documentation means ncx-filename file!
+|\ ;
+
 |;
 
 
@@ -490,25 +503,37 @@ linked-list atom-root
 |\ atom" ~~~TOC" constant atom-toc
 |\ atom" index.html" constant toc-filename
 
-|\ parse..| <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"
+|\ : weave-toc-chapter ( chapter -- )
+|\    .d{ <h3><b><a href="}
+|\    dup chapter-filename doc+=$
+|\    .d{ ">}
+|\    chapter-name doc+=$
+|\    .d{ </a></b></h3>} .dcr
+|\ ;
+
+|\ : weave-toc
+|\    atom-toc documentation-chunk ! doc!
+
+|\ .d| <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"
 |\ "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
 |\ <html xmlns="http://www.w3.org/1999/xhtml">
 |\ <head><title>Table of Contents</title></head>
 |\ <body>
 |\ <div>
 |\  <h1><b>TABLE OF CONTENTS</b></h1>
-|\ |-constant toc-pre
-|\ 
-|\ parse..|
+|\ |.d
+
+|\    chapters @ begin dup while dup weave-toc-chapter ->next repeat drop
+
+|\ .d|
 |\ </div>
 |\ </body>
 |\ </html>
-|\ |-constant toc-post
-|\ 
-|\ parse..| <h3><b><a href="|-constant toc-chapter-pre1
-|\ parse..| ">|-constant toc-chapter-pre2
-|\ parse..| </a></b></h3>
-|\ |-constant toc-chapter-post
+|\ |.d
+
+|\    documentation means toc-filename file!
+|\ ;
+
 |;
 
 
@@ -520,39 +545,7 @@ linked-list atom-root
 |\ : weave-chapters
 |\    chapters @ begin dup while dup weave-chapter ->next repeat drop ;
 |\ 
-|\ : weave-toc-chapter ( chapter -- )
-|\    toc-chapter-pre1 doc+=$
-|\    dup chapter-filename doc+=$
-|\    toc-chapter-pre2 doc+=$
-|\    chapter-name doc+=$
-|\    toc-chapter-post doc+=$
-|\ ;
-|\ : weave-toc
-|\    atom-toc documentation-chunk ! doc!
-|\    toc-pre doc+=$
-|\    chapters @ begin dup while dup weave-toc-chapter ->next repeat drop
-|\    toc-post doc+=$
-|\    documentation means toc-filename file!
-|\ ;
 |\ 
-|\ : weave-ncx-chapter ( chapter -- )
-|\    ncx-chapter-pre1 doc+=$
-|\    dup chapter-filename doc+=$
-|\    ncx-chapter-pre2 doc+=$
-|\    dup chapter-filename doc+=$
-|\    ncx-chapter-pre3 doc+=$
-|\    dup chapter-name doc+=$
-|\    ncx-chapter-pre4 doc+=$
-|\    chapter-filename doc+=$
-|\    ncx-chapter-post doc+=$
-|\ ;
-|\ : weave-ncx
-|\    atom-ncx documentation-chunk ! doc!
-|\    ncx-pre1 doc+=$
-|\    chapters @ begin dup while dup weave-ncx-chapter ->next repeat drop
-|\    ncx-post doc+=$
-|\    documentation means ncx-filename file!
-|\ ;
 |\ 
 |\ 
 |\ 
