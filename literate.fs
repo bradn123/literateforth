@@ -287,7 +287,7 @@ linked-list out-files
 
 variable chapter-count
 linked-list chapters
-: chapter-finish   .d{ </p></body></html>} ;
+: chapter-finish   .d{ </p></div></body></html>} ;
 
 
 : |chapter:
@@ -332,7 +332,7 @@ pre {
 
     dup doc+=$
 
-    .d{ </title></head><body><h1>}
+    .d{ </title></head><body><div class="section"><h1>}
 
     doc+=$
 
@@ -344,16 +344,23 @@ pre {
 ;
 
 
-: |section:   parse-cr .d{ </p><h2>} doc+=$ .d{ </h2><p>} feed ;
+: |section:   parse-cr .d{ </p></div><div class="section"><h2>} doc+=$
+                 .d{ </h2><p>} feed ;
 
 : |page   parse-cr .d{ </p><p style="page-break-before:always;">} feed ;
 
 
-: |{-   .d{ <ul><li>} feed ;
+variable bullet-depth
+
+: bullet+   1 bullet-depth +!   bullet-depth @ 1 = if .d{ </p>} then ;
+
+: bullet-   -1 bullet-depth +!   bullet-depth @ 0 = if .d{ <p>} then ;
+
+: |{-   bullet+ .d{ <ul><li>} feed ;
 
 : |--   .d{ </li><li>} feed ;
 
-: |-}   .d{ </li></ul>} feed ;
+: |-}   .d{ </li></ul>} bullet- feed ;
 
 : chapter-name ( chp -- A ) cell+ @ ;
 : chapter-text ( chp -- A ) cell+ @ means ;

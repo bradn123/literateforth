@@ -574,7 +574,7 @@ vocabulary literate also literate definitions
 |: chapters and sections
 variable chapter-count
 linked-list chapters
-: chapter-finish   .d{ </p></body></html>} ;
+: chapter-finish   .d{ </p></div></body></html>} ;
 
 |\ : |chapter:
 |\     chapter-finish
@@ -598,7 +598,7 @@ linked-list chapters
 |\ <title>|.d
 
 |\     dup doc+=$
-|\     .d{ </title></head><body><h1>}
+|\     .d{ </title></head><body><div class="section"><h1>}
 |\     doc+=$
 |\     .d{ </h1><p>}
 
@@ -607,14 +607,18 @@ linked-list chapters
 |;
 
 |: chapters and sections
-|\ : |section:   parse-cr .d{ </p><h2>} doc+=$ .d{ </h2><p>} feed ;
+|\ : |section:   parse-cr .d{ </p></div><div class="section"><h2>} doc+=$
+                 .d{ </h2><p>} feed ;
 |\ : |page   parse-cr .d{ </p><p style="page-break-before:always;">} feed ;
 |;
 
 |: chapters and sections
-|\ : |{-   .d{ <ul><li>} feed ;
+|\ variable bullet-depth
+|\ : bullet+   1 bullet-depth +!   bullet-depth @ 1 = if .d{ </p>} then ;
+|\ : bullet-   -1 bullet-depth +!   bullet-depth @ 0 = if .d{ <p>} then ;
+|\ : |{-   bullet+ .d{ <ul><li>} feed ;
 |\ : |--   .d{ </li><li>} feed ;
-|\ : |-}   .d{ </li></ul>} feed ;
+|\ : |-}   .d{ </li></ul>} bullet- feed ;
 |;
 
 |section: chapter handling
