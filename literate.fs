@@ -3,15 +3,18 @@
 vocabulary literate also literate definitions
 
 
-: assert ( n -- ) 0= if abort then ;
+: assert ( n -- )
+    0= if abort then ;
 
 
-: linked-list   create 0 , 0 , ;
+: linked-list
+    create 0 , 0 , ;
 
 : allocate' ( n -- a )
     allocate 0= assert ;
 
-: zero ( a n -- ) 0 fill ;
+: zero ( a n -- )
+    0 fill ;
 : allocate0 ( n -- a )
     dup allocate' swap 2dup zero drop ;
 
@@ -37,8 +40,10 @@ vocabulary literate also literate definitions
     >r 2dup r> dup >r swap >r swap r> r> ;
 
 
-: atom-length@ ( A -- n ) 1 cells + @ ;
-: atom-data@ ( A -- a ) 2 cells + @ ;
+: atom-length@ ( A -- n )
+    1 cells + @ ;
+: atom-data@ ( A -- a )
+    2 cells + @ ;
 : atom-string@ ( A -- $ )
     dup atom-data@ swap atom-length@ ;
 : atom-meaning-head ( A -- A[head] )
@@ -153,32 +158,42 @@ atom" foo" means atom" 1234abcdef5678 9abcdef" = assert
 
 
 
+: source@ source ( -- a )
+    drop >in @ + ;
+: source-remaining ( -- n )
+   source nip >in @ - ;
 
-: source@ source drop >in @ + ;
+: drop| ( -- )
 
-: source-remaining source nip >in @ - ;
+    source@ 1- c@ [char] | = if -1 >in +! then ;
+: need-refill? ( -- f)
+    source nip >in @ <= ;
 
-: drop| ( -- ) source@ 1- c@ [char] | = if -1 >in +! then ;
+: on|? ( -- f )
 
-: need-refill? ( -- f) source nip >in @ <= ;
+    need-refill? if false exit then source@ c@ [char] | = ;
+: replenish ( -- f )
+    need-refill? if refill else true then ;
 
-: on|? ( -- f ) need-refill? if false exit then source@ c@ [char] | = ;
+: ?atom-cr+ ( A -- A )
 
-: replenish ( -- f ) need-refill? if refill else true then ;
+    on|? 0= if atom-cr+ then ;
 
-: ?atom-cr+ ( A -- A ) on|? 0= if atom-cr+ then ;
+: eat| ( -- )
 
-: eat| ( -- ) [char] | parse drop| atom atom+ ?atom-cr+ ;
+    [char] | parse drop| atom atom+ ?atom-cr+ ;
+: parse-cr ( -- A )
+    source@ source-remaining atom   source nip >in ! ;
 
-: parse-cr ( -- A ) source@ source-remaining atom   source nip >in ! ;
+: parse..| ( -- A )
 
-: parse..| ( -- A ) atom"" begin replenish 0=
+    atom"" begin replenish 0=
 
-                    if exit then eat| on|? until ;
+    if exit then eat| on|? until ;
 
-: skip| ( -- ) on|?  need-refill? 0= and if 1 >in +! then ;
+: skip| ( -- )
 
-: |-constant ( create atom constant ) constant ;
+    on|?  need-refill? 0= and if 1 >in +! then ;
 
 
 : escape-ch ( ch -- )
@@ -844,14 +859,10 @@ xmlns:opf="http://www.idpf.org/2007/opf">
 
 
 : |. ( exit literate mode )
-
-    chapter-finish
-
-    weaving? if weave bye then
-
-    tangling? if tangle bye then
-
-    running? if run then ;
+     chapter-finish
+     weaving? if weave bye then
+     tangling? if tangle bye then
+     running? if run then ;
 
 
 

@@ -213,10 +213,10 @@ the chunk named "*".
 
 |: apply literate mode
 |\ : |. ( exit literate mode )
-|\     chapter-finish
-|\     weaving? if weave bye then
-|\     tangling? if tangle bye then
-|\     running? if run then ;
+     chapter-finish
+     weaving? if weave bye then
+     tangling? if tangle bye then
+     running? if run then ;
 |;
 
 
@@ -226,7 +226,8 @@ the chunk named "*".
 We will often want to check if certain conditions are true,
 halting if they are not.
 |: assertion support
-: assert ( n -- ) 0= if abort then ;
+: assert ( n -- )
+    0= if abort then ;
 |;
 
 
@@ -242,7 +243,8 @@ a list root with this structure:
 
 We will need a word to create list roots in a variable:
 |: utility words
-: linked-list   create 0 , 0 , ;
+: linked-list
+    create 0 , 0 , ;
 |;
 
 In allocating memory for lists, we will assume sufficient memory is available.
@@ -253,7 +255,8 @@ In allocating memory for lists, we will assume sufficient memory is available.
 
 We will also the allocated memory for simplicity.
 |: utility words
-: zero ( a n -- ) 0 fill ;
+: zero ( a n -- )
+    0 fill ;
 : allocate0 ( n -- a )
     dup allocate' swap 2dup zero drop ;
 |;
@@ -361,8 +364,10 @@ Each atom's value will be the address of a structure:
 
 Some words to read these values are useful:
 |: implement atoms
-: atom-length@ ( A -- n ) 1 cells + @ ;
-: atom-data@ ( A -- a ) 2 cells + @ ;
+: atom-length@ ( A -- n )
+    1 cells + @ ;
+: atom-data@ ( A -- a )
+    2 cells + @ ;
 : atom-string@ ( A -- $ )
     dup atom-data@ swap atom-length@ ;
 : atom-meaning-head ( A -- A[head] )
@@ -544,26 +549,36 @@ As is printing |b{ all |}b  atoms.
 |\ parse..| testing
 |\ Hello there
 |\ 123|halt!
-|\ atom" testing" atom-cr+
-|\ atom" Hello there" atom+ atom-cr+
-|\ atom" 123" atom+ = assert
+atom" testing" atom-cr+
+atom" Hello there" atom+ atom-cr+
+atom" 123" atom+ = assert
 |;
 
 
 |: pipe parsing
-|\ : source@ source drop >in @ + ;
-|\ : source-remaining source nip >in @ - ;
-|\ : drop| ( -- ) source@ 1- c@ [char] | = if -1 >in +! then ;
-|\ : need-refill? ( -- f) source nip >in @ <= ;
-|\ : on|? ( -- f ) need-refill? if false exit then source@ c@ [char] | = ;
-|\ : replenish ( -- f ) need-refill? if refill else true then ;
-|\ : ?atom-cr+ ( A -- A ) on|? 0= if atom-cr+ then ;
-|\ : eat| ( -- ) [char] | parse drop| atom atom+ ?atom-cr+ ;
-|\ : parse-cr ( -- A ) source@ source-remaining atom   source nip >in ! ;
-|\ : parse..| ( -- A ) atom"" begin replenish 0=
-|\                     if exit then eat| on|? until ;
-|\ : skip| ( -- ) on|?  need-refill? 0= and if 1 >in +! then ;
-|\ : |-constant ( create atom constant ) constant ;
+: source@ source ( -- a )
+    drop >in @ + ;
+: source-remaining ( -- n )
+   source nip >in @ - ;
+|\ : drop| ( -- )
+|\     source@ 1- c@ [char] | = if -1 >in +! then ;
+: need-refill? ( -- f)
+    source nip >in @ <= ;
+|\ : on|? ( -- f )
+|\     need-refill? if false exit then source@ c@ [char] | = ;
+: replenish ( -- f )
+    need-refill? if refill else true then ;
+|\ : ?atom-cr+ ( A -- A )
+|\     on|? 0= if atom-cr+ then ;
+|\ : eat| ( -- )
+|\     [char] | parse drop| atom atom+ ?atom-cr+ ;
+: parse-cr ( -- A )
+    source@ source-remaining atom   source nip >in ! ;
+|\ : parse..| ( -- A )
+|\     atom"" begin replenish 0=
+|\     if exit then eat| on|? until ;
+|\ : skip| ( -- )
+|\     on|?  need-refill? 0= and if 1 >in +! then ;
 |;
 
 
