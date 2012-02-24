@@ -319,10 +319,21 @@ linked-list out-files
 
 
 
-
 variable slide-chapter
 variable chapter-count
 linked-list chapters
+
+: chapter-name ( chp -- A )
+    cell+ @ ;
+: chapter-text ( chp -- A )
+    cell+ @ means ;
+: chapter-number ( chp -- n )
+    2 cells + @ ;
+
+atom" .html" constant .html
+: chapter-filename ( chp -- A )
+     chapter-number s>d <# # # # #s #> atom
+     doc-base @ atom" _" atom+ swap .html atom+ atom+ ;
 
 
 : chapter-finish   .d{ </p></div></body></html>} ;
@@ -428,18 +439,8 @@ then
 : |section:   parse-cr .d{ </p></div><div class="section"><h2>} doc+=$
                  .d{ </h2><p>} feed ;
 
-: |page   parse-cr .d{ </p><p style="page-break-before:always;">} feed ;
 
-: chapter-name ( chp -- A )
-    cell+ @ ;
-: chapter-text ( chp -- A )
-    cell+ @ means ;
-: chapter-number ( chp -- n )
-    2 cells + @ ;
-atom" .html" constant .html
-: chapter-filename ( chp -- A )
-     chapter-number s>d <# # # # #s #> atom
-     doc-base @ atom" _" atom+ swap .html atom+ atom+ ;
+: |page   parse-cr .d{ </p><p style="page-break-before:always;">} feed ;
 
 
 

@@ -109,7 +109,6 @@ This is the basic structure of the literate programming parser:
 |@ chunks
 |@ global fields
 |@ output files
-|@ file writing implementation
 |@ chapters and sections
 |;
 
@@ -786,32 +785,23 @@ We provide some tags for arrow symbols.
 
 |section: Chapters and Sections
 
+We provide tags for regular and slide show chapters.
 |: chapters and sections
 |@ chapter implementation
 |\ : |chapter:   false slide-chapter !  raw-chapter ;
 |\ : |slide-chapter:   true slide-chapter !  raw-chapter ;
 |;
 
+Sections.
 |: chapters and sections
 |\ : |section:   parse-cr .d{ </p></div><div class="section"><h2>} doc+=$
                  .d{ </h2><p>} feed ;
+|;
+
+And page breaks.
+|: chapters and sections
 |\ : |page   parse-cr .d{ </p><p style="page-break-before:always;">} feed ;
 |;
-
-|section: chapter handling
-|: chapters and sections
-: chapter-name ( chp -- A )
-    cell+ @ ;
-: chapter-text ( chp -- A )
-    cell+ @ means ;
-: chapter-number ( chp -- n )
-    2 cells + @ ;
-atom" .html" constant .html
-: chapter-filename ( chp -- A )
-     chapter-number s>d <# # # # #s #> atom
-     doc-base @ atom" _" atom+ swap .html atom+ atom+ ;
-|;
-
 
 
 |section: Output Files
@@ -1186,6 +1176,25 @@ variable chapter-count
 linked-list chapters
 |;
 
+Accessors for chapters are provided.
+|: chapter implementation
+: chapter-name ( chp -- A )
+    cell+ @ ;
+: chapter-text ( chp -- A )
+    cell+ @ means ;
+: chapter-number ( chp -- n )
+    2 cells + @ ;
+|;
+
+Chapters are output to the base document name, followed by an
+underscore, then a zero extended number, and .html at the end.
+|: chapter implementation
+atom" .html" constant .html
+: chapter-filename ( chp -- A )
+     chapter-number s>d <# # # # #s #> atom
+     doc-base @ atom" _" atom+ swap .html atom+ atom+ ;
+|;
+
 A raw chapter can be either normal or for slides.
 It is added to the list of chapters.
 |: chapter implementation
@@ -1271,6 +1280,8 @@ This allows us to construct each chapter.
 
 |chapter: Odds and Ends
 
+We want to be able apply the literate programming tool from inside itself.
+To that end, we need to isolate it from the base vocabulary.
 |section: isolate in wordlist
 |: isolate in wordlist
 vocabulary literate also literate definitions
