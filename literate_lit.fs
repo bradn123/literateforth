@@ -310,15 +310,12 @@ linked-list atom-root
 |section: tex and latex
 
 |: tex and latex shortcuts
-|\ : |TeX
-    .d{ <span style="font-family:cmr10, LMRoman10-Regular, Times, serif;">T<span style="text-transform:uppercase; vertical-align:-0.5ex; margin-left:-0.1667em; margin-right:-0.125em;">e</span>X</span>}
-    feed
-;
+|\ : |TeX .d{ <span>T<sub><big>E</big></sub>X</span>} feed ;
 |;
 
 |: tex and latex shortcuts
 |\ : |LaTeX
-    .d{ <span style="font-family:cmr10, LMRoman10-Regular, Times, serif;">L<span style="text-transform: uppercase; font-size: 70%; margin-left: -0.36em; vertical-align: 0.3em; line-height: 0; margin-right: -0.15em;">a</span>T<span style="text-transform: uppercase; margin-left: -0.1667em; vertical-align: -0.5ex; line-height: 0; margin-right: -0.125em;">e</span>X</span>}
+    .d{ <span>L<sup><small>A</small></sup>T<sub><big>E</big></sub>X</span>}
     feed
 ;
 |;
