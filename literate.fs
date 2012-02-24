@@ -198,6 +198,10 @@ doc!
 
 : .d{ ( -- ) postpone atom{ postpone doc+=$ ; immediate
 
+: .d| ( -- ) parse..| ; immediate
+
+: |.d ( -- ) postpone literal postpone doc+=$ ; immediate
+
 : .dcr   atom-cr doc+=$ ;
 
 : doc+=ref ( A -- ) documentation atom+=ref ;
@@ -604,7 +608,7 @@ linked-list chapters
 ;
 
 
-: |section:   parse-cr .d{ </p><h2>} doc+=$ .d{ </h2><p>} feed ;
+: |section:   parse-cr .d| </p><h2>|.d doc+=$ .d{ </h2><p>} feed ;
 
 : |page   parse-cr .d{ </p><p style="page-break-before:always;">} feed ;
 

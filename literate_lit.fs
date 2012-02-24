@@ -313,6 +313,8 @@ linked-list atom-root
 |\ : chunk+=ref ( A -- ) chunk @ atom+=ref ;
 |\ : doc+=$ ( A -- ) documentation atom+=$ ;
 |\ : .d{ ( -- ) postpone atom{ postpone doc+=$ ; immediate
+|\ : .d| ( -- ) parse..| ; immediate
+|\ : |.d ( -- ) postpone literal postpone doc+=$ ; immediate
 |\ : .dcr   atom-cr doc+=$ ;
 |\ : doc+=ref ( A -- ) documentation atom+=ref ;
 |\ : ?doc+=$ ( A -- ) doc? 0= if escape doc+=$ else drop then ;
