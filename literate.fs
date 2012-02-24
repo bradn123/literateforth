@@ -586,9 +586,11 @@ linked-list chapters
 
     chapter-finish
 
-    parse-cr chapters chain dup ,
+    parse-cr 
 
-    chapter-count @ ,   1 chapter-count +!
+    chapter-count @   1 chapter-count +!
+
+    over 2 chapters nchain
 
     dup documentation-chunk ! doc!
 

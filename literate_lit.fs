@@ -621,8 +621,9 @@ atom" literate_running.tmp" constant run-filename
 |\ : chapter-finish   chapter-post doc+=$ ;
 |\ : |chapter:
 |\     chapter-finish
-|\     parse-cr chapters chain dup ,
-|\     chapter-count @ ,   1 chapter-count +!
+|\     parse-cr 
+|\     chapter-count @   1 chapter-count +!
+|\     over 2 chapters nchain
 |\     dup documentation-chunk ! doc!
 |\     chapter-pre1 doc+=$
 |\     dup doc+=$
