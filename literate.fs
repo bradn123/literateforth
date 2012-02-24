@@ -53,9 +53,12 @@ linked-list atom-root
 
 : atom= ( $ A -- f ) atom-string@ compare 0= ;
 
-: atom-find' ( $ A -- A ) dup 0= if nip nip exit then
-                          3dup atom= if nip nip exit then
-                          ->next recurse ;
+: atom-find' ( $ A -- A )
+    begin
+       dup 0= if nip nip exit then
+       3dup atom= if nip nip exit then
+       ->next
+    again ;
 : atom-find ( $ -- A ) atom-root @ atom-find' ;
 
 : atom ( $ -- A ) 2dup atom-find dup if nip nip else drop atom-new then ;
@@ -447,9 +450,12 @@ atom" .html" constant .html
 
 
 : literate-env ( -- $ ) s" LITERATE" getenv ;
-literate-env s" weave" compare 0= constant weaving?
-literate-env s" tangle" compare 0= constant tangling?
-literate-env s" " compare 0= constant running?
+: literate-mode ( $ -- )
+    literate-env compare 0= constant ;
+
+s" weave" literate-mode weaving?
+s" tangle" literate-mode tangling?
+s" " literate-mode running?
 
 weaving? tangling? or running? or assert
 
@@ -762,9 +768,11 @@ xmlns:opf="http://www.idpf.org/2007/opf">
 : tangle   out-files @ begin dup while dup tangle-file ->next repeat drop ;
 
 
-: run-filename doc-base @ atom" _running.tmp" atom+ ;
+: run-filename ( -- A )
+    doc-base @ atom" _running.tmp" atom+ ;
 
-: run-cleanup   run-filename atom-string@ delete-file drop ;
+: run-cleanup
+    run-filename atom-string@ delete-file drop ;
 
 : bye   run-cleanup bye ;
 

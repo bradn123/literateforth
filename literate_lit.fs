@@ -41,6 +41,27 @@ citizens which hi-lite the wisdom of MOBI's restrictions, particularly on
 eInk devices.
 
 
+|section: Comment Conventions
+When useful, Forth style stack effect comments ( xyz -- abc ) will be used
+to describe stack effects.
+|$
+The capital letter A will be used throughout indicate the "atomic string"
+type (described later). (e.g. ( A -- f )
+|$
+The dollar sign $ will be used to indicate an address count pair
+referencing a string. So ( -- $ ) will be used in place of ( -- a n ).
+|$
+Other typical Forth stack effect abbreviations will be used.
+|$
+
+|{- f = flag
+|-- a = address
+|-- n = number (cell)
+|-- A = atomic string
+|-- $ = string in two element: address, length
+|-}
+
+
 |section: Generated Files
 
 When generating runnable code (weaving),
@@ -108,14 +129,19 @@ The pieces look like this:
 We will need to decide which mode in which to operate.
 For the moment we will use the value of the LITERATE
 environment variable to select which mode.
+|: setup mode flags
+: literate-env ( -- $ ) s" LITERATE" getenv ;
+: literate-mode ( $ -- )
+    literate-env compare 0= constant ;
+|;
 |$
+
 Running is selected by having LITERATE unset or empty.
 Anything else is considered an error.
 |: setup mode flags
-: literate-env ( -- $ ) s" LITERATE" getenv ;
-literate-env s" weave" compare 0= constant weaving?
-literate-env s" tangle" compare 0= constant tangling?
-literate-env s" " compare 0= constant running?
+s" weave" literate-mode weaving?
+s" tangle" literate-mode tangling?
+s" " literate-mode running?
 |;
 
 As a sanity check, we will insist we are in at least one mode.
@@ -154,12 +180,14 @@ We will select a temporary filename based on the document base.
 This can cause problems if multiple instances are running at once from the
 same directory. However, pre-tangling can be used in this case.
 |: run implementation
-: run-filename doc-base @ atom" _running.tmp" atom+ ;
+: run-filename ( -- A )
+    doc-base @ atom" _running.tmp" atom+ ;
 |;
 
 After evaluation we will want to cleanup the temporary file.
 |: run implementation
-: run-cleanup   run-filename atom-string@ delete-file drop ;
+: run-cleanup
+    run-filename atom-string@ delete-file drop ;
 |;
 
 We will override bye to attempt to make sure cleanup happens even
@@ -295,9 +323,12 @@ linked-list atom-root
 
 : atom= ( $ A -- f ) atom-string@ compare 0= ;
 
-: atom-find' ( $ A -- A ) dup 0= if nip nip exit then
-                          3dup atom= if nip nip exit then
-                          ->next recurse ;
+: atom-find' ( $ A -- A )
+    begin
+       dup 0= if nip nip exit then
+       3dup atom= if nip nip exit then
+       ->next
+    again ;
 : atom-find ( $ -- A ) atom-root @ atom-find' ;
 
 : atom ( $ -- A ) 2dup atom-find dup if nip nip else drop atom-new then ;
