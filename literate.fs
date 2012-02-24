@@ -8,11 +8,6 @@ vocabulary literate also literate definitions
 : once! ( n a -- ) dup @ 0= assert ! ;
 
 
-: $clone ( $ - $ ) dup allocate 0= assert swap 2dup >r >r move r> r> ;
-
-: 3dup ( xyz -- xyzxyz ) >r 2dup r> dup >r swap >r swap r> r> ;
-
-
 : allocate' ( n -- a ) allocate 0= assert ;
 : zero ( a n -- ) 0 fill ;
 : allocate0 ( n -- a ) dup allocate' swap 2dup zero drop ;
@@ -27,6 +22,10 @@ vocabulary literate also literate definitions
 : ->next ( a -- a' ) @ ;
 : linked-list   create 0 , 0 , ;
 
+
+: $clone ( $ - $ ) dup allocate 0= assert swap 2dup >r >r move r> r> ;
+
+: 3dup ( xyz -- xyzxyz ) >r 2dup r> dup >r swap >r swap r> r> ;
 
 
 \ Atomic strings.
@@ -118,6 +117,14 @@ atom" foo" means atom" 1234abcdef5678 9abcdef" = assert
 10 atom-ch constant atom-cr
 : atom-cr+ ( A -- A ) atom-cr atom+ ;
 
+
+
+
+: file! ( A A -- )
+    atom-string@ w/o bin create-file 0= assert
+    swap over >r atom-string@ r> write-file 0= assert
+    close-file 0= assert
+;
 
 
 
@@ -252,12 +259,6 @@ variable author
 
 : |author:   parse-cr author once! feed ;
 
-
-: file! ( A A -- )
-    atom-string@ w/o bin create-file 0= assert
-    swap over >r atom-string@ r> write-file 0= assert
-    close-file 0= assert
-;
 
 
 

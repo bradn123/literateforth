@@ -17,7 +17,6 @@ s" literate.fs" included
 |@ isolate in wordlist
 |@ assertion support
 |@ utility words
-|@ linked lists
 |@ implement atoms
 |@ pipe parsing
 |@ escaping atoms
@@ -116,7 +115,7 @@ ensuring that this happens only once.
 
 |section: Linked lists
 
-|: linked lists
+|: utility words
 : allocate' ( n -- a ) allocate 0= assert ;
 : zero ( a n -- ) 0 fill ;
 : allocate0 ( n -- a ) dup allocate' swap 2dup zero drop ;
@@ -144,6 +143,15 @@ We will need to clone strings occasionally.
 We will also need to duplicate three items off the stack.
 |: utility words
 : 3dup ( xyz -- xyzxyz ) >r 2dup r> dup >r swap >r swap r> r> ;
+|;
+
+|section: file writing
+|: post atom utility words
+: file! ( A A -- )
+    atom-string@ w/o bin create-file 0= assert
+    swap over >r atom-string@ r> write-file 0= assert
+    close-file 0= assert
+;
 |;
 
 
@@ -251,6 +259,8 @@ linked-list atom-root
 : atom-cr+ ( A -- A ) atom-cr atom+ ;
 
 |@ testing atom+
+
+|@ post atom utility words
 |;
 
 |section: html escaping
@@ -355,39 +365,6 @@ linked-list atom-root
 |;
 
 
-|chapter: Chapters
-
-
-|: chapters
-|\ parse..| <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"
-|\ "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
-|\ <html>
-|\ <head>
-|\ <style type="text/css">
-|\ div.chunk {
-|\   margin: 0em 0.5em;
-|\ }
-|\ pre {
-|\   margin: 0em 0em;
-|\ }
-|\ </style>
-|\ <title>|-constant chapter-pre1
-|\ 
-|\ parse..| </title>
-|\ </head>
-|\ <body>
-|\ <h1>|-constant chapter-pre2
-|\ 
-|\ parse..| </h1>
-|\ <p>
-|\ |-constant chapter-pre3
-|\ 
-|\ parse..|
-|\ </p>
-|\ </body>
-|\ </html>
-|\ |-constant chapter-post
-|;
 
 
 |chapter: MOBI Format
@@ -572,6 +549,37 @@ linked-list atom-root
 
 |section: Chapter HTML
 
+|: chapters
+|\ parse..| <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"
+|\ "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+|\ <html>
+|\ <head>
+|\ <style type="text/css">
+|\ div.chunk {
+|\   margin: 0em 0.5em;
+|\ }
+|\ pre {
+|\   margin: 0em 0em;
+|\ }
+|\ </style>
+|\ <title>|-constant chapter-pre1
+|\ 
+|\ parse..| </title>
+|\ </head>
+|\ <body>
+|\ <h1>|-constant chapter-pre2
+|\ 
+|\ parse..| </h1>
+|\ <p>
+|\ |-constant chapter-pre3
+|\ 
+|\ parse..|
+|\ </p>
+|\ </body>
+|\ </html>
+|\ |-constant chapter-post
+|;
+
 |: weaving chapter html
 : weave-chapter ( chapter -- ) dup chapter-text swap chapter-filename file! ;
 : weave-chapters
@@ -587,15 +595,7 @@ vocabulary literate also literate definitions
 |;
 
 
-|section: file writing
-|: file writing implementation
-: file! ( A A -- )
-    atom-string@ w/o bin create-file 0= assert
-    swap over >r atom-string@ r> write-file 0= assert
-    close-file 0= assert
-;
-|;
-
+|chapter: Chapters
 
 |section: Chapters and Sections
 |: chapters and sections
