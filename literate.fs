@@ -552,8 +552,10 @@ atom" ~~~TOC" constant atom-toc
 
 
 atom" ~~~NCX" constant atom-ncx
+
 : ncx-filename ( -- A )
     doc-base @ atom" .ncx" atom+ ;
+
 
 : weave-ncx-chapter ( chapter -- )
    .d{ <navPoint class="chapter" id="}
@@ -583,16 +585,19 @@ atom" ~~~NCX" constant atom-ncx
 <meta name="dtb:maxPageNumber" content="0"/>
 </head>
 
+
 |.d
 .d{ <docTitle><text>} title @ doc+=$
 
 .d| </text></docTitle>
 <docAuthor><text>me</text></docAuthor>
+
   <navMap>
     <navPoint class="toc" id="toc" playOrder="1">
       <navLabel>
         <text>Table of Contents</text>
       </navLabel>
+
 
      <content src="|.d toc-filename doc+=$ .d| "/>
      </navPoint>

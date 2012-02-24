@@ -822,26 +822,30 @@ Then write out the file.
 
 
 |section: NCX files
+
+The NCX file relists each chapter to select the navigation points in
+the document.
+|$
+As with the OPF, accumulate into the "meaning" of a reserved atom.
 |: weaving ncx
 atom" ~~~NCX" constant atom-ncx
+|;
+
+Output to the document base with .ncx appended.
+|: weaving ncx
 : ncx-filename ( -- A )
     doc-base @ atom" .ncx" atom+ ;
+|;
 
-: weave-ncx-chapter ( chapter -- )
-   .d{ <navPoint class="chapter" id="}
-    dup chapter-filename doc+=$
-    .d{ " playOrder="}
-    dup chapter-filename doc+=$
-    .d{ "><navLabel><text>}
-    dup chapter-name doc+=$
-    .d{ </text></navLabel><content src="}
-    chapter-filename doc+=$
-    .d{ "/></navPoint>}
-;
-
+We then can write to the reserved atom.
+|: weaving ncx
+|@ weaving ncx chapter
 : weave-ncx
     atom-ncx documentation-chunk ! doc!
+|;
 
+Writing out the ncx header.
+|: weaving ncx
 |\ .d| <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE ncx PUBLIC "-//NISO//DTD ncx 2005-1//EN"
 "http://www.daisy.org/z3986/2005/ncx-2005-1.dtd">
@@ -853,22 +857,55 @@ atom" ~~~NCX" constant atom-ncx
 <meta name="dtb:totalPageCount" content="0"/>
 <meta name="dtb:maxPageNumber" content="0"/>
 </head>
+|;
+
+Including the a few fields like title and author.
+|: weaving ncx
 |\ |.d
 .d{ <docTitle><text>} title @ doc+=$
 |\ .d| </text></docTitle>
 <docAuthor><text>me</text></docAuthor>
+|;
+
+Then the main navmap.
+|: weaving ncx
   <navMap>
     <navPoint class="toc" id="toc" playOrder="1">
       <navLabel>
         <text>Table of Contents</text>
       </navLabel>
+|;
+
+Add in the table of contents.
+|: weaving ncx
 |\      <content src="|.d toc-filename doc+=$ .d| "/>
      </navPoint>
 |\ |.d
+|;
 
+And each chapter.
+|: weaving ncx
     chapters @ begin dup while
     dup weave-ncx-chapter ->next repeat drop
+|;
 
+A chapter looks like this.
+|: weaving ncx chapter
+: weave-ncx-chapter ( chapter -- )
+   .d{ <navPoint class="chapter" id="}
+    dup chapter-filename doc+=$
+    .d{ " playOrder="}
+    dup chapter-filename doc+=$
+    .d{ "><navLabel><text>}
+    dup chapter-name doc+=$
+    .d{ </text></navLabel><content src="}
+    chapter-filename doc+=$
+    .d{ "/></navPoint>}
+;
+|;
+
+Then close out the file and write it.
+|: weaving ncx
     .d{ </navMap></ncx>}
     documentation means ncx-filename file!
 ;
