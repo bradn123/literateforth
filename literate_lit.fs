@@ -274,43 +274,21 @@ We will also need to duplicate three items off the stack.
 |section: Introduction
 We will devise a number of words to implement so called "atomic strings".
 This data type augments Forth's more machine level string handling with
-something higher level.
+something higher level. Hereafter atomic strings will simply be referred
+to as atoms.
 |$
-The central idea is that atomic strings will:
+The central properties of atoms are:
 |{- occupy a single cell on the stack
 |-- have identical numerical value when equal (for one program run)
 |-- have a single associative "meaning"
 |-}
 |$
-Conveniently, by requiring atomic strings (atoms hereafter) to have a single
-numerical value, we can implement meaning without the need for a lookup
-data structure.
-Each atom's value will be the address of a structure:
-|{- address of next atom (in the set of atoms)
-|-- string length
-|-- address of string start
-|-- "meaning" head
-|-- "meaning" tail
-|-}
-|$
-Off of each atom's primary structure, a chain of "meaning" links.
-When determining the "meaning" of an atom, the expansion of each
-link in the chain is concatenated.
-There are two types of link:
-|{- raw strings (atom specifies the literal string)
-|-- reference links (atom specifies another atom who's
-    meaning should recursively be used)
-|-}
-|$
-The format of the meaning links is:
-|{- address of next link (in the meaning list)
-|-- flag indicating if this is a reference (rather than a raw string)
-|-- an atom (either raw string or a recursive reference)
-|-}
+The utility of atoms will become apparent given some examples.
 
-|section: Using atoms
 
-As stated above, atoms with the same string are equal:
+|section: Using Atoms
+
+Atoms with the same string are equal:
 |: testing atoms
 atom" foo" atom" foo" = assert
 |;
@@ -338,13 +316,47 @@ atom" bar" atom" foo" atom+=ref
 atom" foo" means atom" 1234abcdef5678 9abcdef" = assert
 |;
 
-|section: Implementing Atoms
+
+|section: Structure of an Atom
+
+Conveniently, because atoms have a single numerical value per string value,
+we can implement meaning without the need for a lookup data structure.
+Each atom's value will be the address of a structure:
+|{- address of next atom (in the set of atoms)
+|-- string length
+|-- address of string start
+|-- "meaning" head
+|-- "meaning" tail
+|-}
+
+Some words to read these values are useful:
+accessors words
 |: implement atoms
 : atom-length@ ( A -- n ) 1 cells + @ ;
 : atom-data@ ( A -- a ) 2 cells + @ ;
 : atom-string@ ( A -- $ ) dup atom-data@ swap atom-length@ ;
 : atom-def-head ( A -- A[head] ) 3 cells + ;
+|;
 
+|$
+Off of each atom's primary structure, a chain of "meaning" links.
+When determining the "meaning" of an atom, the expansion of each
+link in the chain is concatenated.
+There are two types of link:
+|{- raw strings (atom specifies the literal string)
+|-- reference links (atom specifies another atom who's
+    meaning should recursively be used)
+|-}
+|$
+The format of the meaning links is:
+|{- address of next link (in the meaning list)
+|-- flag indicating if this is a reference (rather than a raw string)
+|-- an atom (either raw string or a recursive reference)
+|-}
+
+|section: Implementing Atoms
+
+|: implement atoms
 linked-list atom-root
 : $atom-new ( $ -- A ) >r >r 0 0 r> r> 4 atom-root chain
                        atom-root cell+ @ ;
