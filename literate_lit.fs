@@ -102,7 +102,7 @@ This is the basic structure of the literate programming parser:
 |@ assertion support
 |@ utility words
 |@ implement atoms
-|@ pipe parsing
+|@ parsing
 |@ chunks
 |@ global fields
 |@ output files
@@ -214,9 +214,10 @@ When running, as there can be many tangled output files,
 we adopt noweb's convention that the root for evaluation is
 the chunk named "*".
 |: run implementation
-: run   atom" *" means run-filename file!
-        run-filename atom-string@ included
-        run-cleanup
+: run
+    atom" *" means run-filename file!
+    run-filename atom-string@ included
+    run-cleanup
 ;
 |;
 
@@ -242,7 +243,7 @@ halting if they are not.
 |;
 
 
-|section: Linked lists
+|section: Linked Lists
 
 In several places in this program, singely linked lists are useful.
 As we are interested primarily in inserting in elements at the end of a
@@ -272,6 +273,7 @@ We will also the allocated memory for simplicity.
     dup allocate' swap 2dup zero drop ;
 |;
 
+Support adding a new link to the end of a chain.
 |: utility words
 : chain-new ( n -- a )
     1+ cells allocate0 ;
@@ -287,26 +289,28 @@ We will also the allocated memory for simplicity.
     dup @ if chain-rest else chain-first then ;
 |;
 
+And walking down the list.
 |: utility words
 : ->next ( a -- a' ) @ ;
 |;
 
 
-|section: strings
+|section: Ordinary Strings
 We will need to clone strings occasionally.
 |: utility words
 : $clone ( $ - $ )
     dup allocate 0= assert swap 2dup >r >r move r> r> ;
 |;
 
-|section: stack maneuvers
+
+|section: Stack Maneuvers
 We will also need to duplicate three items off the stack.
 |: utility words
 : 3dup ( xyz -- xyzxyz )
     >r 2dup r> dup >r swap >r swap r> r> ;
 |;
 
-|section: file writing
+|section: File Writing
 |: post atom utility words
 : file! ( A A -- )
     atom-string@ w/o bin create-file 0= assert
@@ -596,10 +600,12 @@ We convert the following:
 
 |chapter: Parsing
 
-|section: parsing pipe
+|section: Parsing Pipe
 
+|\ As we will use the pipe (|) character as a divider,
+we will need tools to parse around it.
+Something like this:
 |: testing parsing
-\ Test parsing.
 |\ : |halt! ;
 |\ parse..| testing
 |\ Hello there
@@ -609,12 +615,19 @@ atom" Hello there" atom+ atom-cr+
 atom" 123" atom+ = assert
 |;
 
+|section: Implement Parsing Pipe
 
-|: pipe parsing
+We'll need to manipulate the input buffer.
+|: parsing
 : source@ source ( -- a )
     drop >in @ + ;
 : source-remaining ( -- n )
    source nip >in @ - ;
+|;
+
+Then parse through multiple lines until (but not including),
+the next pipe character.
+|: parsing
 |\ : drop| ( -- )
 |\     source@ 1- c@ [char] | = if -1 >in +! then ;
 : need-refill? ( -- f)
@@ -627,13 +640,15 @@ atom" 123" atom+ = assert
 |\     on|? 0= if atom-cr+ then ;
 |\ : eat| ( -- )
 |\     [char] | parse drop| atom atom+ ?atom-cr+ ;
-: parse-cr ( -- A )
-    source@ source-remaining atom   source nip >in ! ;
 |\ : parse..| ( -- A )
 |\     atom"" begin replenish 0=
 |\     if exit then eat| on|? until ;
-|\ : skip| ( -- )
-|\     on|?  need-refill? 0= and if 1 >in +! then ;
+|;
+
+We'll also have some words that grab input until the end of the line.
+|: parsing
+: parse-cr ( -- A )
+    source@ source-remaining atom   source nip >in ! ;
 |;
 
 

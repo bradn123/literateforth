@@ -186,6 +186,7 @@ atom" foo" means atom" 1234abcdef5678 9abcdef" = assert
 : source-remaining ( -- n )
    source nip >in @ - ;
 
+
 : drop| ( -- )
 
     source@ 1- c@ [char] | = if -1 >in +! then ;
@@ -205,8 +206,6 @@ atom" foo" means atom" 1234abcdef5678 9abcdef" = assert
 : eat| ( -- )
 
     [char] | parse drop| atom atom+ ?atom-cr+ ;
-: parse-cr ( -- A )
-    source@ source-remaining atom   source nip >in ! ;
 
 : parse..| ( -- A )
 
@@ -214,9 +213,8 @@ atom" foo" means atom" 1234abcdef5678 9abcdef" = assert
 
     if exit then eat| on|? until ;
 
-: skip| ( -- )
-
-    on|?  need-refill? 0= and if 1 >in +! then ;
+: parse-cr ( -- A )
+    source@ source-remaining atom   source nip >in ! ;
 
 
 atom" ~~~blackhole" constant blackhole
@@ -717,9 +715,10 @@ xmlns:opf="http://www.idpf.org/2007/opf">
 
 : bye   run-cleanup bye ;
 
-: run   atom" *" means run-filename file!
-        run-filename atom-string@ included
-        run-cleanup
+: run
+    atom" *" means run-filename file!
+    run-filename atom-string@ included
+    run-cleanup
 ;
 
 
