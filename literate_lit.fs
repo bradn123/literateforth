@@ -663,7 +663,7 @@ atom" literate_running.tmp" constant run-filename
 |: output files
 |\ linked-list out-files
 |\ : |file: ( add a new output file )
-|\    parse-cr out-files chain dup ,
+|\    parse-cr dup 1 out-files nchain
 |\    .d{ <tt><i>} doc+=$ .d{ </i></tt>} feed ;
 |;
 
