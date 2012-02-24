@@ -227,25 +227,10 @@ doc!
 : |\ ( whole line) parse-cr atom-cr+ dup chunk+=$ ?doc+=$ feed ;
 
 
+variable doc-base
+atom" index" doc-base !
 
-: |TeX .d{ <span>T<sub><big>E</big></sub>X</span>} feed ;
-
-
-: |LaTeX
-    .d{ <span>L<sup><small>A</small></sup>T<sub><big>E</big></sub>X</span>}
-    feed
-;
-
-
-
-linked-list out-files
-
-: |file: ( add a new output file )
-
-   parse-cr dup 1 out-files chain
-
-   .d{ <tt><i>} doc+=$ .d{ </i></tt>} feed ;
-
+: |document-base:   parse-cr doc-base ! feed ;
 
 variable title
 atom" Untitled" title !
@@ -276,6 +261,26 @@ variable description
 atom" No description available." description !
 
 : |description:   parse-cr description ! feed ;
+
+
+
+: |TeX .d{ <span>T<sub><big>E</big></sub>X</span>} feed ;
+
+
+: |LaTeX
+    .d{ <span>L<sup><small>A</small></sup>T<sub><big>E</big></sub>X</span>}
+    feed
+;
+
+
+
+linked-list out-files
+
+: |file: ( add a new output file )
+
+   parse-cr dup 1 out-files chain
+
+   .d{ <tt><i>} doc+=$ .d{ </i></tt>} feed ;
 
 
 
@@ -355,7 +360,7 @@ pre {
 : chapter-number ( chp -- n ) 2 cells + @ ;
 atom" .html" constant .html
 : chapter-filename ( chp -- A )
-     chapter-number s>d <# # # # #s #> atom .html atom+ ;
+     chapter-number s>d <# # # # #s #> atom doc-base @ swap .html atom+ atom+ ;
 
 
 
@@ -371,133 +376,71 @@ weaving? tangling? or running? or assert
 
 
 
-atom" ~~~OPF" constant atom-opf
+atom" ~~~TOC" constant atom-toc
 
-atom" index.opf" constant opf-filename
-
-
-: opf-chapter ( A -- )
-
-  .d{ <item id="}
-
-  dup doc+=$
-
-  .d{ " media-type="application/xhtml+xml" href="}
-
-  doc+=$
-
-  .d{ "></item>} .dcr
-
-;
+: toc-filename doc-base @ atom" .html" atom+ ;
 
 
-: opf-chapter' ( A -- )
+: weave-toc-chapter ( chapter -- )
 
-  .d{ <itemref idref="} doc+=$ .d{ "/>} .dcr
+   .d{ <h3><b><a href="}
+
+   dup chapter-filename doc+=$
+
+   .d{ ">}
+
+   chapter-name doc+=$
+
+   .d{ </a></b></h3>} .dcr
 
 ;
 
 
+: weave-toc
+
+   atom-toc documentation-chunk ! doc!
 
 
-: weave-opf
+.d| <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"
 
-   atom-opf documentation-chunk ! doc!
+"http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
 
+<html xmlns="http://www.w3.org/1999/xhtml">
 
-.d| <?xml version="1.0" encoding="utf-8"?>
+<head><title>Table of Contents</title></head>
 
-<package xmlns="http://www.idpf.org/2007/opf" version="2.0"
+<body>
 
-unique-identifier="BookId">
+<div>
 
-<metadata xmlns:dc="http://purl.org/dc/elements/1.1/"
-
-xmlns:opf="http://www.idpf.org/2007/opf">
-
-|.d
-
-  .d{ <dc:title>} title @ doc+=$ .d{ </dc:title>} .dcr
-
-  .d{ <dc:language>en-us</dc:language>} .dcr
-
-  .d{ <dc:identifier id="BookId" opf:scheme="ISBN">}
-
-  isbn @ doc+=$ .d{ </dc:identifier>} .dcr
-
-  .d{ <dc:creator>} author @ doc+=$ .d{ </dc:creator>} .dcr
-
-  .d{ <dc:publisher>} author @ doc+=$ .d{ </dc:publisher>} .dcr
-
-  .d{ <dc:subject>} subject @ doc+=$ .d{ </dc:subject>} .dcr
-
-  .d{ <dc:date>} doc-date @ doc+=$ .d{ </dc:date>} .dcr
-
-  .d{ <dc:description>} description @ doc+=$ .d{ </dc:description>} .dcr
-
-.d|
-
-</metadata>
-
-
-
-<manifest>
-
-  <item id="My_Table_of_Contents" media-type="application/x-dtbncx+xml"
-
-   href="index.ncx"/>
-
-  <item id="toc" media-type="application/xhtml+xml" href="index.html"></item>
+ <h1><b>TABLE OF CONTENTS</b></h1>
 
 |.d
 
 
-   chapters @ begin dup while
-
-        dup chapter-filename opf-chapter ->next repeat drop
+   chapters @ begin dup while dup weave-toc-chapter ->next repeat drop
 
 
 .d|
 
-</manifest>
+</div>
 
-<spine toc="My_Table_of_Contents">
+</body>
 
-  <itemref idref="toc"/>
-
-|.d
-
-
-   chapters @ begin dup while dup chapter-filename opf-chapter' ->next repeat drop
-
-
-.d|
-
-</spine>
-
-<guide>
-
-  <reference type="toc" title="Table of Contents"
-
-   href="index.html"></reference>
-
-</guide>
-
-</package>
+</html>
 
 |.d
 
 
-   documentation means opf-filename file!
+   documentation means toc-filename file!
 
 ;
-
 
 
 
 atom" ~~~NCX" constant atom-ncx
 
-atom" index.ncx" constant ncx-filename
+: ncx-filename   doc-base @ atom" .ncx" atom+ ;
 
 
 : weave-ncx-chapter ( chapter -- )
@@ -576,7 +519,7 @@ atom" index.ncx" constant ncx-filename
 
       </navLabel>
 
-      <content src="index.html"/>
+      <content src="|.d toc-filename doc+=$ .d| "/>
 
     </navPoint>
 
@@ -602,65 +545,129 @@ atom" index.ncx" constant ncx-filename
 
 
 
-atom" ~~~TOC" constant atom-toc
+atom" ~~~OPF" constant atom-opf
 
-atom" index.html" constant toc-filename
+: opf-filename   doc-base @ atom" .opf" atom+ ;
 
 
-: weave-toc-chapter ( chapter -- )
+: opf-chapter ( A -- )
 
-   .d{ <h3><b><a href="}
+  .d{ <item id="}
 
-   dup chapter-filename doc+=$
+  dup doc+=$
 
-   .d{ ">}
+  .d{ " media-type="application/xhtml+xml" href="}
 
-   chapter-name doc+=$
+  doc+=$
 
-   .d{ </a></b></h3>} .dcr
+  .d{ "></item>} .dcr
 
 ;
 
 
-: weave-toc
+: opf-chapter' ( A -- )
 
-   atom-toc documentation-chunk ! doc!
+  .d{ <itemref idref="} doc+=$ .d{ "/>} .dcr
+
+;
 
 
-.d| <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"
 
-"http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
 
-<html xmlns="http://www.w3.org/1999/xhtml">
+: weave-opf
 
-<head><title>Table of Contents</title></head>
+   atom-opf documentation-chunk ! doc!
 
-<body>
 
-<div>
+.d| <?xml version="1.0" encoding="utf-8"?>
 
- <h1><b>TABLE OF CONTENTS</b></h1>
+<package xmlns="http://www.idpf.org/2007/opf" version="2.0"
+
+unique-identifier="BookId">
+
+<metadata xmlns:dc="http://purl.org/dc/elements/1.1/"
+
+xmlns:opf="http://www.idpf.org/2007/opf">
+
+|.d
+
+  .d{ <dc:title>} title @ doc+=$ .d{ </dc:title>} .dcr
+
+  .d{ <dc:language>en-us</dc:language>} .dcr
+
+  .d{ <dc:identifier id="BookId" opf:scheme="ISBN">}
+
+  isbn @ doc+=$ .d{ </dc:identifier>} .dcr
+
+  .d{ <dc:creator>} author @ doc+=$ .d{ </dc:creator>} .dcr
+
+  .d{ <dc:publisher>} author @ doc+=$ .d{ </dc:publisher>} .dcr
+
+  .d{ <dc:subject>} subject @ doc+=$ .d{ </dc:subject>} .dcr
+
+  .d{ <dc:date>} doc-date @ doc+=$ .d{ </dc:date>} .dcr
+
+  .d{ <dc:description>} description @ doc+=$ .d{ </dc:description>} .dcr
+
+.d|
+
+</metadata>
+
+
+
+<manifest>
+
+  <item id="My_Table_of_Contents" media-type="application/x-dtbncx+xml"
+
+   href="|.d ncx-filename doc+=$ .d| "/>
+
+  <item id="toc" media-type="application/xhtml+xml" href="|.d
+
+  toc-filename doc+=$ .d| "></item>
 
 |.d
 
 
-   chapters @ begin dup while dup weave-toc-chapter ->next repeat drop
+   chapters @ begin dup while
+
+        dup chapter-filename opf-chapter ->next repeat drop
 
 
 .d|
 
-</div>
+</manifest>
 
-</body>
+<spine toc="My_Table_of_Contents">
 
-</html>
+  <itemref idref="toc"/>
 
 |.d
 
 
-   documentation means toc-filename file!
+   chapters @ begin dup while dup chapter-filename opf-chapter' ->next repeat drop
+
+
+.d|
+
+</spine>
+
+<guide>
+
+  <reference type="toc" title="Table of Contents"
+
+   href="|.d toc-filename doc+=$ .d| "></reference>
+
+</guide>
+
+</package>
+
+|.d
+
+
+   documentation means opf-filename file!
 
 ;
+
 
 
 : weave-chapter ( chapter -- ) dup chapter-text swap chapter-filename file! ;
@@ -674,7 +681,7 @@ atom" index.html" constant toc-filename
 : tangle   out-files @ begin dup while dup tangle-file ->next repeat drop ;
 
 
-atom" literate_running.tmp" constant run-filename
+: run-filename doc-base @ atom" _running.tmp" atom+ ;
 : run-cleanup   run-filename atom-string@ delete-file drop ;
 : bye   run-cleanup bye ;
 : run   atom" *" means run-filename file!

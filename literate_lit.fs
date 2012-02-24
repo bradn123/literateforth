@@ -5,6 +5,7 @@ s" literate.fs" included
 |subject: Literate Programming in Forth
 |description: Literate programming implemention in Forth.
 |date: 2012-02-23
+|document-base: literate
 
 |chapter: Overview
 |section: Major Structure
@@ -24,9 +25,9 @@ s" literate.fs" included
 |@ pipe parsing
 |@ escaping atoms
 |@ chunks
+|@ global fields
 |@ tex and latex shortcuts
 |@ output files
-|@ global fields
 |@ file writing implementation
 |@ chapters
 |@ chapters and sections
@@ -81,7 +82,7 @@ weaving? tangling? or running? or assert
 |section: running
 
 |: run implementation
-atom" literate_running.tmp" constant run-filename
+: run-filename doc-base @ atom" _running.tmp" atom+ ;
 : run-cleanup   run-filename atom-string@ delete-file drop ;
 : bye   run-cleanup bye ;
 : run   atom" *" means run-filename file!
@@ -370,9 +371,9 @@ linked-list atom-root
 |section: MOBI files
 
 |: weaving implementation
-|@ weaving opf
-|@ weaving ncx
 |@ weaving toc
+|@ weaving ncx
+|@ weaving opf
 |@ weaving chapter html
 : weave ( -- ) weave-chapters weave-toc weave-opf weave-ncx ;
 |;
@@ -381,7 +382,7 @@ linked-list atom-root
 
 |: weaving opf
 |\ atom" ~~~OPF" constant atom-opf
-|\ atom" index.opf" constant opf-filename
+|\ : opf-filename   doc-base @ atom" .opf" atom+ ;
 
 |\ : opf-chapter ( A -- )
 |\   .d{ <item id="}
@@ -419,8 +420,9 @@ linked-list atom-root
 |\ 
 |\ <manifest>
 |\   <item id="My_Table_of_Contents" media-type="application/x-dtbncx+xml"
-|\    href="index.ncx"/>
-|\   <item id="toc" media-type="application/xhtml+xml" href="index.html"></item>
+|\    href="|.d ncx-filename doc+=$ .d| "/>
+|\   <item id="toc" media-type="application/xhtml+xml" href="|.d
+|\   toc-filename doc+=$ .d| "></item>
 |\ |.d
 
 |\    chapters @ begin dup while
@@ -438,7 +440,7 @@ linked-list atom-root
 |\ </spine>
 |\ <guide>
 |\   <reference type="toc" title="Table of Contents"
-|\    href="index.html"></reference>
+|\    href="|.d toc-filename doc+=$ .d| "></reference>
 |\ </guide>
 |\ </package>
 |\ |.d
@@ -452,7 +454,7 @@ linked-list atom-root
 |section: NCX files
 |: weaving ncx
 |\ atom" ~~~NCX" constant atom-ncx
-|\ atom" index.ncx" constant ncx-filename
+|\ : ncx-filename   doc-base @ atom" .ncx" atom+ ;
 
 |\ : weave-ncx-chapter ( chapter -- )
 |\    .d{ <navPoint class="chapter" id="}
@@ -493,7 +495,7 @@ linked-list atom-root
 |\       <navLabel>
 |\         <text>Table of Contents</text>
 |\       </navLabel>
-|\       <content src="index.html"/>
+|\       <content src="|.d toc-filename doc+=$ .d| "/>
 |\     </navPoint>
 |\ |.d
 
@@ -513,7 +515,7 @@ linked-list atom-root
 |section: table of contents
 |: weaving toc
 |\ atom" ~~~TOC" constant atom-toc
-|\ atom" index.html" constant toc-filename
+|\ : toc-filename doc-base @ atom" .html" atom+ ;
 
 |\ : weave-toc-chapter ( chapter -- )
 |\    .d{ <h3><b><a href="}
@@ -622,13 +624,19 @@ linked-list chapters
 : chapter-number ( chp -- n ) 2 cells + @ ;
 atom" .html" constant .html
 : chapter-filename ( chp -- A )
-     chapter-number s>d <# # # # #s #> atom .html atom+ ;
+     chapter-number s>d <# # # # #s #> atom doc-base @ swap .html atom+ atom+ ;
 |;
 
 
 
 
 |section: Global Fields
+
+|: global fields
+variable doc-base
+atom" index" doc-base !
+|\ : |document-base:   parse-cr doc-base ! feed ;
+|;
 
 |: global fields
 variable title

@@ -2,6 +2,7 @@ s" literate.fs" included
 
 |title: fun^4
 |author: me
+|document-base: test1
 
 |chapter: Introduction
 
