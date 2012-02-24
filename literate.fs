@@ -375,7 +375,6 @@ function Load() {
     ShowSlide(current_slide);
   };
 }
-
 </script>
 
 |.d

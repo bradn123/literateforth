@@ -1125,43 +1125,6 @@ variable bullet-depth
 |\ : |}sub   .d{ </sub>} feed ;
 |;
 
-|: slide show logic
-|\ .d|
-<script type="text/javascript">
-function SlideCount() {
-  var sections = document.getElementsByClassName('section');
-  return sections.length;
-}
-
-function ShowSlide(index) {
-  var sections = document.getElementsByClassName('section');
-  for (var i = 0; i < sections.length; i++) {
-    sections[i].style.display = ((i == index) ? 'inline' : 'none');
-  }
-}
-
-var current_slide = 0;
-
-function Load() {
-  ShowSlide(0);
-  window.onkeydown = function(e) {
-    if (e.keyCode == 37) {  // left
-      current_slide = Math.max(0, current_slide - 1);
-    } else if (e.keyCode == 39) {  // right
-      current_slide = Math.min(SlideCount() - 1, current_slide + 1);
-    } else if (e.keyCode == 38) {  // up
-      current_slide = 0;
-    } else if (e.keyCode == 40) {  // down
-      current_slide = SlideCount() - 1;
-    }
-    ShowSlide(current_slide);
-  };
-}
-
-</script>
-|\ |.d
-|;
-
 |section: chapter handling
 |: chapters and sections
 : chapter-name ( chp -- A )
@@ -1233,6 +1196,60 @@ atom" No description available." description !
     .d{ <tt><i>} doc+=$ .d{ </i></tt>} feed ;
 : file-name@ ( file -- A )
     cell+ @ ;
+|;
+
+|chapter: Slide Show
+We would like to be able to support a slide show for some chapters.
+On eBook readers this is handled by marking each section being preceded
+with a page break.
+For desktop browsers, we add a small amount of Javascript to selectively
+hide each section <div> tag.
+|$
+We need to be able to count the number of slides.
+|: slide show logic
+|\ .d|
+<script type="text/javascript">
+function SlideCount() {
+  var sections = document.getElementsByClassName('section');
+  return sections.length;
+}
+|;
+
+Move to a slide.
+|: slide show logic
+function ShowSlide(index) {
+  var sections = document.getElementsByClassName('section');
+  for (var i = 0; i < sections.length; i++) {
+    sections[i].style.display = ((i == index) ? 'inline' : 'none');
+  }
+}
+|;
+
+Track the current slide.
+|: slide show logic
+var current_slide = 0;
+|;
+
+Then start the show on load and intercept the arrow keys
+to control the show.
+|: slide show logic
+function Load() {
+  ShowSlide(0);
+  window.onkeydown = function(e) {
+    if (e.keyCode == 37) {  // left
+      current_slide = Math.max(0, current_slide - 1);
+    } else if (e.keyCode == 39) {  // right
+      current_slide = Math.min(SlideCount() - 1, current_slide + 1);
+    } else if (e.keyCode == 38) {  // up
+      current_slide = 0;
+    } else if (e.keyCode == 40) {  // down
+      current_slide = SlideCount() - 1;
+    }
+    ShowSlide(current_slide);
+  };
+}
+</script>
+|\ |.d
 |;
 
 |slide-chapter: Appendix A - Slides
