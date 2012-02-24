@@ -176,7 +176,9 @@ At the point we are doing final tangling, all filenames will have a
 Each file is then iterated thru.
 
 |: tangle implementation
-: tangle   out-files @ begin dup while dup tangle-file ->next repeat drop ;
+: tangle
+    out-files @ begin dup while
+    dup tangle-file ->next repeat drop ;
 |;
 
 
@@ -465,7 +467,8 @@ Printing an atom is provided (mainly for debugging).
 As is printing |b{ all |}b  atoms.
 |: implement atoms
 : atoms. ( -- )
-    atom-root @ begin dup while dup atom. cr ->next repeat drop ;
+    atom-root @ begin dup while
+    dup atom. cr ->next repeat drop ;
 |;
 
 
@@ -694,7 +697,7 @@ The inputs consist of:
 |{- an .opf file (an xml manifest listing all the other files)
 |-- an .ncx file (an xml index file listing document divisions)
 |-- an XHTML table of contents
-|-- One or more XHTML files, each containing a chapter of the book.
+|-- one or more XHTML files, each containing a chapter of the book
 |-}
 
 Thus the process of weaving to the MOBI format looks like this:
@@ -709,32 +712,44 @@ Thus the process of weaving to the MOBI format looks like this:
 
 |section: OPF files
 
+The OPF file provided to kindlegen is the primary input file.
+In fact, it is the file listed as an argument when running kindlegen
+from the command line.
+|$
+We will assume a single OPF file which will be generated into the
+"meaning" of a reserved atom.
 |: weaving opf
 atom" ~~~OPF" constant atom-opf
+|;
+
+We will append .opf to the document base name to select the output file.
+|: weaving opf
 : opf-filename ( -- A )
     doc-base @ atom" .opf" atom+ ;
+|;
 
-: opf-chapter ( A -- )
-    .d{ <item id="}
-    dup doc+=$
-    .d{ " media-type="application/xhtml+xml" href="}
-    doc+=$
-    .d{ "></item>} .dcr
-;
-
-: opf-chapter' ( A -- )
-    .d{ <itemref idref="} doc+=$ .d{ "/>} .dcr
- ;
-
+Weaving the opf file involves changing the focus
+chunk to the opf file.
+|: weaving opf
+|@ weaving opf manifest chapters
+|@ weaving opf chapter itemref
 : weave-opf
     atom-opf documentation-chunk ! doc!
+|;
 
+Emitting the opf header.
+|: weaving opf
 |\ .d| <?xml version="1.0" encoding="utf-8"?>
 <package xmlns="http://www.idpf.org/2007/opf" version="2.0"
 unique-identifier="BookId">
 <metadata xmlns:dc="http://purl.org/dc/elements/1.1/"
 xmlns:opf="http://www.idpf.org/2007/opf">
 |\ |.d
+|;
+
+Add in metadata fields about the document in general like:
+title, isbn, author, subject, date, and description.
+|: weaving opf
     .d{ <dc:title>} title @ doc+=$ .d{ </dc:title>} .dcr
     .d{ <dc:language>en-us</dc:language>} .dcr
     .d{ <dc:identifier id="BookId" opf:scheme="ISBN">}
@@ -746,37 +761,63 @@ xmlns:opf="http://www.idpf.org/2007/opf">
     .d{ <dc:description>} description @ doc+=$ .d{ </dc:description>} .dcr
 |\ .d|
 </metadata>
+|;
 
+Then add in a table of contents listing all the files in the book,
+including table of contents and chapters.
+|: weaving opf
 <manifest>
    <item id="My_Table_of_Contents" media-type="application/x-dtbncx+xml"
 |\    href="|.d ncx-filename doc+=$ .d| "/>
 |\   <item id="toc" media-type="application/xhtml+xml" href="|.d
-|\   toc-filename doc+=$ .d| "></item>
-|\ |.d
-
+    toc-filename doc+=$ .d{ "></item>}
     chapters @ begin dup while
-        dup chapter-filename opf-chapter ->next repeat drop
+        dup chapter-filename opf-chapter ->next
+    repeat drop
+    .d{ </manifest>}
+|;
 
+One entry per chapter.
+|: weaving opf manifest chapters
+: opf-chapter ( A -- )
+    .d{ <item id="}
+    dup doc+=$
+    .d{ " media-type="application/xhtml+xml" href="}
+    doc+=$
+    .d{ "></item>} .dcr
+;
+|;
+
+Then list each chapter and TOC again for the spine.
+|: weaving opf
+    .d{ <spine toc="My_Table_of_Contents"><itemref idref="toc"/>}
+    chapters @ begin dup while
+        dup chapter-filename opf-chapter' ->next
+    repeat drop
+   .d{ </spine>}
+|;
+
+Each itemref in the spine looks like this.
+|: weaving opf chapter itemref
+: opf-chapter' ( A -- )
+    .d{ <itemref idref="} doc+=$ .d{ "/>} .dcr ;
+|;
+
+Finally the guide can just consist of the table of contents.
+|: weaving opf
 |\ .d|
-</manifest>
-<spine toc="My_Table_of_Contents">
-  <itemref idref="toc"/>
-|\ |.d
-
-|\    chapters @ begin dup while dup chapter-filename opf-chapter' ->next repeat drop
-
-|\ .d|
-</spine>
 <guide>
   <reference type="toc" title="Table of Contents"
 |\    href="|.d toc-filename doc+=$ .d| "></reference>
 </guide>
 </package>
 |\ |.d
+|;
 
+Then write out the file.
+|: weaving opf
    documentation means opf-filename file!
 ;
-
 |;
 
 
@@ -825,7 +866,8 @@ atom" ~~~NCX" constant atom-ncx
      </navPoint>
 |\ |.d
 
-    chapters @ begin dup while dup weave-ncx-chapter ->next repeat drop
+    chapters @ begin dup while
+    dup weave-ncx-chapter ->next repeat drop
 
     .d{ </navMap></ncx>}
     documentation means ncx-filename file!
@@ -858,7 +900,8 @@ atom" ~~~TOC" constant atom-toc
   <h1><b>TABLE OF CONTENTS</b></h1>
 |\ |.d
 
-    chapters @ begin dup while dup weave-toc-chapter ->next repeat drop
+    chapters @ begin dup while
+    dup weave-toc-chapter ->next repeat drop
 
     .d{ </div></body></html>} .dcr
 
@@ -873,7 +916,8 @@ atom" ~~~TOC" constant atom-toc
 : weave-chapter ( chapter -- )
     dup chapter-text swap chapter-filename file! ;
 : weave-chapters
-    chapters @ begin dup while dup weave-chapter ->next repeat drop ;
+    chapters @ begin dup while
+    dup weave-chapter ->next repeat drop ;
 |;
 
 

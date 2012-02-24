@@ -80,7 +80,8 @@ linked-list atom-root
     atom-string@ type ;
 
 : atoms. ( -- )
-    atom-root @ begin dup while dup atom. cr ->next repeat drop ;
+    atom-root @ begin dup while
+    dup atom. cr ->next repeat drop ;
 
 : atom" ( -- A )
     [char] " parse
@@ -541,7 +542,8 @@ atom" ~~~TOC" constant atom-toc
 
 |.d
 
-    chapters @ begin dup while dup weave-toc-chapter ->next repeat drop
+    chapters @ begin dup while
+    dup weave-toc-chapter ->next repeat drop
 
     .d{ </div></body></html>} .dcr
 
@@ -597,7 +599,8 @@ atom" ~~~NCX" constant atom-ncx
 
 |.d
 
-    chapters @ begin dup while dup weave-ncx-chapter ->next repeat drop
+    chapters @ begin dup while
+    dup weave-ncx-chapter ->next repeat drop
 
     .d{ </navMap></ncx>}
     documentation means ncx-filename file!
@@ -605,8 +608,10 @@ atom" ~~~NCX" constant atom-ncx
 
 
 atom" ~~~OPF" constant atom-opf
+
 : opf-filename ( -- A )
     doc-base @ atom" .opf" atom+ ;
+
 
 : opf-chapter ( A -- )
     .d{ <item id="}
@@ -616,9 +621,9 @@ atom" ~~~OPF" constant atom-opf
     .d{ "></item>} .dcr
 ;
 
+
 : opf-chapter' ( A -- )
-    .d{ <itemref idref="} doc+=$ .d{ "/>} .dcr
- ;
+    .d{ <itemref idref="} doc+=$ .d{ "/>} .dcr ;
 
 : weave-opf
     atom-opf documentation-chunk ! doc!
@@ -631,6 +636,7 @@ unique-identifier="BookId">
 xmlns:opf="http://www.idpf.org/2007/opf">
 
 |.d
+
     .d{ <dc:title>} title @ doc+=$ .d{ </dc:title>} .dcr
     .d{ <dc:language>en-us</dc:language>} .dcr
     .d{ <dc:identifier id="BookId" opf:scheme="ISBN">}
@@ -650,28 +656,20 @@ xmlns:opf="http://www.idpf.org/2007/opf">
    href="|.d ncx-filename doc+=$ .d| "/>
 
   <item id="toc" media-type="application/xhtml+xml" href="|.d
-
-  toc-filename doc+=$ .d| "></item>
-
-|.d
-
+    toc-filename doc+=$ .d{ "></item>}
     chapters @ begin dup while
-        dup chapter-filename opf-chapter ->next repeat drop
+        dup chapter-filename opf-chapter ->next
+    repeat drop
+    .d{ </manifest>}
+
+    .d{ <spine toc="My_Table_of_Contents"><itemref idref="toc"/>}
+    chapters @ begin dup while
+        dup chapter-filename opf-chapter' ->next
+    repeat drop
+   .d{ </spine>}
 
 
 .d|
-</manifest>
-<spine toc="My_Table_of_Contents">
-  <itemref idref="toc"/>
-
-|.d
-
-
-   chapters @ begin dup while dup chapter-filename opf-chapter' ->next repeat drop
-
-
-.d|
-</spine>
 <guide>
   <reference type="toc" title="Table of Contents"
 
@@ -685,11 +683,11 @@ xmlns:opf="http://www.idpf.org/2007/opf">
 ;
 
 
-
 : weave-chapter ( chapter -- )
     dup chapter-text swap chapter-filename file! ;
 : weave-chapters
-    chapters @ begin dup while dup weave-chapter ->next repeat drop ;
+    chapters @ begin dup while
+    dup weave-chapter ->next repeat drop ;
 
 : weave ( -- )
     weave-chapters weave-toc weave-opf weave-ncx ;
@@ -698,7 +696,9 @@ xmlns:opf="http://www.idpf.org/2007/opf">
 : tangle-file ( file -- )
     file-name@ dup means swap file! ;
 
-: tangle   out-files @ begin dup while dup tangle-file ->next repeat drop ;
+: tangle
+    out-files @ begin dup while
+    dup tangle-file ->next repeat drop ;
 
 
 : run-filename ( -- A )
