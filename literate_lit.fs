@@ -26,12 +26,12 @@ s" literate.fs" included
 |@ tex and latex shortcuts
 |@ output files
 |@ global fields
+|@ file writing implementation
 |@ chapters
+|@ chapters and sections
 |@ opf
 |@ ncx
 |@ toc
-|@ chapters and sections
-|@ file writing implementation
 |@ chapter structure
 |@ weaving implementation
 |@ tangle implementation
@@ -334,16 +334,6 @@ linked-list atom-root
 
 |chapter: Chapters
 
-|section: chapter handling
-|: chapter structure
-: chapter-name ( chp -- A ) cell+ @ ;
-: chapter-text ( chp -- A ) cell+ @ means ;
-: chapter-number ( chp -- n ) 2 cells + @ ;
-atom" .html" constant .html
-: chapter-filename ( chp -- A )
-     chapter-number s>d <# # # # #s #> atom .html atom+ ;
-|;
-
 
 |: chapters
 |\ parse..| <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"
@@ -384,7 +374,36 @@ atom" .html" constant .html
 |\ atom" ~~~OPF" constant atom-opf
 |\ atom" index.opf" constant opf-filename
 
-|\ parse..| <?xml version="1.0" encoding="utf-8"?>
+|\ 
+|\ parse..| <item id="|-constant opf-chapter-pre1
+|\ parse..| " media-type="application/xhtml+xml" href="|-constant opf-chapter-pre2
+|\ parse..| "></item>
+|\ |-constant opf-chapter-post
+|\ : opf-chapter ( A -- )
+|\   opf-chapter-pre1 doc+=$ 
+|\   dup doc+=$
+|\   opf-chapter-pre2 doc+=$ 
+|\   doc+=$
+|\   opf-chapter-post doc+=$ 
+|\ ;
+|\ 
+|\ 
+|\ parse..| <itemref idref="|-constant opf-chapter'-pre1
+|\ parse..| "/>
+|\ |-constant opf-chapter'-post
+|\ : opf-chapter' ( A -- )
+|\   opf-chapter'-pre1 doc+=$ 
+|\   doc+=$
+|\   opf-chapter'-post doc+=$ 
+|\ ;
+|\ 
+
+
+
+|\ : weave-opf
+|\    atom-opf documentation-chunk ! doc!
+
+|\ .d| <?xml version="1.0" encoding="utf-8"?>
 |\ <package xmlns="http://www.idpf.org/2007/opf" version="2.0"
 |\ unique-identifier="BookId">
 |\ <metadata xmlns:dc="http://purl.org/dc/elements/1.1/"
@@ -403,45 +422,33 @@ atom" .html" constant .html
 |\   <item id="My_Table_of_Contents" media-type="application/x-dtbncx+xml"
 |\    href="index.ncx"/>
 |\   <item id="toc" media-type="application/xhtml+xml" href="index.html"></item>
-|\ |-constant opf-pre1
-|\ 
-|\ parse..| <item id="|-constant opf-chapter-pre1
-|\ parse..| " media-type="application/xhtml+xml" href="|-constant opf-chapter-pre2
-|\ parse..| "></item>
-|\ |-constant opf-chapter-post
-|\ : opf-chapter ( A -- )
-|\   opf-chapter-pre1 doc+=$ 
-|\   dup doc+=$
-|\   opf-chapter-pre2 doc+=$ 
-|\   doc+=$
-|\   opf-chapter-post doc+=$ 
-|\ ;
-|\ 
-|\ parse..|
+|\ |.d
+
+|\    chapters @ begin dup while dup chapter-filename opf-chapter ->next repeat drop
+
+|\ .d|
 |\ </manifest>
 |\ <spine toc="My_Table_of_Contents">
 |\   <itemref idref="toc"/>
-|\ |-constant opf-pre2
-|\ 
-|\ parse..| <itemref idref="|-constant opf-chapter'-pre1
-|\ parse..| "/>
-|\ |-constant opf-chapter'-post
-|\ : opf-chapter' ( A -- )
-|\   opf-chapter'-pre1 doc+=$ 
-|\   doc+=$
-|\   opf-chapter'-post doc+=$ 
-|\ ;
-|\ 
-|\ 
-|\ 
-|\ parse..|
+|\ |.d
+
+|\    chapters @ begin dup while dup chapter-filename opf-chapter' ->next repeat drop
+
+|\ .d|
 |\ </spine>
 |\ <guide>
 |\   <reference type="toc" title="Table of Contents"
 |\    href="index.html"></reference>
 |\ </guide>
 |\ </package>
-|\ |-constant opf-post
+|\ |.d
+
+|\    documentation means opf-filename file!
+|\ ;
+
+
+|\ 
+|\ 
 |;
 
 
@@ -560,15 +567,6 @@ atom" .html" constant .html
 |\    documentation means ncx-filename file!
 |\ ;
 |\ 
-|\ : weave-opf
-|\    atom-opf documentation-chunk ! doc!
-|\    opf-pre1 doc+=$
-|\    chapters @ begin dup while dup chapter-filename opf-chapter ->next repeat drop
-|\    opf-pre2 doc+=$
-|\    chapters @ begin dup while dup chapter-filename opf-chapter' ->next repeat drop
-|\    opf-post doc+=$
-|\    documentation means opf-filename file!
-|\ ;
 |\ 
 |\ 
 |\ 
@@ -641,6 +639,18 @@ atom" literate_running.tmp" constant run-filename
 |\ : |--   .d{ </li><li>} feed ;
 |\ : |-}   .d{ </li></ul>} feed ;
 |;
+
+|section: chapter handling
+|: chapters and sections
+: chapter-name ( chp -- A ) cell+ @ ;
+: chapter-text ( chp -- A ) cell+ @ means ;
+: chapter-number ( chp -- n ) 2 cells + @ ;
+atom" .html" constant .html
+: chapter-filename ( chp -- A )
+     chapter-number s>d <# # # # #s #> atom .html atom+ ;
+|;
+
+
 
 
 |section: Global Fields

@@ -265,6 +265,13 @@ variable author
 : |author:   parse-cr author once! feed ;
 
 
+: file! ( A A -- )
+    atom-string@ w/o bin create-file 0= assert
+    swap over >r atom-string@ r> write-file 0= assert
+    close-file 0= assert
+;
+
+
 
 parse..| <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"
 
@@ -324,12 +331,119 @@ parse..|
 
 
 
+variable chapter-count
+
+linked-list chapters
+
+: chapter-finish   chapter-post doc+=$ ;
+
+: |chapter:
+
+    chapter-finish
+
+    parse-cr 
+
+    chapter-count @   1 chapter-count +!
+
+    over 2 chapters chain
+
+    dup documentation-chunk ! doc!
+
+    chapter-pre1 doc+=$
+
+    dup doc+=$
+
+    chapter-pre2 doc+=$
+
+    doc+=$
+
+    chapter-pre3 doc+=$
+
+    feed
+
+;
+
+
+: |section:   parse-cr .d{ </p><h2>} doc+=$ .d{ </h2><p>} feed ;
+
+: |page   parse-cr .d{ </p><p style="page-break-before:always;">} feed ;
+
+
+: |{-   .d{ <ul><li>} feed ;
+
+: |--   .d{ </li><li>} feed ;
+
+: |-}   .d{ </li></ul>} feed ;
+
+: chapter-name ( chp -- A ) cell+ @ ;
+: chapter-text ( chp -- A ) cell+ @ means ;
+: chapter-number ( chp -- n ) 2 cells + @ ;
+atom" .html" constant .html
+: chapter-filename ( chp -- A )
+     chapter-number s>d <# # # # #s #> atom .html atom+ ;
+
+
+
 atom" ~~~OPF" constant atom-opf
 
 atom" index.opf" constant opf-filename
 
 
-parse..| <?xml version="1.0" encoding="utf-8"?>
+
+
+parse..| <item id="|-constant opf-chapter-pre1
+
+parse..| " media-type="application/xhtml+xml" href="|-constant opf-chapter-pre2
+
+parse..| "></item>
+
+|-constant opf-chapter-post
+
+: opf-chapter ( A -- )
+
+  opf-chapter-pre1 doc+=$ 
+
+  dup doc+=$
+
+  opf-chapter-pre2 doc+=$ 
+
+  doc+=$
+
+  opf-chapter-post doc+=$ 
+
+;
+
+
+
+
+
+parse..| <itemref idref="|-constant opf-chapter'-pre1
+
+parse..| "/>
+
+|-constant opf-chapter'-post
+
+: opf-chapter' ( A -- )
+
+  opf-chapter'-pre1 doc+=$ 
+
+  doc+=$
+
+  opf-chapter'-post doc+=$ 
+
+;
+
+
+
+
+
+
+: weave-opf
+
+   atom-opf documentation-chunk ! doc!
+
+
+.d| <?xml version="1.0" encoding="utf-8"?>
 
 <package xmlns="http://www.idpf.org/2007/opf" version="2.0"
 
@@ -367,35 +481,13 @@ xmlns:opf="http://www.idpf.org/2007/opf">
 
   <item id="toc" media-type="application/xhtml+xml" href="index.html"></item>
 
-|-constant opf-pre1
+|.d
 
 
-
-parse..| <item id="|-constant opf-chapter-pre1
-
-parse..| " media-type="application/xhtml+xml" href="|-constant opf-chapter-pre2
-
-parse..| "></item>
-
-|-constant opf-chapter-post
-
-: opf-chapter ( A -- )
-
-  opf-chapter-pre1 doc+=$ 
-
-  dup doc+=$
-
-  opf-chapter-pre2 doc+=$ 
-
-  doc+=$
-
-  opf-chapter-post doc+=$ 
-
-;
+   chapters @ begin dup while dup chapter-filename opf-chapter ->next repeat drop
 
 
-
-parse..|
+.d|
 
 </manifest>
 
@@ -403,33 +495,13 @@ parse..|
 
   <itemref idref="toc"/>
 
-|-constant opf-pre2
+|.d
 
 
-
-parse..| <itemref idref="|-constant opf-chapter'-pre1
-
-parse..| "/>
-
-|-constant opf-chapter'-post
-
-: opf-chapter' ( A -- )
-
-  opf-chapter'-pre1 doc+=$ 
-
-  doc+=$
-
-  opf-chapter'-post doc+=$ 
-
-;
+   chapters @ begin dup while dup chapter-filename opf-chapter' ->next repeat drop
 
 
-
-
-
-
-
-parse..|
+.d|
 
 </spine>
 
@@ -443,7 +515,18 @@ parse..|
 
 </package>
 
-|-constant opf-post
+|.d
+
+
+   documentation means opf-filename file!
+
+;
+
+
+
+
+
+
 
 
 
@@ -575,66 +658,6 @@ parse..| </a></b></h3>
 
 
 
-variable chapter-count
-
-linked-list chapters
-
-: chapter-finish   chapter-post doc+=$ ;
-
-: |chapter:
-
-    chapter-finish
-
-    parse-cr 
-
-    chapter-count @   1 chapter-count +!
-
-    over 2 chapters chain
-
-    dup documentation-chunk ! doc!
-
-    chapter-pre1 doc+=$
-
-    dup doc+=$
-
-    chapter-pre2 doc+=$
-
-    doc+=$
-
-    chapter-pre3 doc+=$
-
-    feed
-
-;
-
-
-: |section:   parse-cr .d| </p><h2>|.d doc+=$ .d{ </h2><p>} feed ;
-
-: |page   parse-cr .d{ </p><p style="page-break-before:always;">} feed ;
-
-
-: |{-   .d{ <ul><li>} feed ;
-
-: |--   .d{ </li><li>} feed ;
-
-: |-}   .d{ </li></ul>} feed ;
-
-
-: file! ( A A -- )
-    atom-string@ w/o bin create-file 0= assert
-    swap over >r atom-string@ r> write-file 0= assert
-    close-file 0= assert
-;
-
-
-: chapter-name ( chp -- A ) cell+ @ ;
-: chapter-text ( chp -- A ) cell+ @ means ;
-: chapter-number ( chp -- n ) 2 cells + @ ;
-atom" .html" constant .html
-: chapter-filename ( chp -- A )
-     chapter-number s>d <# # # # #s #> atom .html atom+ ;
-
-
 
 : weave-chapter ( chapter -- ) dup chapter-text swap chapter-filename file! ;
 
@@ -711,24 +734,6 @@ atom" .html" constant .html
 ;
 
 
-
-: weave-opf
-
-   atom-opf documentation-chunk ! doc!
-
-   opf-pre1 doc+=$
-
-   chapters @ begin dup while dup chapter-filename opf-chapter ->next repeat drop
-
-   opf-pre2 doc+=$
-
-   chapters @ begin dup while dup chapter-filename opf-chapter' ->next repeat drop
-
-   opf-post doc+=$
-
-   documentation means opf-filename file!
-
-;
 
 
 
