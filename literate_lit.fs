@@ -2,6 +2,9 @@ s" literate.fs" included
 
 |title: Literate Forth
 |author: Brad Nelson
+|subject: Literate Programming in Forth
+|description: Literate programming implemention in Forth.
+|date: 2012-02-23
 
 |chapter: Overview
 |section: Major Structure
@@ -105,11 +108,6 @@ We will often want to check if certain conditions are true,
 halting if they are not.
 |: assertion support
 : assert ( n -- ) 0= if abort then ;
-|;
-Additionally we may want to set a variable to a non-zero value,
-ensuring that this happens only once.
-|: assertion support
-: once! ( n a -- ) dup @ 0= assert ! ;
 |;
 
 
@@ -406,14 +404,17 @@ linked-list atom-root
 |\ unique-identifier="BookId">
 |\ <metadata xmlns:dc="http://purl.org/dc/elements/1.1/"
 |\ xmlns:opf="http://www.idpf.org/2007/opf">
-|\   <dc:title>Test1</dc:title>
-|\   <dc:language>en-us</dc:language>
-|\   <dc:identifier id="BookId" opf:scheme="ISBN">9999999999</dc:identifier>
-|\   <dc:creator>me</dc:creator>
-|\   <dc:publisher>Self</dc:publisher>
-|\   <dc:subject>Article</dc:subject>
-|\   <dc:date>2012-02-15</dc:date>
-|\   <dc:description>My short description.</dc:description>
+|\ |.d
+|\   .d{ <dc:title>} title @ doc+=$ .d{ </dc:title>} .dcr
+|\   .d{ <dc:language>en-us</dc:language>} .dcr
+|\   .d{ <dc:identifier id="BookId" opf:scheme="ISBN">}
+|\   isbn @ doc+=$ .d{ </dc:identifier>} .dcr
+|\   .d{ <dc:creator>} author @ doc+=$ .d{ </dc:creator>} .dcr
+|\   .d{ <dc:publisher>} author @ doc+=$ .d{ </dc:publisher>} .dcr
+|\   .d{ <dc:subject>} subject @ doc+=$ .d{ </dc:subject>} .dcr
+|\   .d{ <dc:date>} doc-date @ doc+=$ .d{ </dc:date>} .dcr
+|\   .d{ <dc:description>} description @ doc+=$ .d{ </dc:description>} .dcr
+|\ .d|
 |\ </metadata>
 |\ 
 |\ <manifest>
@@ -630,13 +631,39 @@ atom" .html" constant .html
 |section: Global Fields
 
 |: global fields
-|\ variable title
-|\ : |title:   parse-cr title once! feed ;
+variable title
+atom" Untitled" title !
+|\ : |title:   parse-cr title ! feed ;
 |;
 
 |: global fields
-|\ variable author
-|\ : |author:   parse-cr author once! feed ;
+variable author
+atom" Anonymous" author !
+|\ : |author:   parse-cr author ! feed ;
+|;
+
+|: global fields
+variable isbn
+atom" 9999999999" isbn !
+|\ : |isbn:   parse-cr isbn ! feed ;
+|;
+
+|: global fields
+variable subject
+atom" Article" subject !
+|\ : |subject:   parse-cr subject ! feed ;
+|;
+
+|: global fields
+variable doc-date
+atom" Unknown" doc-date !
+|\ : |date:   parse-cr doc-date ! feed ;
+|;
+
+|: global fields
+variable description
+atom" No description available." description !
+|\ : |description:   parse-cr description ! feed ;
 |;
 
 

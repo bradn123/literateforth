@@ -5,8 +5,6 @@ vocabulary literate also literate definitions
 
 : assert ( n -- ) 0= if abort then ;
 
-: once! ( n a -- ) dup @ 0= assert ! ;
-
 
 : allocate' ( n -- a ) allocate 0= assert ;
 : zero ( a n -- ) 0 fill ;
@@ -249,15 +247,35 @@ linked-list out-files
    .d{ <tt><i>} doc+=$ .d{ </i></tt>} feed ;
 
 
-
 variable title
+atom" Untitled" title !
 
-: |title:   parse-cr title once! feed ;
-
+: |title:   parse-cr title ! feed ;
 
 variable author
+atom" Anonymous" author !
 
-: |author:   parse-cr author once! feed ;
+: |author:   parse-cr author ! feed ;
+
+variable isbn
+atom" 9999999999" isbn !
+
+: |isbn:   parse-cr isbn ! feed ;
+
+variable subject
+atom" Article" subject !
+
+: |subject:   parse-cr subject ! feed ;
+
+variable doc-date
+atom" Unknown" doc-date !
+
+: |date:   parse-cr doc-date ! feed ;
+
+variable description
+atom" No description available." description !
+
+: |description:   parse-cr description ! feed ;
 
 
 
@@ -397,21 +415,27 @@ unique-identifier="BookId">
 
 xmlns:opf="http://www.idpf.org/2007/opf">
 
-  <dc:title>Test1</dc:title>
+|.d
 
-  <dc:language>en-us</dc:language>
+  .d{ <dc:title>} title @ doc+=$ .d{ </dc:title>} .dcr
 
-  <dc:identifier id="BookId" opf:scheme="ISBN">9999999999</dc:identifier>
+  .d{ <dc:language>en-us</dc:language>} .dcr
 
-  <dc:creator>me</dc:creator>
+  .d{ <dc:identifier id="BookId" opf:scheme="ISBN">}
 
-  <dc:publisher>Self</dc:publisher>
+  isbn @ doc+=$ .d{ </dc:identifier>} .dcr
 
-  <dc:subject>Article</dc:subject>
+  .d{ <dc:creator>} author @ doc+=$ .d{ </dc:creator>} .dcr
 
-  <dc:date>2012-02-15</dc:date>
+  .d{ <dc:publisher>} author @ doc+=$ .d{ </dc:publisher>} .dcr
 
-  <dc:description>My short description.</dc:description>
+  .d{ <dc:subject>} subject @ doc+=$ .d{ </dc:subject>} .dcr
+
+  .d{ <dc:date>} doc-date @ doc+=$ .d{ </dc:date>} .dcr
+
+  .d{ <dc:description>} description @ doc+=$ .d{ </dc:description>} .dcr
+
+.d|
 
 </metadata>
 
