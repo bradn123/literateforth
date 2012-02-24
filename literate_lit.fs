@@ -42,14 +42,16 @@ eInk devices.
 
 
 |section: Comment Conventions
-When useful, Forth style stack effect comments ( xyz -- abc ) will be used
+When useful, Forth style stack effect comments
+|tt{ ( xyz -- abc ) |}tt  will be used
 to describe stack effects.
 |$
 The capital letter A will be used throughout indicate the "atomic string"
-type (described later). (e.g. ( A -- f )
+type (described later). (e.g. |tt{ ( A -- f )|}tt )
 |$
 The dollar sign $ will be used to indicate an address count pair
-referencing a string. So ( -- $ ) will be used in place of ( -- a n ).
+referencing a string.
+So |tt{ ( -- $ )|}tt  will be used in place of |tt{ ( -- a n )|}tt .
 |$
 Other typical Forth stack effect abbreviations will be used.
 |$
@@ -374,8 +376,12 @@ The format of the meaning links is:
 
 |section: Implementing Atoms
 
+A list of all atoms will be kept chained off |ttb{ atom-root |}ttb .
 |: implement atoms
 linked-list atom-root
+|;
+
+|: implement atoms
 : $atom-new ( $ -- A ) >r >r 0 0 r> r> 4 atom-root chain atom-root cell+ @ ;
 : atom-new ( $ -- A ) $clone $atom-new ;
 
@@ -834,6 +840,8 @@ then
 |\ : |}u   .d{ </u} feed ;
 |\ : |tt{   .d{ <tt>} feed ;
 |\ : |}tt   .d{ </tt>} feed ;
+|\ : |ttb{   .d{ <tt><b>} feed ;
+|\ : |}ttb   .d{ </b></tt>} feed ;
 |\ : |sup{   .d{ <sup>} feed ;
 |\ : |}sup   .d{ </sup>} feed ;
 |\ : |sub{   .d{ <sub>} feed ;

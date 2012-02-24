@@ -34,6 +34,7 @@ vocabulary literate also literate definitions
 : atom-meaning-head ( A -- A[head] ) 3 cells + ;
 
 linked-list atom-root
+
 : $atom-new ( $ -- A ) >r >r 0 0 r> r> 4 atom-root chain atom-root cell+ @ ;
 : atom-new ( $ -- A ) $clone $atom-new ;
 
@@ -437,6 +438,10 @@ variable bullet-depth
 : |tt{   .d{ <tt>} feed ;
 
 : |}tt   .d{ </tt>} feed ;
+
+: |ttb{   .d{ <tt><b>} feed ;
+
+: |}ttb   .d{ </b></tt>} feed ;
 
 : |sup{   .d{ <sup>} feed ;
 
