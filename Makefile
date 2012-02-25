@@ -15,5 +15,14 @@ install:
 deploy:
 	cp literate.mobi /Volumes/Kindle/documents
 
+snap:
+	rm -rf snap
+	mkdir snap
+	cp *.mobi snap
+	cp *.html snap
+	cp *.fs snap
+	zip -r literate.zip snap/
+
 clean :
 	rm -f *.opf *.ncx *.mobi power4.fs main.fs *.html literate_out.fs
+	rm -rf snap
