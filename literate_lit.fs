@@ -1320,9 +1320,9 @@ This allows us to construct each chapter.
 
 |chapter: Odds and Ends
 
+|section: isolate in wordlist
 We want to be able apply the literate programming tool from inside itself.
 To that end, we need to isolate it from the base vocabulary.
-|section: isolate in wordlist
 |: isolate in wordlist
 vocabulary literate also literate definitions
 |;
