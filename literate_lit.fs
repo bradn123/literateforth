@@ -116,6 +116,206 @@ The data structures and tools needed to put this together are detailed.
 |;
 
 
+|chapter: Tags
+
+|section: Overview
+Tags are the user facing set of words provided by this tool.
+|\ All tags are preceded by the pipe (|) character.
+They are cataloged herein.
+
+|section: Global Fields
+Most documents will begin with a number of document wide field
+tags.
+|$
+
+The document base is the prefix put in front of each output file in weaving
+mode.
+|: global fields
+variable doc-base
+atom" index" doc-base !
+|\ : |document-base:   parse-cr doc-base ! feed ;
+|;
+
+The document has a title.
+|: global fields
+variable title
+atom" Untitled" title !
+|\ : |title:   parse-cr title ! feed ;
+|;
+
+And an author (used for the publisher for now too).
+|: global fields
+variable author
+atom" Anonymous" author !
+|\ : |author:   parse-cr author ! feed ;
+|;
+
+A frivolous ISBN number
+|: global fields
+variable isbn
+atom" 9999999999" isbn !
+|\ : |isbn:   parse-cr isbn ! feed ;
+|;
+
+A subject.
+|: global fields
+variable subject
+atom" Article" subject !
+|\ : |subject:   parse-cr subject ! feed ;
+|;
+
+A date of authorship.
+|: global fields
+variable doc-date
+atom" Unknown" doc-date !
+|\ : |date:   parse-cr doc-date ! feed ;
+|;
+
+And a description.
+|: global fields
+variable description
+atom" No description available." description !
+|\ : |description:   parse-cr description ! feed ;
+|;
+
+|section: Formatting Tags
+
+Tags are provided for bold, italics, underline, fixed width (teletype),
+superscript, and subscript.
+|: formatting tags
+|\ : |b{   .d{ <b>} feed ;
+|\ : |}b   .d{ </b>} feed ;
+|\ : |i{   .d{ <i>} feed ;
+|\ : |}i   .d{ </i>} feed ;
+|\ : |u{   .d{ <u>} feed ;
+|\ : |}u   .d{ </u} feed ;
+|\ : |tt{   .d{ <tt>} feed ;
+|\ : |}tt   .d{ </tt>} feed ;
+|\ : |sup{   .d{ <sup>} feed ;
+|\ : |}sup   .d{ </sup>} feed ;
+|\ : |sub{   .d{ <sub>} feed ;
+|\ : |}sub   .d{ </sub>} feed ;
+|;
+
+
+|section: Bullet Lists
+
+Tags are provided for bullet lists.
+|: bullet lists
+variable bullet-depth
+: bullet+   1 bullet-depth +!   bullet-depth @ 1 = if .d{ </p>} then ;
+: bullet-   -1 bullet-depth +!   bullet-depth @ 0 = if .d{ <p>} then ;
+|\ : |{-   bullet+ .d{ <ul><li>} feed ;
+|\ : |--   .d{ </li><li>} feed ;
+|\ : |-}   .d{ </li></ul>} bullet- feed ;
+|;
+
+
+|section: TeX and LaTeX
+
+As |TeX  and |LaTeX  are widely referenced in material related to
+literate programming, we will want to be able to mention them in
+way that has some semblance of typographical accuracy.
+Unfortunately, precise duplication would require images
+(which don't scale).
+|$
+Use of subscript and big text gives use this for |TeX :
+|: tex and latex shortcuts
+|\ : |TeX .d{ <span>T<sub><big>E</big></sub>X</span>} feed ;
+|;
+|$
+Adding in small text and superscript then brings us to this for |LaTeX :
+|: tex and latex shortcuts
+|\ : |LaTeX
+    .d{ <span>L<sup><small>A</small></sup>T<sub><big>E</big></sub>X</span>}
+    feed
+;
+|;
+
+
+|section: Symbols
+
+We provide some tags for arrow symbols.
+|: arrow symbols
+|\ : |<-| .d{ &larr;} feed ;
+|\ : |->| .d{ &rarr;} feed ;
+|\ : |^| .d{ &uarr;} feed ;
+|\ : |v| .d{ &darr;} feed ;
+|;
+
+
+
+|section: Document Boundaries
+Documents need logical division markers.
+|$
+We provide tags for regular and slide show chapters.
+|: document boundaries
+|@ chapter implementation
+|\ : |chapter:   false slide-chapter !  raw-chapter ;
+|\ : |slide-chapter:   true slide-chapter !  raw-chapter ;
+|;
+
+Sections.
+|: document boundaries
+|\ : |section:   parse-cr .d{ </p></div><div class="section"><h2>} doc+=$
+                 .d{ </h2><p>} feed ;
+|;
+
+Page breaks.
+|: document boundaries
+|\ : |page   parse-cr .d{ </p><p style="page-break-before:always;">} feed ;
+|;
+
+Paragraph boundaries.
+|: document boundaries
+|\ : |$ ( paragraph )
+    .d{ </p><p>} feed ;
+|;
+
+|\ And pipe (|) escaping whole line.
+|: document boundaries
+|\ : |\ ( whole line)
+    parse-cr atom-cr+ dup chunk+=$ escape doc+=$ feed ;
+|;
+
+
+|section: Chunk Tags
+
+Crucial to literate programming.
+Tags are provided to manipulate chunks.
+|$
+Adding to their definition (in a Forth-y way).
+|: chunk tags
+|\ : |: ( add to a chunk )
+    parse-cr dup chunk ! doc+=def feed ;
+|\ : |; ( documentation )
+    .d{ </pre></div><p>} doc! feed ;
+|;
+
+Using them (in a Forth-y way).
+|: chunk tags
+|\ : |@ ( use a chunk )
+    parse-cr dup chunk+=ref doc+=use .dcr feed ;
+|;
+
+
+|section: Output Files
+
+Tangled output can be directed to multile files using a special tag.
+A linked list of output files is kept.
+Their "meaning" is consulted to know what to emit.
+|: output files
+|\ linked-list out-files
+|\ : |file: ( add a new output file )
+    parse-cr dup 1 out-files chain
+    .d{ <tt><i>} doc+=$ .d{ </i></tt>} feed ;
+: file-name@ ( file -- A )
+    cell+ @ ;
+|;
+
+
+
+
 |chapter: Weaving, Tangling, and Running
 
 |section: Modes of operation
@@ -709,202 +909,6 @@ using the word |tt{ feed |}tt .
 |;
 
 
-
-|chapter: Tags
-
-|section: Overview
-|\ All tags are preceded by the pipe (|) character.
-They are cataloged herein.
-
-|section: Global Fields
-Most documents will begin with a number of document wide field
-tags.
-|$
-
-The document base is the prefix put in front of each output file in weaving
-mode.
-|: global fields
-variable doc-base
-atom" index" doc-base !
-|\ : |document-base:   parse-cr doc-base ! feed ;
-|;
-
-The document has a title.
-|: global fields
-variable title
-atom" Untitled" title !
-|\ : |title:   parse-cr title ! feed ;
-|;
-
-And an author (used for the publisher for now too).
-|: global fields
-variable author
-atom" Anonymous" author !
-|\ : |author:   parse-cr author ! feed ;
-|;
-
-A frivolous ISBN number
-|: global fields
-variable isbn
-atom" 9999999999" isbn !
-|\ : |isbn:   parse-cr isbn ! feed ;
-|;
-
-A subject.
-|: global fields
-variable subject
-atom" Article" subject !
-|\ : |subject:   parse-cr subject ! feed ;
-|;
-
-A date of authorship.
-|: global fields
-variable doc-date
-atom" Unknown" doc-date !
-|\ : |date:   parse-cr doc-date ! feed ;
-|;
-
-And a description.
-|: global fields
-variable description
-atom" No description available." description !
-|\ : |description:   parse-cr description ! feed ;
-|;
-
-|section: Formatting Tags
-
-Tags are provided for bold, italics, underline, fixed width (teletype),
-superscript, and subscript.
-|: formatting tags
-|\ : |b{   .d{ <b>} feed ;
-|\ : |}b   .d{ </b>} feed ;
-|\ : |i{   .d{ <i>} feed ;
-|\ : |}i   .d{ </i>} feed ;
-|\ : |u{   .d{ <u>} feed ;
-|\ : |}u   .d{ </u} feed ;
-|\ : |tt{   .d{ <tt>} feed ;
-|\ : |}tt   .d{ </tt>} feed ;
-|\ : |sup{   .d{ <sup>} feed ;
-|\ : |}sup   .d{ </sup>} feed ;
-|\ : |sub{   .d{ <sub>} feed ;
-|\ : |}sub   .d{ </sub>} feed ;
-|;
-
-
-|section: Bullet Lists
-
-Tags are provided for bullet lists.
-|: bullet lists
-variable bullet-depth
-: bullet+   1 bullet-depth +!   bullet-depth @ 1 = if .d{ </p>} then ;
-: bullet-   -1 bullet-depth +!   bullet-depth @ 0 = if .d{ <p>} then ;
-|\ : |{-   bullet+ .d{ <ul><li>} feed ;
-|\ : |--   .d{ </li><li>} feed ;
-|\ : |-}   .d{ </li></ul>} bullet- feed ;
-|;
-
-
-|section: TeX and LaTeX
-
-As |TeX  and |LaTeX  are widely referenced in material related to
-literate programming, we will want to be able to mention them in
-way that has some semblance of typographical accuracy.
-Unfortunately, precise duplication would require images
-(which don't scale).
-|$
-Use of subscript and big text gives use this for |TeX :
-|: tex and latex shortcuts
-|\ : |TeX .d{ <span>T<sub><big>E</big></sub>X</span>} feed ;
-|;
-|$
-Adding in small text and superscript then brings us to this for |LaTeX :
-|: tex and latex shortcuts
-|\ : |LaTeX
-    .d{ <span>L<sup><small>A</small></sup>T<sub><big>E</big></sub>X</span>}
-    feed
-;
-|;
-
-
-|section: Symbols
-
-We provide some tags for arrow symbols.
-|: arrow symbols
-|\ : |<-| .d{ &larr;} feed ;
-|\ : |->| .d{ &rarr;} feed ;
-|\ : |^| .d{ &uarr;} feed ;
-|\ : |v| .d{ &darr;} feed ;
-|;
-
-
-
-|section: Document Boundaries
-Documents need logical division markers.
-|$
-We provide tags for regular and slide show chapters.
-|: document boundaries
-|@ chapter implementation
-|\ : |chapter:   false slide-chapter !  raw-chapter ;
-|\ : |slide-chapter:   true slide-chapter !  raw-chapter ;
-|;
-
-Sections.
-|: document boundaries
-|\ : |section:   parse-cr .d{ </p></div><div class="section"><h2>} doc+=$
-                 .d{ </h2><p>} feed ;
-|;
-
-Page breaks.
-|: document boundaries
-|\ : |page   parse-cr .d{ </p><p style="page-break-before:always;">} feed ;
-|;
-
-Paragraph boundaries.
-|: document boundaries
-|\ : |$ ( paragraph )
-    .d{ </p><p>} feed ;
-|;
-
-|\ And pipe (|) escaping whole line.
-|: document boundaries
-|\ : |\ ( whole line)
-    parse-cr atom-cr+ dup chunk+=$ escape doc+=$ feed ;
-|;
-
-
-|section: Chunk Tags
-
-Crucial to literate programming.
-Tags are provided to manipulate chunks.
-|$
-Adding to their definition (in a Forth-y way).
-|: chunk tags
-|\ : |: ( add to a chunk )
-    parse-cr dup chunk ! doc+=def feed ;
-|\ : |; ( documentation )
-    .d{ </pre></div><p>} doc! feed ;
-|;
-
-Using them (in a Forth-y way).
-|: chunk tags
-|\ : |@ ( use a chunk )
-    parse-cr dup chunk+=ref doc+=use .dcr feed ;
-|;
-
-
-|section: Output Files
-
-Tangled output can be directed to multile files using a special tag.
-A linked list of output files is kept.
-Their "meaning" is consulted to know what to emit.
-|: output files
-|\ linked-list out-files
-|\ : |file: ( add a new output file )
-    parse-cr dup 1 out-files chain
-    .d{ <tt><i>} doc+=$ .d{ </i></tt>} feed ;
-: file-name@ ( file -- A )
-    cell+ @ ;
-|;
 
 
 
