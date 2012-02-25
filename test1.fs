@@ -9,7 +9,6 @@ s" literate.fs" included
 |section: Overview
 
 Our goal is to print the 4 raised to the 4th power.
-Testing |TeX and testing |LaTeX .
 
 |section: Source Files
 
