@@ -98,6 +98,7 @@ A variety of user facing formatting tags are provided.
 |@ bullet lists
 |@ tex and latex shortcuts
 |@ arrow symbols
+|@ chunk tags
 |;
 
 
@@ -111,7 +112,7 @@ The data structures and tools needed to put this together are detailed.
 |@ chunks
 |@ global fields
 |@ output files
-|@ chapters and sections
+|@ document boundaries
 |;
 
 
@@ -656,6 +657,59 @@ We'll also have some words that grab input until the end of the line.
 |;
 
 
+|chapter: Chunks
+
+|section: Implementing Chunks
+As text is parsed it is accumulated into chunks.
+|: chunks
+variable chunk
+: chunk+=$ ( A -- )
+    chunk @ dup if atom+=$ else drop then ;
+: chunk+=ref ( A -- )
+    chunk @ dup if atom+=ref else drop then ;
+|;
+
+A special primary chunk is kept for the main document.
+|: chunks
+atom" ~~~DOC" constant main-documentation
+variable documentation-chunk
+main-documentation documentation-chunk !
+|;
+
+A number of words are provided to write to the current
+documentation chunk or to set it.
+|: chunks
+: documentation ( -- A )
+    documentation-chunk @ ;
+: doc! ( back to documentation)
+    0 chunk ! ;
+: doc+=$ ( A -- )
+    documentation atom+=$ ;
+: .d{ ( -- )
+    postpone atom{ postpone doc+=$ ; immediate
+|\ : .d| ( -- )
+|\     parse..| ; immediate
+|\ : |.d ( -- )
+    postpone literal postpone doc+=$ ; immediate
+: .dcr   atom-cr doc+=$ ;
+: doc+=ref ( A -- )
+    documentation atom+=ref ;
+: doc+=use
+    ( A -- ) .d{ <b>} doc+=$ .d{ </b>} ;
+: doc+=def ( A -- )
+    .d{ </p><tt><b>} doc+=$
+    .d{ </b> +&equiv;</tt><div class="chunk"><pre>} ;
+|;
+
+This is critically use by nearly every tag to parse until the next tag
+using the word |tt{ feed |}tt .
+|: chunks
+: feed ( read into current chunk )
+|\     parse..| dup ?atom-cr+ escape doc+=$ atom-cr+ chunk+=$ ;
+|;
+
+
+
 |chapter: Tags
 
 |section: Overview
@@ -784,76 +838,57 @@ We provide some tags for arrow symbols.
 
 
 
-
-|section: Chapters and Sections
-
+|section: Document Boundaries
+Documents need logical division markers.
+|$
 We provide tags for regular and slide show chapters.
-|: chapters and sections
+|: document boundaries
 |@ chapter implementation
 |\ : |chapter:   false slide-chapter !  raw-chapter ;
 |\ : |slide-chapter:   true slide-chapter !  raw-chapter ;
 |;
 
 Sections.
-|: chapters and sections
+|: document boundaries
 |\ : |section:   parse-cr .d{ </p></div><div class="section"><h2>} doc+=$
                  .d{ </h2><p>} feed ;
 |;
 
-And page breaks.
-|: chapters and sections
+Page breaks.
+|: document boundaries
 |\ : |page   parse-cr .d{ </p><p style="page-break-before:always;">} feed ;
 |;
 
+Paragraph boundaries.
+|: document boundaries
+|\ : |$ ( paragraph )
+    .d{ </p><p>} feed ;
+|;
+
+|\ And pipe (|) escaping whole line.
+|: document boundaries
+|\ : |\ ( whole line)
+    parse-cr atom-cr+ dup chunk+=$ escape doc+=$ feed ;
+|;
 
 
-|section: Documentation and  Chunks
+|section: Chunk Tags
 
-|: chunks
-atom" ~~~blackhole" constant blackhole
-variable documentation-chunk
-blackhole documentation-chunk !
-
-: documentation ( -- A )
-    documentation-chunk @ ;
-
-variable chunk
-: doc! ( back to documentation)
-    0 chunk ! ;
-: chunk+=$ ( A -- )
-    chunk @ dup if atom+=$ else drop then ;
-: chunk+=ref ( A -- )
-    chunk @ dup if atom+=ref else drop then ;
-: doc+=$ ( A -- )
-    documentation atom+=$ ;
-: .d{ ( -- )
-    postpone atom{ postpone doc+=$ ; immediate
-|\ : .d| ( -- )
-|\     parse..| ; immediate
-|\ : |.d ( -- )
-    postpone literal postpone doc+=$ ; immediate
-: .dcr   atom-cr doc+=$ ;
-: doc+=ref ( A -- )
-    documentation atom+=ref ;
-: feed ( read into current chunk )
-|\     parse..| dup ?atom-cr+ escape doc+=$ atom-cr+ chunk+=$ ;
-: doc+=use
-    ( A -- ) .d{ <b>} doc+=$ .d{ </b>} ;
-: doc+=def ( A -- )
-    .d{ </p><tt><b>} doc+=$
-    .d{ </b> +&equiv;</tt><div class="chunk"><pre>} ;
-
-
-|\ : |@ ( use a chunk )
-    parse-cr dup chunk+=ref doc+=use .dcr feed ;
+Crucial to literate programming.
+Tags are provided to manipulate chunks.
+|$
+Adding to their definition (in a Forth-y way).
+|: chunk tags
 |\ : |: ( add to a chunk )
     parse-cr dup chunk ! doc+=def feed ;
 |\ : |; ( documentation )
     .d{ </pre></div><p>} doc! feed ;
-|\ : |$ ( paragraph )
-    .d{ </p><p>} feed ;
-|\ : |\ ( whole line)
-    parse-cr atom-cr+ dup chunk+=$ escape doc+=$ feed ;
+|;
+
+Using them (in a Forth-y way).
+|: chunk tags
+|\ : |@ ( use a chunk )
+    parse-cr dup chunk+=ref doc+=use .dcr feed ;
 |;
 
 

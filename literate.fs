@@ -217,20 +217,20 @@ atom" foo" means atom" 1234abcdef5678 9abcdef" = assert
     source@ source-remaining atom   source nip >in ! ;
 
 
-atom" ~~~blackhole" constant blackhole
-variable documentation-chunk
-blackhole documentation-chunk !
-
-: documentation ( -- A )
-    documentation-chunk @ ;
-
 variable chunk
-: doc! ( back to documentation)
-    0 chunk ! ;
 : chunk+=$ ( A -- )
     chunk @ dup if atom+=$ else drop then ;
 : chunk+=ref ( A -- )
     chunk @ dup if atom+=ref else drop then ;
+
+atom" ~~~DOC" constant main-documentation
+variable documentation-chunk
+main-documentation documentation-chunk !
+
+: documentation ( -- A )
+    documentation-chunk @ ;
+: doc! ( back to documentation)
+    0 chunk ! ;
 : doc+=$ ( A -- )
     documentation atom+=$ ;
 : .d{ ( -- )
@@ -245,31 +245,15 @@ variable chunk
 : .dcr   atom-cr doc+=$ ;
 : doc+=ref ( A -- )
     documentation atom+=ref ;
-: feed ( read into current chunk )
-
-    parse..| dup ?atom-cr+ escape doc+=$ atom-cr+ chunk+=$ ;
 : doc+=use
     ( A -- ) .d{ <b>} doc+=$ .d{ </b>} ;
 : doc+=def ( A -- )
     .d{ </p><tt><b>} doc+=$
     .d{ </b> +&equiv;</tt><div class="chunk"><pre>} ;
 
+: feed ( read into current chunk )
 
-
-: |@ ( use a chunk )
-    parse-cr dup chunk+=ref doc+=use .dcr feed ;
-
-: |: ( add to a chunk )
-    parse-cr dup chunk ! doc+=def feed ;
-
-: |; ( documentation )
-    .d{ </pre></div><p>} doc! feed ;
-
-: |$ ( paragraph )
-    .d{ </p><p>} feed ;
-
-: |\ ( whole line)
-    parse-cr atom-cr+ dup chunk+=$ escape doc+=$ feed ;
+    parse..| dup ?atom-cr+ escape doc+=$ atom-cr+ chunk+=$ ;
 
 
 variable doc-base
@@ -443,6 +427,14 @@ then
 : |page   parse-cr .d{ </p><p style="page-break-before:always;">} feed ;
 
 
+: |$ ( paragraph )
+    .d{ </p><p>} feed ;
+
+
+: |\ ( whole line)
+    parse-cr atom-cr+ dup chunk+=$ escape doc+=$ feed ;
+
+
 
 
 
@@ -502,6 +494,18 @@ variable bullet-depth
 : |^| .d{ &uarr;} feed ;
 
 : |v| .d{ &darr;} feed ;
+
+
+
+: |: ( add to a chunk )
+    parse-cr dup chunk ! doc+=def feed ;
+
+: |; ( documentation )
+    .d{ </pre></div><p>} doc! feed ;
+
+
+: |@ ( use a chunk )
+    parse-cr dup chunk+=ref doc+=use .dcr feed ;
 
 
 
