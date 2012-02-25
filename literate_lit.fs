@@ -301,7 +301,7 @@ Using them (in a Forth-y way).
 
 |section: Output Files
 
-Tangled output can be directed to multile files using a special tag.
+Tangled output can be directed to multiple files using a special tag.
 A linked list of output files is kept.
 Their "meaning" is consulted to know what to emit.
 |: output files
@@ -450,7 +450,7 @@ halting if they are not.
 
 |section: Linked Lists
 
-In several places in this program, singely linked lists are useful.
+In several places in this program, singly linked lists are useful.
 As we are interested primarily in inserting in elements at the end of a
 list (or are indifferent as to the order). We will standardize on
 a list root with this structure:
@@ -512,7 +512,7 @@ We will need to clone strings occasionally.
 We will also need to duplicate three items off the stack.
 |: utility words
 : 3dup ( xyz -- xyzxyz )
-    >r 2dup r> dup >r swap >r swap r> r> ;
+    dup 2over rot ;
 |;
 
 |section: File Writing
@@ -697,8 +697,8 @@ As well as a word for an empty atom.
 : atom"" ( -- A ) 0 0 atom ;
 |;
 
-While atoms a fixed, once created.
-Their "meanings" can be accumulated gradually.
+While atoms are fixed, once created,
+their "meanings" can be accumulated gradually.
 The two words for this are |tt{ atom+=$|}tt  and
 |tt{ atom+=ref|}tt .
 |: implement atoms
@@ -1149,7 +1149,7 @@ Then close out the file and write it.
 
 The table of contents is an XHTML file like the chapters.
 XHTML is like HTML but strictly XML like in format.
-We use a subset that is constrainted by MOBI's limitations.
+We use a subset that is constrained by MOBI's limitations.
 |$
 We will accumulate the table of contents to a reserved atom.
 |: weaving toc
@@ -1256,7 +1256,7 @@ Then a the xhtml header is written.
 |\ |.d
 |;
 
-Then potentially slide show javascript.
+Then potentially slide show Javascript.
 |: chapter implementation
 slide-chapter @ if
 |@ slide show logic
@@ -1389,7 +1389,7 @@ February 25, 2012.
 |$
 On eBook readers, browse normally.
 On full browsers, |<-|  and |->|  move through the slides,
-|^|  and |v|  jump to the begining and end.
+|^|  and |v|  jump to the beginning and end.
 
 
 |section: Literate Programming in Forth

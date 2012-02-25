@@ -38,7 +38,7 @@ vocabulary literate also literate definitions
     dup allocate 0= assert swap 2dup >r >r move r> r> ;
 
 : 3dup ( xyz -- xyzxyz )
-    >r 2dup r> dup >r swap >r swap r> r> ;
+    dup 2over rot ;
 
 
 : atom-length@ ( A -- n )
