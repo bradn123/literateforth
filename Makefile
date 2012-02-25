@@ -14,6 +14,7 @@ install:
 
 deploy:
 	cp literate.mobi /Volumes/Kindle/documents
+	diskutil eject Kindle
 
 snapshot:
 	rm -rf snap
