@@ -24,6 +24,9 @@ snapshot:
 	cp *.fs snap
 	zip -r literate.zip snap/
 
+bmp:
+	gforth bmp.fs
+
 clean :
-	rm -f *.opf *.ncx *.mobi power4.fs main.fs *.html literate_out.fs
+	rm -f *.opf *.ncx *.mobi power4.fs main.fs *.html literate_out.fs *.bmp *.zip
 	rm -rf snap
