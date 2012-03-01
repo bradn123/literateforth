@@ -1,13 +1,13 @@
 all:
 	LITERATE=weave gforth test1.fs
 	LITERATE=tangle gforth test1.fs
-	~/kindle/KindleGen_Mac_i386_v2/kindlegen test1.opf || true
+	~/kindle/KindleGen_Mac_i386_v2/kindlegen test1.opf
 	gforth test1.fs
 
 lit:
 	LITERATE=tangle gforth literate_lit.fs
 	LITERATE=weave gforth literate_lit.fs
-	~/kindle/KindleGen_Mac_i386_v2/kindlegen literate.opf || true
+	~/kindle/KindleGen_Mac_i386_v2/kindlegen literate.opf
 
 install:
 	cp literate_out.fs literate.fs
@@ -24,9 +24,6 @@ snapshot:
 	cp *.fs snap
 	zip -r literate.zip snap/
 
-bmp:
-	gforth bmp.fs
-
-clean :
+clean:
 	rm -f *.opf *.ncx *.mobi power4.fs main.fs *.html literate_out.fs *.bmp *.zip
 	rm -rf snap

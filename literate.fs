@@ -619,6 +619,140 @@ atom" ~~~NCX" constant atom-ncx
 ;
 
 
+: cover-filename doc-base @ atom" _cover.bmp" atom+ ;
+
+
+variable image-width
+variable image-height
+variable image-data
+
+: image-data-size ( -- n )
+    image-width @ image-height @ * 4 * ;
+
+: image-pick-size ( w h -- )
+    image-height ! image-width ! ;
+: image-free-old
+    image-data @ dup if free 0= assert else drop then ;
+: image-allocate
+    image-data-size allocate 0= assert image-data ! ;
+: image-clear
+    image-data @ image-data-size 0 fill ;
+: image-setup ( w h -- )
+    image-pick-size image-free-old image-allocate image-clear ;
+
+
+variable red
+variable green
+variable blue
+
+: rgb ( r g b -- ) blue ! green ! red ! ;
+: f>primary ( f -- n ) 255e f* f>s 0 max 255 min ;
+: rgbf ( rf gf bf -- ) f>primary f>primary f>primary rgb ;
+
+: black ( -- ) 0 0 0 rgb ;
+: white ( -- ) 255 255 255 rgb ;
+
+: gray ( n -- ) dup dup rgb ;
+
+: image-xy ( x y -- a )
+    image-width @ * + 4 *
+    image-data @ + ;
+: plot ( x y -- )
+    image-xy
+    red @ over c!
+    green @ over 1+ c!
+    blue @ over 2 + c!
+    0 swap 3 + c! ; 
+
+
+variable bmp-file
+
+: bmp-begin ( A -- )
+    atom-string@ w/o bin create-file 0= assert bmp-file ! ;
+: bmp-end ( -- )
+    bmp-file @ close-file 0= assert ;
+
+: bmp-write ( $ -- )
+    bmp-file @ write-file 0= assert ;
+
+: bmp-byte ( b -- ) here c! here 1 bmp-write ;
+: bmp-word ( w -- ) dup 255 and bmp-byte 8 rshift 255 and bmp-byte ;
+: bmp-dword ( d -- ) dup 65535 and bmp-word 16 rshift 65535 and bmp-word ;
+
+3 2 * 2 4 * + constant bmp-header-size
+10 4 * constant dib-header-size
+
+: bmp-save ( A -- )
+  bmp-begin
+  \ BMP header
+  s" BM" bmp-write
+  bmp-header-size
+  dib-header-size +
+  image-data-size + bmp-dword \ size of bmp file in bytes
+  0 bmp-word \ unused
+  0 bmp-word \ unused
+  bmp-header-size
+  dib-header-size + bmp-dword \ offset to start of bitmap image data
+
+  \ DIB header
+  dib-header-size bmp-dword \ size of header in bytes
+  image-width @ bmp-dword \ width
+  image-height @ bmp-dword \ height
+  1 bmp-word \ color planes
+  32 bmp-word \ bits per pixel
+  0 bmp-dword \ BI_RGB (uncompressed)
+  image-data-size bmp-dword \ pixel data size
+  0 bmp-dword \ horizontal pixels per meter
+  0 bmp-dword \ vertical pixels per meter
+  0 bmp-dword \ colors in color palette
+  0 bmp-dword \ important colors in palette
+
+  \ Image data
+  image-data @ image-data-size bmp-write
+  bmp-end
+;
+
+
+fvariable xx
+fvariable yy
+: x ( -- f ) xx f@ ;
+: y ( -- f ) yy f@ ;
+
+: haiku ( f -- )
+  image-height @ 0 do
+    i s>f image-height @ s>f f/ yy f!
+    image-width @ 0 do
+      i s>f image-width @ s>f f/ xx f!
+      dup execute
+      rgbf i j plot
+    loop
+  loop
+  drop
+;
+
+: luminance ( rf gf bf -- f )
+    0.0722e f* fswap
+    0.7152e f* f+ fswap
+    0.2126e f* f+ ;
+
+
+: 4spire ( -- )
+  x x 23e f* fsin 2e f/ y fmax f/ fsin
+  y x 23e f* fsin 2e f/ y fmax f/ fsin
+  fover fover f/ fsin
+;
+
+: 4spire-gray
+  4spire luminance fdup fdup
+;
+
+: weave-cover
+  600 800 image-setup
+  ['] 4spire haiku
+  cover-filename bmp-save
+;
+
+
 atom" ~~~OPF" constant atom-opf
 
 : opf-filename ( -- A )
@@ -651,6 +785,7 @@ xmlns:opf="http://www.idpf.org/2007/opf">
 
     .d{ <dc:title>} title @ doc+=$ .d{ </dc:title>} .dcr
     .d{ <dc:language>en-us</dc:language>} .dcr
+    .d{ <meta name="cover" content="My_Cover"/> } .dcr
     .d{ <dc:identifier id="BookId" opf:scheme="ISBN">}
     isbn @ doc+=$ .d{ </dc:identifier>} .dcr
     .d{ <dc:creator>} author @ doc+=$ .d{ </dc:creator>} .dcr
@@ -672,6 +807,8 @@ xmlns:opf="http://www.idpf.org/2007/opf">
     chapters @ begin dup while
         dup chapter-filename opf-chapter ->next
     repeat drop
+    .d{ <item id="My_Cover" media-type="image/gif"} .dcr
+    .d{  href="} cover-filename doc+=$ .d{ "/>} .dcr
     .d{ </manifest>}
 
     .d{ <spine toc="My_Table_of_Contents"><itemref idref="toc"/>}
@@ -704,6 +841,7 @@ xmlns:opf="http://www.idpf.org/2007/opf">
 : weave ( -- )
     weave-opf
     weave-ncx
+    weave-cover
     weave-toc
     weave-chapters
 ;

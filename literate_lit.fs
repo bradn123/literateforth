@@ -933,11 +933,13 @@ Thus the process of weaving to the MOBI format looks like this:
 |: weaving implementation
 |@ weaving toc
 |@ weaving ncx
+|@ weaving cover
 |@ weaving opf
 |@ weaving chapter xhtml
 : weave ( -- )
     weave-opf
     weave-ncx
+    weave-cover
     weave-toc
     weave-chapters
 ;
@@ -985,6 +987,7 @@ title, isbn, author, subject, date, and description.
 |: weaving opf
     .d{ <dc:title>} title @ doc+=$ .d{ </dc:title>} .dcr
     .d{ <dc:language>en-us</dc:language>} .dcr
+    .d{ <meta name="cover" content="My_Cover"/> } .dcr
     .d{ <dc:identifier id="BookId" opf:scheme="ISBN">}
     isbn @ doc+=$ .d{ </dc:identifier>} .dcr
     .d{ <dc:creator>} author @ doc+=$ .d{ </dc:creator>} .dcr
@@ -1007,6 +1010,8 @@ including table of contents and chapters.
     chapters @ begin dup while
         dup chapter-filename opf-chapter ->next
     repeat drop
+    .d{ <item id="My_Cover" media-type="image/gif"} .dcr
+    .d{  href="} cover-filename doc+=$ .d{ "/>} .dcr
     .d{ </manifest>}
 |;
 
@@ -1381,6 +1386,258 @@ function Load() {
 </script>
 |\ |.d
 |;
+
+
+|chapter: Images
+
+|section: Colors
+
+In order to represent images, we'll need to handle colors.
+We keep a 0-255 value for the red, green, and blue component of the current
+color.
+
+|: implement colors
+variable red
+variable green
+variable blue
+|;
+
+We'll often use it to setup colors specified as a triple.
+Often this triple will be floating point in the 0-1 range.
+|: implement colors
+: rgb ( r g b -- ) blue ! green ! red ! ;
+: f>primary ( f -- n ) 255e f* f>s 0 max 255 min ;
+: rgbf ( rf gf bf -- ) f>primary f>primary f>primary rgb ;
+|;
+
+We can then define some important common colors.
+|: implement colors
+: black ( -- ) 0 0 0 rgb ;
+: white ( -- ) 255 255 255 rgb ;
+|;
+
+And some common color sets.
+|: implement colors
+: gray ( n -- ) dup dup rgb ;
+|;
+
+
+|section: Images
+
+We will need to implement images.
+For now, a single global image will suffice.
+We'll store it in 4 byte per pixel form (with the alpha component unused for
+now). These fields will be needed.
+
+|: implement images
+variable image-width
+variable image-height
+variable image-data
+|;
+
+In manipulating images we'll want to be able to reference the total size of
+the image data.
+|: implement images
+: image-data-size ( -- n )
+    image-width @ image-height @ * 4 * ;
+|;
+
+We will (re-)allocate image data on setup.
+|: implement images
+: image-pick-size ( w h -- )
+    image-height ! image-width ! ;
+: image-free-old
+    image-data @ dup if free 0= assert else drop then ;
+: image-allocate
+    image-data-size allocate 0= assert image-data ! ;
+: image-clear
+    image-data @ image-data-size 0 fill ;
+: image-setup ( w h -- )
+    image-pick-size image-free-old image-allocate image-clear ;
+|;
+
+
+The most basic operation will be to plot to a given (x, y) coordinate
+with the current color.
+|: implement images
+|@ implement colors
+: image-xy ( x y -- a )
+    image-width @ * + 4 *
+    image-data @ + ;
+: plot ( x y -- )
+    image-xy
+    red @ over c!
+    green @ over 1+ c!
+    blue @ over 2 + c!
+    0 swap 3 + c! ; 
+|;
+
+|section: Writing BMPs.
+
+We will want to output the current image to a windows BMP file.
+We will assume we're only writing one BMP at time and keep a global to its
+file handle.
+
+|: writing bmp files
+variable bmp-file
+|;
+
+Opening and closing the file based on an atom name will be useful.
+|: writing bmp files
+: bmp-begin ( A -- )
+    atom-string@ w/o bin create-file 0= assert bmp-file ! ;
+: bmp-end ( -- )
+    bmp-file @ close-file 0= assert ;
+|;
+
+We will halt on failures to write, so we should centralize that.
+|: writing bmp files
+: bmp-write ( $ -- )
+    bmp-file @ write-file 0= assert ;
+|;
+
+Additionally writing out little endian bytes, words, and double words will be
+needed.
+
+|: writing bmp files
+: bmp-byte ( b -- ) here c! here 1 bmp-write ;
+: bmp-word ( w -- ) dup 255 and bmp-byte 8 rshift 255 and bmp-byte ;
+: bmp-dword ( d -- ) dup 65535 and bmp-word 16 rshift 65535 and bmp-word ;
+|;
+
+BMP files have two headers, the main BMP header and a DIB (device
+independent header. We'll need to talk about the size of them.
+|: writing bmp files
+3 2 * 2 4 * + constant bmp-header-size
+10 4 * constant dib-header-size
+|;
+
+We can then implement writing the bmp file.
+Starting with the BMP header.
+|: writing bmp files
+: bmp-save ( A -- )
+  bmp-begin
+  \ BMP header
+  s" BM" bmp-write
+  bmp-header-size
+  dib-header-size +
+  image-data-size + bmp-dword \ size of bmp file in bytes
+  0 bmp-word \ unused
+  0 bmp-word \ unused
+  bmp-header-size
+  dib-header-size + bmp-dword \ offset to start of bitmap image data
+|;
+
+Then the DIB header.
+|: writing bmp files
+  \ DIB header
+  dib-header-size bmp-dword \ size of header in bytes
+  image-width @ bmp-dword \ width
+  image-height @ bmp-dword \ height
+  1 bmp-word \ color planes
+  32 bmp-word \ bits per pixel
+  0 bmp-dword \ BI_RGB (uncompressed)
+  image-data-size bmp-dword \ pixel data size
+  0 bmp-dword \ horizontal pixels per meter
+  0 bmp-dword \ vertical pixels per meter
+  0 bmp-dword \ colors in color palette
+  0 bmp-dword \ important colors in palette
+|;
+
+Then the image data and done.
+|: writing bmp files
+  \ Image data
+  image-data @ image-data-size bmp-write
+  bmp-end
+;
+|;
+
+
+|chapter: Book Cover
+
+|section: Introduction
+We will want to produce interesting images for the book cover.
+To this end we will use "Forth Haiku" which produce images with
+small snippets of Forth code.
+
+
+|section: Forth Haiku
+
+Forth Haiku are described in terms of a current coordinate.
+We will call them x and y for simplicity.
+The Haiku cannot mutate the coordinates, so we'll provide accessors.
+
+|: implement haiku
+fvariable xx
+fvariable yy
+: x ( -- f ) xx f@ ;
+: y ( -- f ) yy f@ ;
+|;
+
+We will implement haiku by calling a per-pixel execution token for each pixel
+in the current image.
+|: implement haiku
+: haiku ( f -- )
+  image-height @ 0 do
+    i s>f image-height @ s>f f/ yy f!
+    image-width @ 0 do
+      i s>f image-width @ s>f f/ xx f!
+      dup execute
+      rgbf i j plot
+    loop
+  loop
+  drop
+;
+|;
+
+Sometimes we will want to convert a haiku to grayscale.
+We'll want an rgb to grayscale conversion function.
+|: implement haiku
+: luminance ( rf gf bf -- f )
+    0.0722e f* fswap
+    0.7152e f* f+ fswap
+    0.2126e f* f+ ;
+|;
+
+|section: 4spire
+
+My favorite Forth Haiku of my own devising is called |b{ 4spire |}b .
+|: 4spire
+: 4spire ( -- )
+  x x 23e f* fsin 2e f/ y fmax f/ fsin
+  y x 23e f* fsin 2e f/ y fmax f/ fsin
+  fover fover f/ fsin
+;
+|;
+
+We will likely want a grayscale version.
+|: 4spire
+: 4spire-gray
+  4spire luminance fdup fdup
+;
+|;
+
+|section: Weaving the cover
+
+We will have a cover based on the document base.
+|: weaving cover
+: cover-filename doc-base @ atom" _cover.bmp" atom+ ;
+|;
+
+We can now weave the cover, using 4spire.
+It is a 600x800 image.
+|: weaving cover
+|@ implement images
+|@ writing bmp files
+|@ implement haiku
+|@ 4spire
+: weave-cover
+  600 800 image-setup
+  ['] 4spire haiku
+  cover-filename bmp-save
+;
+|;
+
 
 |slide-chapter: Appendix A - Slides
 
