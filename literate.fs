@@ -739,6 +739,28 @@ fvariable aspect
     0.2126e f* f+ ;
 
 
+fvariable gradient-scale
+: 3fg* ( f f f -- f f f )
+   gradient-scale f@ f* frot
+   gradient-scale f@ f* frot
+   gradient-scale f@ f* frot
+;
+: gradient-invert
+  1e gradient-scale f@ f- gradient-scale f! ;
+
+: gradient1
+   1e x f- 0.3e f* y f+ 0.5e f+ 10e f**
+   0e fmax 1e fmin
+   gradient-scale f! ;
+
+fvariable 3f+temp
+: 3f+ ( xyz abc -- x+a y+b z+c )
+  fswap 3f+temp f! frot f+ ( x y a z+c )
+  frot 3f+temp f@ f+ ( x a z+c y+b )
+  3f+temp f! frot frot f+ ( z+c x+a )
+  3f+temp f@ frot ( x+a y+b z+c )
+;
+
 
 : 4spire
   x x 23e f* fsin 2e f/ y fmax f/ fsin
@@ -765,19 +787,18 @@ fvariable aspect
   scales luminance fdup fdup
 ;
 
-: gradient ( -- f )
-   x y f* 0e fmax 1e fmin ;
-: gradient' ( -- f)
-   1e gradient f- ;
 : scales-4spire
-  scales luminance gradient f*
-  4spire luminance gradient' f* f+
-  fdup fdup
+  scales gradient1 3fg*
+  4spire gradient1 gradient-invert 3fg* 3f+
+;
+
+: scales-4spire-gray
+  scales-4spire luminance fdup fdup
 ;
 
 : weave-cover
   600 800 image-setup
-  ['] scales-4spire haiku
+  ['] scales-4spire-gray haiku
   cover-filename bmp-save
 ;
 

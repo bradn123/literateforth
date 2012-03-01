@@ -1651,18 +1651,52 @@ We will also likely want a grayscale version.
 
 |section: Mixing 4spire and scales
 
+We will want a general facility for multiplying a haiku by a gradient.
+|: mixing 4spire and scales
+fvariable gradient-scale
+: 3fg* ( f f f -- f f f )
+   gradient-scale f@ f* frot
+   gradient-scale f@ f* frot
+   gradient-scale f@ f* frot
+;
+: gradient-invert
+  1e gradient-scale f@ f- gradient-scale f! ;
+|;
+
+And a particular gradient that highlights the towers of 4spire,
+but mainly focuses on scales.
+|: mixing 4spire and scales
+: gradient1
+   1e x f- 0.3e f* y f+ 0.5e f+ 10e f**
+   0e fmax 1e fmin
+   gradient-scale f! ;
+|;
+
+We will also need t be able to add rgb triples on the floating point stack.
+|: mixing 4spire and scales
+fvariable 3f+temp
+: 3f+ ( xyz abc -- x+a y+b z+c )
+  fswap 3f+temp f! frot f+ ( x y a z+c )
+  frot 3f+temp f@ f+ ( x a z+c y+b )
+  3f+temp f! frot frot f+ ( z+c x+a )
+  3f+temp f@ frot ( x+a y+b z+c )
+;
+|;
+
 We will mix 4spire and scales.
 |: mixing 4spire and scales
 |@ 4spire haiku
 |@ scales haiku
-: gradient ( -- f )
-   x y f* 0e fmax 1e fmin ;
-: gradient' ( -- f)
-   1e gradient f- ;
 : scales-4spire
-  scales luminance gradient f*
-  4spire luminance gradient' f* f+
-  fdup fdup
+  scales gradient1 3fg*
+  4spire gradient1 gradient-invert 3fg* 3f+
+;
+|;
+
+And a grayscale version.
+|: mixing 4spire and scales
+: scales-4spire-gray
+  scales-4spire luminance fdup fdup
 ;
 |;
 
@@ -1682,7 +1716,7 @@ It is a 600x800 image.
 |@ mixing 4spire and scales
 : weave-cover
   600 800 image-setup
-  ['] scales-4spire haiku
+  ['] scales-4spire-gray haiku
   cover-filename bmp-save
 ;
 |;
