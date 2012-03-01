@@ -718,11 +718,14 @@ fvariable yy
 : x ( -- f ) xx f@ ;
 : y ( -- f ) yy f@ ;
 
+fvariable aspect
+1e aspect f!
+
 : haiku ( f -- )
   image-height @ 0 do
-    i s>f image-height @ s>f f/ yy f!
+    i s>f 0.5e f+ image-width @ s>f aspect f@ f/ f/ yy f!
     image-width @ 0 do
-      i s>f image-width @ s>f f/ xx f!
+      i s>f 0.5e f+ image-width @ s>f f/ xx f!
       dup execute
       rgbf i j plot
     loop
@@ -736,7 +739,8 @@ fvariable yy
     0.2126e f* f+ ;
 
 
-: 4spire ( -- )
+
+: 4spire
   x x 23e f* fsin 2e f/ y fmax f/ fsin
   y x 23e f* fsin 2e f/ y fmax f/ fsin
   fover fover f/ fsin
@@ -746,9 +750,34 @@ fvariable yy
   4spire luminance fdup fdup
 ;
 
+
+: scales-x' x 0.3e f- ;
+: scales-y' y 0.1e f+ ;
+: scales
+  scales-x' scales-y' f* 40e f* fsin
+  1e scales-x' f- scales-y' f* 30e f* fsin f*
+  scales-x' 1e scales-y' f- f* 20e f* fsin f*
+  fdup scales-x' f/ fsin
+  fdup scales-y' f/ fcos 1e x f- 1e y f- f+ f*
+;
+
+: scales-gray
+  scales luminance fdup fdup
+;
+
+: gradient ( -- f )
+   x y f* 0e fmax 1e fmin ;
+: gradient' ( -- f)
+   1e gradient f- ;
+: scales-4spire
+  scales luminance gradient f*
+  4spire luminance gradient' f* f+
+  fdup fdup
+;
+
 : weave-cover
   600 800 image-setup
-  ['] 4spire haiku
+  ['] scales-4spire haiku
   cover-filename bmp-save
 ;
 

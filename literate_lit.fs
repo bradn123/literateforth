@@ -1574,14 +1574,24 @@ fvariable yy
 : y ( -- f ) yy f@ ;
 |;
 
+As Forth Haiku are canonically square, we will need to decide how to handle
+rectangular output. We will select a global aspect ratio, defaulting to 1.
+It will be take to mean the ratio between the width and the height.
+|: implement haiku
+fvariable aspect
+1e aspect f!
+|;
+
 We will implement haiku by calling a per-pixel execution token for each pixel
-in the current image.
+in the current image. We will assume the width corresponds to the 0-1 range,
+and adjust the scaling along the height to match the selected aspect ratio.
+We will shift things over by half a pixel to avoid certain integer artifacts.
 |: implement haiku
 : haiku ( f -- )
   image-height @ 0 do
-    i s>f image-height @ s>f f/ yy f!
+    i s>f 0.5e f+ image-width @ s>f aspect f@ f/ f/ yy f!
     image-width @ 0 do
-      i s>f image-width @ s>f f/ xx f!
+      i s>f 0.5e f+ image-width @ s>f f/ xx f!
       dup execute
       rgbf i j plot
     loop
@@ -1602,8 +1612,8 @@ We'll want an rgb to grayscale conversion function.
 |section: 4spire
 
 My favorite Forth Haiku of my own devising is called |b{ 4spire |}b .
-|: 4spire
-: 4spire ( -- )
+|: 4spire haiku
+: 4spire
   x x 23e f* fsin 2e f/ y fmax f/ fsin
   y x 23e f* fsin 2e f/ y fmax f/ fsin
   fover fover f/ fsin
@@ -1611,9 +1621,48 @@ My favorite Forth Haiku of my own devising is called |b{ 4spire |}b .
 |;
 
 We will likely want a grayscale version.
-|: 4spire
+|: 4spire haiku
 : 4spire-gray
   4spire luminance fdup fdup
+;
+|;
+
+|section: Scales
+
+Another attractive Haiku is called "scales".
+|: scales haiku
+: scales-x' x 0.3e f- ;
+: scales-y' y 0.1e f+ ;
+: scales
+  scales-x' scales-y' f* 40e f* fsin
+  1e scales-x' f- scales-y' f* 30e f* fsin f*
+  scales-x' 1e scales-y' f- f* 20e f* fsin f*
+  fdup scales-x' f/ fsin
+  fdup scales-y' f/ fcos 1e x f- 1e y f- f+ f*
+;
+|;
+
+We will also likely want a grayscale version.
+|: scales haiku
+: scales-gray
+  scales luminance fdup fdup
+;
+|;
+
+|section: Mixing 4spire and scales
+
+We will mix 4spire and scales.
+|: mixing 4spire and scales
+|@ 4spire haiku
+|@ scales haiku
+: gradient ( -- f )
+   x y f* 0e fmax 1e fmin ;
+: gradient' ( -- f)
+   1e gradient f- ;
+: scales-4spire
+  scales luminance gradient f*
+  4spire luminance gradient' f* f+
+  fdup fdup
 ;
 |;
 
@@ -1624,16 +1673,16 @@ We will have a cover based on the document base.
 : cover-filename doc-base @ atom" _cover.bmp" atom+ ;
 |;
 
-We can now weave the cover, using 4spire.
+We can now weave the cover, using our mixed cover.
 It is a 600x800 image.
 |: weaving cover
 |@ implement images
 |@ writing bmp files
 |@ implement haiku
-|@ 4spire
+|@ mixing 4spire and scales
 : weave-cover
   600 800 image-setup
-  ['] 4spire haiku
+  ['] scales-4spire haiku
   cover-filename bmp-save
 ;
 |;
