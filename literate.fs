@@ -450,7 +450,7 @@ then
 
 : |u{   .d{ <u>} feed ;
 
-: |}u   .d{ </u} feed ;
+: |}u   .d{ </u>} feed ;
 
 : |tt{   .d{ <tt>} feed ;
 

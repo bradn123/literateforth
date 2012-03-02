@@ -180,15 +180,46 @@ atom" No description available." description !
 
 |section: Formatting Tags
 
-Tags are provided for bold, italics, underline, fixed width (teletype),
-superscript, and subscript.
+Tags are provided for:
+|{- |b{ bold|}b  |<-|
+|tt{
+|\  |b{ bold|}b
+|}tt
+
+|-- |i{ italics|}i  |<-|
+|tt{
+|\  |i{ italics|}i
+|}tt
+
+|-- |u{ underline|}u  |<-|
+|tt{
+|\  |u{ underline|}u
+|}tt
+
+|-- |tt{ teletype|}tt  |<-|
+|tt{
+|\  |tt{ teletype|}tt
+|}tt
+
+|-- |sup{ superscript|}sup  |<-|
+|tt{
+|\  |sup{ superscript|}sup
+|}tt
+
+|-- |sub{ subscript|}sub  |<-|
+|tt{
+|\  |sub{ subscript|}sub
+|}tt
+
+|-}
+
 |: formatting tags
 |\ : |b{   .d{ <b>} feed ;
 |\ : |}b   .d{ </b>} feed ;
 |\ : |i{   .d{ <i>} feed ;
 |\ : |}i   .d{ </i>} feed ;
 |\ : |u{   .d{ <u>} feed ;
-|\ : |}u   .d{ </u} feed ;
+|\ : |}u   .d{ </u>} feed ;
 |\ : |tt{   .d{ <tt>} feed ;
 |\ : |}tt   .d{ </tt>} feed ;
 |\ : |sup{   .d{ <sup>} feed ;
