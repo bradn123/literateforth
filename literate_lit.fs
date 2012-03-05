@@ -1638,11 +1638,15 @@ We will shift things over by half a pixel to avoid certain integer artifacts.
 
 Sometimes we will want to convert a haiku to grayscale.
 We'll want an rgb to grayscale conversion function.
+At the very least we will want to refer to the luminance of each primary.
 |: implement haiku
+0.0722e fconstant red-luminance
+0.7152e fconstant green-luminance
+0.2126e fconstant blue-luminance
 : luminance ( rf gf bf -- f )
-    0.0722e f* fswap
-    0.7152e f* f+ fswap
-    0.2126e f* f+ ;
+    blue-luminance f* fswap
+    green-luminance f* f+ fswap
+    red-luminance f* f+ ;
 |;
 
 As the resulting image may end up being quantized to 8 shades of gray,
@@ -1664,13 +1668,23 @@ Provide a method to access to x, y index wrapped around,
 and convert to floating point.
 |: implement haiku
 : dither-map ( x y -- f )
-  8 mod 8 * swap 8 mod + cells dither-table + @ s>f 65e f/ ;
+  8 mod 8 * swap 8 mod + cells dither-table + @ s>f 65e f/ 0.5e f- ;
 |;
 Then provide the actual dither based on the current pixel position.
-Scale by 1/7 (for 8 shades of gray).
 |: implement haiku
-: dither ( f -- )
-  xn @ yn @ dither-map 7e f/ f+ ;
+: dither ( -- f )
+  xn @ yn @ dither-map 7e f/ ;
+|;
+And we may want to do this for color images (so that they can be down
+converted to grayscale and look ok).
+We should do so in proportion to the luminance weight of rgb components.
+(Add in a magic factor of 1/7 that seems to yield the desired result.)
+|: implement haiku
+: 3dither-scale ( f -- f ) 7e f/ ;
+: 3dither ( rgb -- rgb' )
+  dither blue-luminance f/ 3dither-scale f+ frot
+  dither green-luminance f/ 3dither-scale f+ frot
+  dither red-luminance f/ 3dither-scale f+ frot ;
 |;
 
 
@@ -1744,10 +1758,17 @@ We will mix 4spire and scales.
 ;
 |;
 
+Add a dithered version.
+|: mixing 4spire and scales
+: scales-4spire-dithered
+  scales-4spire 3dither
+;
+|;
+
 And a grayscale version.
 |: mixing 4spire and scales
 : scales-4spire-gray
-  scales-4spire luminance dither fdup fdup
+  scales-4spire luminance dither f+ fdup fdup
 ;
 |;
 
@@ -1767,7 +1788,7 @@ It is a 600x800 image.
 |@ mixing 4spire and scales
 : weave-cover
   600 800 image-setup
-  ['] scales-4spire-gray haiku
+  ['] scales-4spire-dithered haiku
   cover-filename bmp-save
 ;
 |;

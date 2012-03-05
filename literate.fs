@@ -737,10 +737,13 @@ fvariable aspect
   drop
 ;
 
+0.0722e fconstant red-luminance
+0.7152e fconstant green-luminance
+0.2126e fconstant blue-luminance
 : luminance ( rf gf bf -- f )
-    0.0722e f* fswap
-    0.7152e f* f+ fswap
-    0.2126e f* f+ ;
+    blue-luminance f* fswap
+    green-luminance f* f+ fswap
+    red-luminance f* f+ ;
 
 create dither-table
  1 , 49 , 13 , 61 ,  4 , 52 , 16 , 64 ,
@@ -753,10 +756,16 @@ create dither-table
 43 , 27 , 39 , 23 , 42 , 26 , 38 , 22 ,
 
 : dither-map ( x y -- f )
-  8 mod 8 * swap 8 mod + cells dither-table + @ s>f 65e f/ ;
+  8 mod 8 * swap 8 mod + cells dither-table + @ s>f 65e f/ 0.5e f- ;
 
-: dither ( f -- )
-  xn @ yn @ dither-map 7e f/ f+ ;
+: dither ( -- f )
+  xn @ yn @ dither-map 7e f/ ;
+
+: 3dither-scale ( f -- f ) 7e f/ ;
+: 3dither ( rgb -- rgb' )
+  dither blue-luminance f/ 3dither-scale f+ frot
+  dither green-luminance f/ 3dither-scale f+ frot
+  dither red-luminance f/ 3dither-scale f+ frot ;
 
 
 fvariable gradient-scale
@@ -804,13 +813,17 @@ fvariable 3f+temp
   4spire gradient1 gradient-invert 3fg* 3f+
 ;
 
+: scales-4spire-dithered
+  scales-4spire 3dither
+;
+
 : scales-4spire-gray
-  scales-4spire luminance dither fdup fdup
+  scales-4spire luminance dither f+ fdup fdup
 ;
 
 : weave-cover
   600 800 image-setup
-  ['] scales-4spire-gray haiku
+  ['] scales-4spire-dithered haiku
   cover-filename bmp-save
 ;
 
