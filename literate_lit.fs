@@ -1597,12 +1597,15 @@ small snippets of Forth code.
 Forth Haiku are described in terms of a current coordinate.
 We will call them x and y for simplicity.
 The Haiku cannot mutate the coordinates, so we'll provide accessors.
+We'll also keep the pixel coordinates for dithering (see below).
 
 |: implement haiku
 fvariable xx
 fvariable yy
 : x ( -- f ) xx f@ ;
 : y ( -- f ) yy f@ ;
+variable xn
+variable yn
 |;
 
 As Forth Haiku are canonically square, we will need to decide how to handle
@@ -1620,8 +1623,10 @@ We will shift things over by half a pixel to avoid certain integer artifacts.
 |: implement haiku
 : haiku ( f -- )
   image-height @ 0 do
+    i yn !
     i s>f 0.5e f+ image-width @ s>f aspect f@ f/ f/ yy f!
     image-width @ 0 do
+      i xn !
       i s>f 0.5e f+ image-width @ s>f f/ xx f!
       dup execute
       rgbf i j plot
@@ -1640,6 +1645,35 @@ We'll want an rgb to grayscale conversion function.
     0.2126e f* f+ ;
 |;
 
+As the resulting image may end up being quantized to 8 shades of gray,
+we will probably want to apply an order dither filter.
+To do this we will need a table describing the dithering perturbation
+for an ordered dither.
+|: implement haiku
+create dither-table
+ 1 , 49 , 13 , 61 ,  4 , 52 , 16 , 64 ,
+33 , 17 , 45 , 29 , 36 , 20 , 48 , 32 ,
+ 9 , 57 ,  5 , 53 , 12 , 60 ,  8 , 56 ,
+41 , 25 , 37 , 21 , 44 , 28 , 40 , 24 ,
+ 3 , 51 , 15 , 63 ,  2 , 50 , 14 , 62 ,
+35 , 19 , 47 , 31 , 34 , 18 , 46 , 30 ,
+11 , 59 ,  7 , 55 , 10 , 58 ,  6 , 54 ,
+43 , 27 , 39 , 23 , 42 , 26 , 38 , 22 ,
+|;
+Provide a method to access to x, y index wrapped around,
+and convert to floating point.
+|: implement haiku
+: dither-map ( x y -- f )
+  8 mod 8 * swap 8 mod + cells dither-table + @ s>f 65e f/ ;
+|;
+Then provide the actual dither based on the current pixel position.
+Scale by 1/7 (for 8 shades of gray).
+|: implement haiku
+: dither ( f -- )
+  xn @ yn @ dither-map 7e f/ f+ ;
+|;
+
+
 |section: 4spire
 
 My favorite Forth Haiku of my own devising is called |b{ 4spire |}b .
@@ -1648,13 +1682,6 @@ My favorite Forth Haiku of my own devising is called |b{ 4spire |}b .
   x x 23e f* fsin 2e f/ y fmax f/ fsin
   y x 23e f* fsin 2e f/ y fmax f/ fsin
   fover fover f/ fsin
-;
-|;
-
-We will likely want a grayscale version.
-|: 4spire haiku
-: 4spire-gray
-  4spire luminance fdup fdup
 ;
 |;
 
@@ -1670,13 +1697,6 @@ Another attractive Haiku is called "scales".
   scales-x' 1e scales-y' f- f* 20e f* fsin f*
   fdup scales-x' f/ fsin
   fdup scales-y' f/ fcos 1e x f- 1e y f- f+ f*
-;
-|;
-
-We will also likely want a grayscale version.
-|: scales haiku
-: scales-gray
-  scales luminance fdup fdup
 ;
 |;
 
@@ -1727,7 +1747,7 @@ We will mix 4spire and scales.
 And a grayscale version.
 |: mixing 4spire and scales
 : scales-4spire-gray
-  scales-4spire luminance fdup fdup
+  scales-4spire luminance dither fdup fdup
 ;
 |;
 

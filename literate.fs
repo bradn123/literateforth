@@ -717,14 +717,18 @@ fvariable xx
 fvariable yy
 : x ( -- f ) xx f@ ;
 : y ( -- f ) yy f@ ;
+variable xn
+variable yn
 
 fvariable aspect
 1e aspect f!
 
 : haiku ( f -- )
   image-height @ 0 do
+    i yn !
     i s>f 0.5e f+ image-width @ s>f aspect f@ f/ f/ yy f!
     image-width @ 0 do
+      i xn !
       i s>f 0.5e f+ image-width @ s>f f/ xx f!
       dup execute
       rgbf i j plot
@@ -737,6 +741,22 @@ fvariable aspect
     0.0722e f* fswap
     0.7152e f* f+ fswap
     0.2126e f* f+ ;
+
+create dither-table
+ 1 , 49 , 13 , 61 ,  4 , 52 , 16 , 64 ,
+33 , 17 , 45 , 29 , 36 , 20 , 48 , 32 ,
+ 9 , 57 ,  5 , 53 , 12 , 60 ,  8 , 56 ,
+41 , 25 , 37 , 21 , 44 , 28 , 40 , 24 ,
+ 3 , 51 , 15 , 63 ,  2 , 50 , 14 , 62 ,
+35 , 19 , 47 , 31 , 34 , 18 , 46 , 30 ,
+11 , 59 ,  7 , 55 , 10 , 58 ,  6 , 54 ,
+43 , 27 , 39 , 23 , 42 , 26 , 38 , 22 ,
+
+: dither-map ( x y -- f )
+  8 mod 8 * swap 8 mod + cells dither-table + @ s>f 65e f/ ;
+
+: dither ( f -- )
+  xn @ yn @ dither-map 7e f/ f+ ;
 
 
 fvariable gradient-scale
@@ -768,10 +788,6 @@ fvariable 3f+temp
   fover fover f/ fsin
 ;
 
-: 4spire-gray
-  4spire luminance fdup fdup
-;
-
 
 : scales-x' x 0.3e f- ;
 : scales-y' y 0.1e f+ ;
@@ -783,17 +799,13 @@ fvariable 3f+temp
   fdup scales-y' f/ fcos 1e x f- 1e y f- f+ f*
 ;
 
-: scales-gray
-  scales luminance fdup fdup
-;
-
 : scales-4spire
   scales gradient1 3fg*
   4spire gradient1 gradient-invert 3fg* 3f+
 ;
 
 : scales-4spire-gray
-  scales-4spire luminance fdup fdup
+  scales-4spire luminance dither fdup fdup
 ;
 
 : weave-cover
