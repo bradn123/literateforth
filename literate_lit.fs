@@ -1636,9 +1636,10 @@ We will shift things over by half a pixel to avoid certain integer artifacts.
 ;
 |;
 
+|section: Grayscale
 Sometimes we will want to convert a haiku to grayscale.
-We'll want an rgb to grayscale conversion function.
-At the very least we will want to refer to the luminance of each primary.
+For this we'll need the the luminance of each primary.
+We can then implement an rgb to grayscale conversion word.
 |: implement haiku
 0.0722e fconstant red-luminance
 0.7152e fconstant green-luminance
@@ -1649,10 +1650,10 @@ At the very least we will want to refer to the luminance of each primary.
     red-luminance f* f+ ;
 |;
 
+|section: Dithering
 As the resulting image may end up being quantized to 8 shades of gray,
-we will probably want to apply an order dither filter.
-To do this we will need a table describing the dithering perturbation
-for an ordered dither.
+we will probably want to apply an ordered dither filter.
+To do this we will need a table describing the dithering perturbation.
 |: implement haiku
 create dither-table
  1 , 49 , 13 , 61 ,  4 , 52 , 16 , 64 ,
@@ -1664,20 +1665,20 @@ create dither-table
 11 , 59 ,  7 , 55 , 10 , 58 ,  6 , 54 ,
 43 , 27 , 39 , 23 , 42 , 26 , 38 , 22 ,
 |;
-Provide a method to access to x, y index wrapped around,
-and convert to floating point.
+We can then repeat this infinitely and provide a word to access it by (x, y)
+coordinate.
 |: implement haiku
 : dither-map ( x y -- f )
   8 mod 8 * swap 8 mod + cells dither-table + @ s>f 65e f/ 0.5e f- ;
 |;
-Then provide the actual dither based on the current pixel position.
+Then we provide the actual dither based on the current pixel position.
 |: implement haiku
 : dither ( -- f )
   xn @ yn @ dither-map 7e f/ ;
 |;
-And we may want to do this for color images (so that they can be down
+We may want to do this for color images (so that they can be down
 converted to grayscale and look ok).
-We should do so in proportion to the luminance weight of rgb components.
+We should do so in proportion to the luminance weight of each RGB component.
 (Add in a magic factor of 1/7 that seems to yield the desired result.)
 |: implement haiku
 : 3dither-scale ( f -- f ) 7e f/ ;
