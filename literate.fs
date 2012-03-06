@@ -427,6 +427,9 @@ then
 : |page   parse-cr .d{ </p><p style="page-break-before:always;">} feed ;
 
 
+: |br   parse-cr .d{ <br/>} feed ;
+
+
 : |$ ( paragraph )
     .d{ </p><p>} feed ;
 
@@ -452,10 +455,6 @@ then
 
 : |}u   .d{ </u>} feed ;
 
-: |tt{   .d{ <tt>} feed ;
-
-: |}tt   .d{ </tt>} feed ;
-
 : |sup{   .d{ <sup>} feed ;
 
 : |}sup   .d{ </sup>} feed ;
@@ -463,6 +462,14 @@ then
 : |sub{   .d{ <sub>} feed ;
 
 : |}sub   .d{ </sub>} feed ;
+
+: |tt{   .d{ <tt>} feed ;
+
+: |}tt   .d{ </tt>} feed ;
+
+: |code{   .d{ <div class="chunk"><pre>} feed ;
+
+: |}code   .d{ </pre></div>} feed ;
 
 
 variable bullet-depth
