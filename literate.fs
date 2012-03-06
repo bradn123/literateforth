@@ -515,6 +515,10 @@ variable bullet-depth
     parse-cr dup chunk+=ref doc+=use .dcr feed ;
 
 
+: |@@ ( use a chunk in documentation )
+    parse-cr means escape doc+=$ feed ;
+
+
 
 
 : literate-env ( -- $ ) s" LITERATE" getenv ;

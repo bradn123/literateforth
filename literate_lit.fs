@@ -312,6 +312,14 @@ Using them (in a Forth-y way).
     parse-cr dup chunk+=ref doc+=use .dcr feed ;
 |;
 
+It may also be useful to expand a chunk in documentation
+(for example listing full source code in the appendix).
+For now, we will do the expansion at the point of use.
+This, unfortunately, will require references to follow all definitions.
+|: chunk tags
+|\ : |@@ ( use a chunk in documentation )
+    parse-cr means escape doc+=$ feed ;
+|;
 
 |section: Output Files
 
@@ -1834,7 +1842,13 @@ It is a 600x800 image.
 |;
 
 
-|slide-chapter: Appendix A - Slides
+|chapter: Appendix A - Full source
+|code{
+|@@ *
+|}code
+
+
+|slide-chapter: Appendix B - Slides
 
 The follow are slides from an SVFIG presentation on
 February 25, 2012.
