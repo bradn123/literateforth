@@ -156,6 +156,17 @@ Tags are provided for:
 |\  |tt{ teletype|}tt
 |}tt
 
+|-- |code{
+Preformatted source code
+in multiple lines.
+|}code  |<-|
+|code{
+|\ |code{
+|\ Preformatted source code
+|\ in multiple lines.
+|\ |}code
+|}code
+
 |-}
 
 |: formatting tags
@@ -322,50 +333,50 @@ Most documents will begin with a number of document wide field
 tags.
 |$
 
-The document base is the prefix put in front of each output file in weaving
-mode.
+The |i{ document base|}i  is the prefix put in front of each output file in
+weaving mode.
 |: global fields
 variable doc-base
 atom" index" doc-base !
 |\ : |document-base:   parse-cr doc-base ! feed ;
 |;
 
-The document has a title.
+The document has a |i{ title|}i .
 |: global fields
 variable title
 atom" Untitled" title !
 |\ : |title:   parse-cr title ! feed ;
 |;
 
-And an author (used for the publisher for now too).
+And an |i{ author|}i  (used for the publisher for now too).
 |: global fields
 variable author
 atom" Anonymous" author !
 |\ : |author:   parse-cr author ! feed ;
 |;
 
-A frivolous ISBN number
+A frivolous |i{ ISBN|}i  number.
 |: global fields
 variable isbn
 atom" 9999999999" isbn !
 |\ : |isbn:   parse-cr isbn ! feed ;
 |;
 
-A subject.
+A |i{ subject|}i .
 |: global fields
 variable subject
 atom" Article" subject !
 |\ : |subject:   parse-cr subject ! feed ;
 |;
 
-A date of authorship.
+A |i{ date|}i  of authorship.
 |: global fields
 variable doc-date
 atom" Unknown" doc-date !
 |\ : |date:   parse-cr doc-date ! feed ;
 |;
 
-And a description.
+And a |i{ description|}i .
 |: global fields
 variable description
 atom" No description available." description !
