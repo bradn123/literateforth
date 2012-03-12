@@ -25,5 +25,5 @@ snapshot:
 	zip -r literate.zip snap/
 
 clean:
-	rm -f *.opf *.ncx *.mobi power4.fs main.fs *.html literate_out.fs *.bmp *.zip
+	rm -f *.opf *.ncx *.mobi test1_power4.fs test1.fs *.html literate_out.fs *.bmp *.zip
 	rm -rf snap
