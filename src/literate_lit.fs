@@ -421,21 +421,38 @@ The pieces look like this:
 |section: Mode selection
 
 We will need to decide which mode in which to operate.
-For the moment we will use the value of the LITERATE
-environment variable to select which mode.
+The properties we desire are:
+|{- Portable to ANSFORTHs.
+|-- Allows recursive use as literate_lit.fs self bootstraps.
+|-- Default behavior should be to run the tangled program.
+|-}
+One way to achieve this is to look for a mode code on the stack.
+Systems like gforth can then be invoked like this:
+|tt{ gforth -e |i{ mode-code|}i program_lit.fs|}tt .
+Recursive use is possible bye passing the code for running mode
+to before importing |tt{ literate_lit.fs|}tt .
+By using |tt{ depth|}tt the default action of running can be
+preserved.
+A small drawback of this approach is that it precludes programs
+which need to use a similar mechanism.
+We'll use the following codes:
+|{- 0 |->|  Running mode (the default)
+|-- 1 |->|  Weaving mode
+|-- 2 |->|  Tangling mode
+|-}
+Let's setup a variable containing the current mode.
 |: setup mode flags
-: literate-env ( -- $ ) s" LITERATE" getenv ;
-: literate-mode ( $ -- )
-    literate-env compare 0= constant ;
+variable literate-mode
+: literate-setup
+    depth 0<= if 0 then literate-mode ! ;
+literate-setup
 |;
-|$
 
-Running is selected by having LITERATE unset or empty.
-Anything else is considered an error.
+Setup flags based on this.
 |: setup mode flags
-s" weave" literate-mode weaving?
-s" tangle" literate-mode tangling?
-s" " literate-mode running?
+literate-mode @ 0 = constant running?
+literate-mode @ 1 = constant tangling?
+literate-mode @ 2 = constant weaving?
 |;
 
 As a sanity check, we will insist we are in at least one mode.
@@ -1547,7 +1564,7 @@ with the current color.
     red @ over c!
     green @ over 1+ c!
     blue @ over 2 + c!
-    0 swap 3 + c! ; 
+    0 swap 3 + c! ;
 |;
 
 |section: Writing BMPs.

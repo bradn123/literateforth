@@ -521,13 +521,14 @@ variable bullet-depth
 
 
 
-: literate-env ( -- $ ) s" LITERATE" getenv ;
-: literate-mode ( $ -- )
-    literate-env compare 0= constant ;
+variable literate-mode
+: literate-setup
+    depth 0<= if 0 then literate-mode ! ;
+literate-setup
 
-s" weave" literate-mode weaving?
-s" tangle" literate-mode tangling?
-s" " literate-mode running?
+literate-mode @ 0 = constant running?
+literate-mode @ 1 = constant tangling?
+literate-mode @ 2 = constant weaving?
 
 weaving? tangling? or running? or assert
 
@@ -673,7 +674,7 @@ variable blue
     red @ over c!
     green @ over 1+ c!
     blue @ over 2 + c!
-    0 swap 3 + c! ; 
+    0 swap 3 + c! ;
 
 
 variable bmp-file
