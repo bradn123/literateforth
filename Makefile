@@ -1,8 +1,8 @@
 all:
-	LITERATE=weave gforth test1.fs
-	LITERATE=tangle gforth test1.fs
+	LITERATE=weave gforth test1_lit.fs
+	LITERATE=tangle gforth test1_lit.fs
 	~/kindle/KindleGen_Mac_i386_v2/kindlegen test1.opf
-	gforth test1.fs
+	gforth test1_lit.fs
 
 lit:
 	LITERATE=tangle gforth literate_lit.fs

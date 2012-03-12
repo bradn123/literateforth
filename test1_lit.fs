@@ -13,19 +13,19 @@ Our goal is to print the 4 raised to the 4th power.
 |section: Source Files
 
 There will be two files:
-|file: main.fs
-|file: power4.fs
+|file: test1.fs
+|file: test1_power4.fs
 
 |$
 
-main.fs will have the main use case:
-|: main.fs
-  s" power4.fs" included
+test1.fs will have the main use case:
+|: test1.fs
+  s" test1_power4.fs" included
   |@ use it
 |;
 
-power4.fs will have the definition of 4^.
-|: power4.fs
+test1_power4.fs will have the definition of 4^.
+|: test1_power4.fs
   |@ define 4^
 |;
 
