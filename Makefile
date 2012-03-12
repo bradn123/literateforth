@@ -1,24 +1,30 @@
-all: test1.stamp literate.stamp
+OUT=out
+VPATH=src
+
+all: $(OUT)/test1.stamp $(OUT)/literate.stamp
 
 .SECONDARY:
 
-%.stamp: %.fs %.mobi
-	touch $@
+$(OUT):
+	mkdir -p $@
 
-%.fs: %_lit.fs
-	LITERATE=tangle gforth $<
+$(OUT)/%.stamp: $(OUT)/%.fs $(OUT)/%.mobi | $(OUT)
+	cd $(@D) && touch ../$@
 
-%.opf: %_lit.fs
-	LITERATE=weave gforth $<
+$(OUT)/%.fs: %_lit.fs | $(OUT)
+	cd $(@D) && LITERATE=tangle gforth ../$<
 
-%.mobi: %.opf
-	~/kindle/KindleGen_Mac_i386_v2/kindlegen $<
+$(OUT)/%.opf: %_lit.fs | $(OUT)
+	cd $(@D) && LITERATE=weave gforth ../$<
 
-install:
-	cp literate.fs literate_tangled.fs
+$(OUT)/%.mobi: $(OUT)/%.opf | $(OUT)
+	cd $(@D) && ~/kindle/KindleGen_Mac_i386_v2/kindlegen ../$<
+
+install: $(OUT)/literate.fs
+	cp $< src/literate_tangled.fs
 
 deploy:
-	cp literate.mobi /Volumes/Kindle/documents
+	cp $(OUT)/literate.mobi /Volumes/Kindle/documents
 	diskutil eject Kindle
 
 snapshot:
@@ -30,5 +36,4 @@ snapshot:
 	zip -r literate.zip snap/
 
 clean:
-	rm -f *.opf *.ncx *.mobi test1_power4.fs test1.fs *.html literate.fs *.bmp *.zip *.stamp
-	rm -rf snap
+	rm -rf out
