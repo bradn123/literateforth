@@ -156,10 +156,18 @@ atom" foo" means atom" 1234abcdef5678 9abcdef" = assert
 
 
 
-: file! ( A A -- )
-    atom-string@ w/o bin create-file 0= assert
+: file!-dangle ( A A -- fileid )
+    atom-string@ r/w bin create-file 0= assert
     swap over >r atom-string@ r> write-file 0= assert
+    dup flush-file 0= assert
+;
+: file! ( A A -- )
+    file!-dangle
     close-file 0= assert
+;
+: file!-tmp ( A A -- fileid )
+    file!-dangle
+    dup 0 s>d rot reposition-file 0= assert
 ;
 
 
@@ -219,9 +227,9 @@ atom" foo" means atom" 1234abcdef5678 9abcdef" = assert
 
 variable chunk
 : chunk+=$ ( A -- )
-    chunk @ dup if atom+=$ else drop then ;
+    chunk @ if chunk @ atom+=$ else drop then ;
 : chunk+=ref ( A -- )
-    chunk @ dup if atom+=ref else drop then ;
+    chunk @ if chunk @ atom+=ref else drop then ;
 
 atom" ~~~DOC" constant main-documentation
 variable documentation-chunk
@@ -951,8 +959,8 @@ xmlns:opf="http://www.idpf.org/2007/opf">
 : bye   run-cleanup bye ;
 
 : run
-    atom" *" means run-filename file!
-    run-filename atom-string@ included
+    atom" *" means run-filename file!-tmp
+    include-file
     run-cleanup
 ;
 

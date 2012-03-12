@@ -515,8 +515,8 @@ we adopt noweb's convention that the root for evaluation is
 the chunk named "*".
 |: run implementation
 : run
-    atom" *" means run-filename file!
-    run-filename atom-string@ included
+    atom" *" means run-filename file!-tmp
+    include-file
     run-cleanup
 ;
 |;
@@ -612,12 +612,21 @@ We will also need to duplicate three items off the stack.
 
 |section: File Writing
 |: post atom utility words
-: file! ( A A -- )
-    atom-string@ w/o bin create-file 0= assert
+: file!-dangle ( A A -- fileid )
+    atom-string@ r/w bin create-file 0= assert
     swap over >r atom-string@ r> write-file 0= assert
+    dup flush-file 0= assert
+;
+: file! ( A A -- )
+    file!-dangle
     close-file 0= assert
 ;
+: file!-tmp ( A A -- fileid )
+    file!-dangle
+    dup 0 s>d rot reposition-file 0= assert
+;
 |;
+
 
 
 |chapter: Atomic Strings
@@ -959,9 +968,9 @@ As text is parsed it is accumulated into chunks.
 |: chunks
 variable chunk
 : chunk+=$ ( A -- )
-    chunk @ dup if atom+=$ else drop then ;
+    chunk @ if chunk @ atom+=$ else drop then ;
 : chunk+=ref ( A -- )
-    chunk @ dup if atom+=ref else drop then ;
+    chunk @ if chunk @ atom+=ref else drop then ;
 |;
 
 A special primary chunk is kept for the main document.
