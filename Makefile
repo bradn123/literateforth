@@ -27,13 +27,12 @@ deploy:
 	cp $(OUT)/literate.mobi /Volumes/Kindle/documents
 	diskutil eject Kindle
 
-snapshot:
+snapshot: all
 	rm -rf snap
 	mkdir snap
-	cp *.mobi snap
-	cp *.html snap
-	cp *.fs snap
+	cp -r src snap
+	cp -r out snap
 	zip -r literate.zip snap/
 
 clean:
-	rm -rf out
+	rm -rf out snap literate.zip
