@@ -1,16 +1,21 @@
-all:
-	LITERATE=weave gforth test1_lit.fs
-	LITERATE=tangle gforth test1_lit.fs
-	~/kindle/KindleGen_Mac_i386_v2/kindlegen test1.opf
-	gforth test1_lit.fs
+all: test1.stamp literate.stamp
 
-lit:
-	LITERATE=tangle gforth literate_lit.fs
-	LITERATE=weave gforth literate_lit.fs
-	~/kindle/KindleGen_Mac_i386_v2/kindlegen literate.opf
+.SECONDARY:
+
+%.stamp: %.fs %.mobi
+	touch $@
+
+%.fs: %_lit.fs
+	LITERATE=tangle gforth $<
+
+%.opf: %_lit.fs
+	LITERATE=weave gforth $<
+
+%.mobi: %.opf
+	~/kindle/KindleGen_Mac_i386_v2/kindlegen $<
 
 install:
-	cp literate_out.fs literate.fs
+	cp literate.fs literate_tangled.fs
 
 deploy:
 	cp literate.mobi /Volumes/Kindle/documents
@@ -25,5 +30,5 @@ snapshot:
 	zip -r literate.zip snap/
 
 clean:
-	rm -f *.opf *.ncx *.mobi test1_power4.fs test1.fs *.html literate_out.fs *.bmp *.zip
+	rm -f *.opf *.ncx *.mobi test1_power4.fs test1.fs *.html literate.fs *.bmp *.zip *.stamp
 	rm -rf snap

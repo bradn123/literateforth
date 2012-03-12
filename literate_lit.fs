@@ -1,4 +1,4 @@
-s" literate.fs" included
+s" literate_tangled.fs" included
 
 |title: Literate Forth
 |author: Brad Nelson
@@ -67,14 +67,14 @@ Other typical Forth stack effect abbreviations will be used.
 |section: Generated Files
 
 When generating runnable code (weaving),
-|file: literate_out.fs
+|file: literate.fs
  is emitted. This file should typically be renamed to
-literate.fs and included in other literate programs to active the syntax
+literate_tangled.fs and included in other literate programs to active the syntax
 described herein.
 |$
 It will contain a single file expansion of all the code described in this
 document.
-|: literate_out.fs
+|: literate.fs
 |@ *
 |;
 
