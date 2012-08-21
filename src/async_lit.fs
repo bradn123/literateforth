@@ -289,6 +289,7 @@ decimal
 ;
 
 test
+bye
 |;
 
 |.
