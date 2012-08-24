@@ -33,6 +33,9 @@ define additional functionality in C.
 |: event types
 \c     SHUTDOWN,
 |;
+|: forth to c declarations
+c-function async-shutdown async_shutdown -- void
+|;
 |: handle requests
 \c     case SHUTDOWN:
 \c       free(req);
@@ -60,6 +63,9 @@ define additional functionality in C.
 |section: Open
 |: event types
 \c     OPEN,
+|;
+|: forth to c declarations
+c-function async-open async_open a n n n n -- void
 |;
 |: handle requests
 \c     case OPEN:
@@ -91,6 +97,9 @@ define additional functionality in C.
 |: event types
 \c     CLOSE,
 |;
+|: forth to c declarations
+c-function async-close async_close n n -- void
+|;
 |: handle requests
 \c     case CLOSE:
 \c       req->result = close(req->args[0].number);
@@ -111,6 +120,9 @@ define additional functionality in C.
 |section: Read
 |: event types
 \c     READ,
+|;
+|: forth to c declarations
+c-function async-read async_read n a n n -- void
 |;
 |: handle requests
 \c     case READ:
@@ -136,6 +148,9 @@ define additional functionality in C.
 |: event types
 \c     WRITE,
 |;
+|: forth to c declarations
+c-function async-write async_write n a n n -- void
+|;
 |: handle requests
 \c     case WRITE:
 \c       req->result = write(req->args[0].number, req->args[1].pointer,
@@ -159,6 +174,9 @@ define additional functionality in C.
 |section: System
 |: event types
 \c     SYSTEM,
+|;
+|: forth to c declarations
+c-function async-system async_system a n n -- void
 |;
 |: handle requests
 \c     case SYSTEM:
@@ -311,14 +329,9 @@ define additional functionality in C.
 \c int o_wronly(void) { return O_WRONLY; }
 \c int o_rdonly(void) { return O_RDONLY; }
 
+|@ forth to c declarations
 c-function async-startup async_startup -- void
-c-function async-shutdown async_shutdown -- void
 c-function async-wait async_wait a a -- void
-c-function async-open async_open a n n n n -- void
-c-function async-close async_close n n -- void
-c-function async-read async_read n a n n -- void
-c-function async-write async_write n a n n -- void
-c-function async-system async_system a n n -- void
 c-function O_CREAT o_creat -- n
 c-function O_TRUNC o_trunc -- n
 c-function O_WRONLY o_wronly -- n
