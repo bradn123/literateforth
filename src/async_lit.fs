@@ -7,6 +7,23 @@
 |chapter: Introduction
 
 |section: Overview
+|: *
+|@ required headers
+|@ worker count
+|@ request structure
+|@ lock and count
+|@ requests queue
+|@ results queue
+|@ worker implementation
+|@ startup routine
+|@ enqueue a request
+|@ issue requests
+|@ implement waiting
+|@ relevant constants
+|@ forth to c declarations
+|@ dispatch events
+|@ general tests
+|;
 
 |chapter: Asynchronous System I/O
 
@@ -386,33 +403,24 @@ Waiting then occurs on the main thread.
 c-function async-wait async_wait a a -- void
 |;
 
+|chapter: Dispatch
 
-|: *
-|@ required headers
-|@ worker count
-|@ request structure
-|@ lock and count
-|@ requests queue
-|@ results queue
-|@ worker implementation
-|@ startup routine
-|@ enqueue a request
-|@ issue requests
-|@ implement waiting
-|@ relevant constants
-|@ forth to c declarations
-
+|section: Run loop
+|: dispatch events
 variable result
 variable callback
-
 : async-run
   begin
     result callback async-wait
 \    result @ . callback @ . cr
     callback @ 0=
   until
-;
+|;
 
+|chapter: Testing
+
+Some tests are in order.
+|: general tests
 : test
     async-startup
 \    10 0 do s" ls >/dev/null" i 1+ async-system loop
@@ -421,7 +429,6 @@ variable callback
     async-run
     async-shutdown
 ;
-
 test
 bye
 |;
