@@ -22,7 +22,15 @@
 |@ relevant constants
 |@ forth to c declarations
 |@ dispatch events
+|@ test tools
+|@ closures
 |@ general tests
+|;
+
+async.fs will get the tangled version.
+|file: async.fs
+|: async.fs
+|@ *
 |;
 
 |chapter: Asynchronous System I/O
@@ -46,10 +54,15 @@ define additional functionality in C.
 
 Some standard constants will be brought over from C.
 |: relevant constants
-c-function O_CREAT O_CREAT -- n
-c-function O_TRUNC O_TRUNC -- n
-c-function O_WRONLY O_WRONLY -- n
-c-function O_RDONLY O_RDONLY -- n
+\c #define DEFINT(name) int name##_int(void) { return name; }
+\c DEFINT(O_CREAT)
+c-function O_CREAT O_CREAT_int -- n
+\c DEFINT(O_TRUNC)
+c-function O_TRUNC O_TRUNC_int -- n
+\c DEFINT(O_WRONLY)
+c-function O_WRONLY O_WRONLY_int -- n
+\c DEFINT(O_RDONLY)
+c-function O_RDONLY O_RDONLY_int -- n
 |;
 
 Others declared to avoid switching base (for permissions).
@@ -61,9 +74,15 @@ octal
 decimal
 |;
 
+We'll also define some generic test tools.
+|: test tools
+: assert ( n -- ) 0= if abort then ;
+: assert= ( a b -- ) = assert ;
+|;
+
 |chapter: Requests
 
-|: Request Structure
+|: request structure
 \c typedef union {
 \c   int number;
 \c   void *pointer;
@@ -414,14 +433,14 @@ variable callback
     result callback async-wait
 \    result @ . callback @ . cr
     callback @ 0=
-  until
+  until ;
 |;
 
 |chapter: Testing
 
 Some tests are in order.
 |: general tests
-: test
+: async-test
     async-startup
 \    10 0 do s" ls >/dev/null" i 1+ async-system loop
 \    s" test1.txt" O_CREAT O_TRUNC or O_WRONLY or 0777 1234 async-open
@@ -429,8 +448,85 @@ Some tests are in order.
     async-run
     async-shutdown
 ;
-test
-bye
+async-test
+|;
+
+|chapter: Closures
+
+|: closures
+|@ carnal knowledge
+|@ scope stack
+|@ scope flow control
+|@ start and end scope
+|;
+
+|section: Carnal Knowledge
+To implement closures, we will need some carnal knowledge of our Forth
+implementation's internals.
+Gforth's control-sys entries are on the data stack and take up 3 cells.
+|: carnal knowledge
+3 constant control-sys-size
+|;
+
+|section: Scope Stack
+
+We'll want to build up nested scope info.
+We can't easily do that on the data stack, as control flow stuff will get in
+the way. We'll define our own instead.
+
+|: scope stack
+create scope-stack   control-sys-size 100 * cells allot
+variable scope-ptr   scope-stack scope-ptr !
+|;
+
+Add some push / pop operations.
+|: scope stack
+: scope+!   cells scope-ptr +! ;
+: >scope   scope-ptr @ !  1 scope+! ;
+: scope>   -1 scope+!  scope-ptr @ @ ;
+|;
+
+Push and pop a whole control-sys.
+|: scope stack
+: scope{   control-sys-size 0 do >scope loop ;
+: }scope   control-sys-size 0 do scope> loop ;
+|;
+
+|section: Flow Control
+
+|tt{ :noname|}tt normally yields an execution token followed by a control-sys.
+We'll be happier with a version that has the control-sys and then the
+excution token.
+|: scope flow control
+: :noname2   :noname control-sys-size 1+ roll ;
+|;
+
+We'll often use |tt{ ahead|}tt and |tt{ then|}tt to bypass the entry point
+entirely. So we'll want a version of |tt{ :noname|}tt that returns just a
+control-sys with no execution token.
+|: scope flow control
+: :headless   :noname2 drop ;
+|;
+
+|section: Start and End Scope
+
+We can know define start and end scope words.
+
+|: start and end scope
+: [:   postpone ahead scope{
+       postpone ; :noname2 >scope ; immediate
+: ;]   postpone ; :headless scope> >r }scope
+       postpone then r> postpone literal ; immediate
+|;
+
+Test it.
+|: general tests
+: scope-test 1 [: 2 [: 3 ;] 4 ;] 5 ;
+scope-test 5 assert=
+execute 4 assert=
+execute 3 assert=
+2 assert=
+1 assert=
 |;
 
 |.

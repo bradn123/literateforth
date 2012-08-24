@@ -8,6 +8,7 @@ all: test1 literate async
 test1: $(OUT)/test1.stamp
 literate: $(OUT)/literate.stamp
 async: $(OUT)/async.stamp
+	gforth src/async_lit.fs -e bye
 
 LITERATE_TOOL=src/literate_lit.fs
 
