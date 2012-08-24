@@ -27,7 +27,41 @@ define additional functionality in C.
 \c #include <unistd.h>
 |;
 
-|chapter: Request Types
+Some standard constants will be brought over from C.
+|: relevant constants
+c-function O_CREAT O_CREAT -- n
+c-function O_TRUNC O_TRUNC -- n
+c-function O_WRONLY O_WRONLY -- n
+c-function O_RDONLY O_RDONLY -- n
+|;
+
+Others declared to avoid switching base (for permissions).
+
+|: relevant constants
+: octal 8 base ! ;
+octal
+777 constant 0777
+decimal
+|;
+
+|chapter: Requests
+
+|: Request Structure
+\c typedef union {
+\c   int number;
+\c   void *pointer;
+\c } VARIANT;
+\c
+\c typedef struct _REQUEST {
+\c   struct _REQUEST *next;
+\c   enum {
+|@ event types
+\c   } operation;
+\c   VARIANT args[10];
+\c   int callback;
+\c   int result;
+\c } REQUEST;
+|;
 
 |section: Shutdown
 |: event types
@@ -201,39 +235,30 @@ c-function async-system async_system a n n -- void
 \c }
 |;
 
-|: *
-|@ required headers
-\c
+|chapter: Workers and Queues
+
+|section: Workers
+
+A number of worker threads will be started so that they can block on pending
+requests. We will for now assume a fixed number of workers.
+|: worker count
 \c #define WORKERS 10
-\c
-\c typedef union {
-\c   int number;
-\c   void *pointer;
-\c } VARIANT;
-\c
-\c typedef struct _REQUEST {
-\c   struct _REQUEST *next;
-\c   enum {
-|@ event types
-\c   } operation;
-\c   VARIANT args[10];
-\c   int callback;
-\c   int result;
-\c } REQUEST;
-\c
 \c static pthread_t g_worker_pool[WORKERS];
-\c
-\c static pthread_mutex_t g_lock;
-\c static int g_pending_count;
-\c
-\c static pthread_cond_t g_requests_ready;
-\c static REQUEST *g_requests_head;
-\c static REQUEST *g_requests_tail;
-\c
-\c static pthread_cond_t g_results_ready;
-\c static REQUEST *g_results_head;
-\c static REQUEST *g_results_tail;
-\c
+|;
+
+The workers are started when the system is initialized.
+|: start all workers
+\c   for (i = 0; i < WORKERS; ++i) {
+\c     if (pthread_create(&g_worker_pool[i], NULL, Worker, NULL)) {
+\c       assert(0);
+\c     }
+\c   }
+|;
+
+A worker draws requests from a single queue, executes it, then posts the result
+to another queue.
+
+|: worker implementation
 \c void *Worker(void *arg) {
 \c   REQUEST *req;
 \c   char *tmp;
@@ -267,7 +292,35 @@ c-function async-system async_system a n n -- void
 \c     pthread_mutex_unlock(&g_lock);
 \c   }
 \c }
-\c
+|;
+
+|section: Queues
+
+Two queues are involved in the system.
+Guarded by a single lock so that a single pending count for the complete
+pipeline can be kept.
+|: lock and count
+\c static pthread_mutex_t g_lock;
+\c static int g_pending_count;
+|;
+
+One to receive pending requests.
+|: requests queue
+\c static pthread_cond_t g_requests_ready;
+\c static REQUEST *g_requests_head;
+\c static REQUEST *g_requests_tail;
+|;
+
+Another to gather processed requests for processing in the main event loop.
+|: results queue
+\c static pthread_cond_t g_results_ready;
+\c static REQUEST *g_results_head;
+\c static REQUEST *g_results_tail;
+|;
+
+These will be initialized on startup.
+
+|: startup routine
 \c void async_startup(void) {
 \c   int i;
 \c   pthread_mutex_init(&g_lock, NULL);
@@ -279,13 +332,12 @@ c-function async-system async_system a n n -- void
 \c   g_results_head = 0;
 \c   g_results_tail = 0;
 \c   g_pending_count = 0;
-\c   for (i = 0; i < WORKERS; ++i) {
-\c     if (pthread_create(&g_worker_pool[i], NULL, Worker, NULL)) {
-\c       assert(0);
-\c     }
-\c   }
+|@ start all workers
 \c }
-\c
+|;
+
+Requests will then be enqueued on demand.
+|: enqueue a request
 \c void async_request_enqueue(REQUEST *req) {
 \c   pthread_mutex_lock(&g_lock);
 \c   ++g_pending_count;
@@ -299,9 +351,14 @@ c-function async-system async_system a n n -- void
 \c   pthread_cond_signal(&g_requests_ready);
 \c   pthread_mutex_unlock(&g_lock);
 \c }
-\c
-|@ issue requests
-\c
+|;
+
+|: forth to c declarations
+c-function async-startup async_startup -- void
+|;
+
+Waiting then occurs on the main thread.
+|: implement waiting
 \c void async_wait(int *result, int *callback) {
 \c   REQUEST *req;
 \c   pthread_mutex_lock(&g_lock);
@@ -323,27 +380,30 @@ c-function async-system async_system a n n -- void
 \c   --g_pending_count;
 \c   pthread_mutex_unlock(&g_lock);
 \c }
-\c
-\c int o_creat(void) { return O_CREAT; }
-\c int o_trunc(void) { return O_TRUNC; }
-\c int o_wronly(void) { return O_WRONLY; }
-\c int o_rdonly(void) { return O_RDONLY; }
+|;
 
-|@ forth to c declarations
-c-function async-startup async_startup -- void
+|: forth to c declarations
 c-function async-wait async_wait a a -- void
-c-function O_CREAT o_creat -- n
-c-function O_TRUNC o_trunc -- n
-c-function O_WRONLY o_wronly -- n
-c-function O_RDONLY o_rdonly -- n
+|;
+
+
+|: *
+|@ required headers
+|@ worker count
+|@ request structure
+|@ lock and count
+|@ requests queue
+|@ results queue
+|@ worker implementation
+|@ startup routine
+|@ enqueue a request
+|@ issue requests
+|@ implement waiting
+|@ relevant constants
+|@ forth to c declarations
 
 variable result
 variable callback
-
-: octal 8 base ! ;
-octal
-777 constant 0777
-decimal
 
 : async-run
   begin
