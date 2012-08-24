@@ -8,7 +8,16 @@
 
 |section: Overview
 
-|: *
+|chapter: Asynchronous System I/O
+
+|section: Overview
+As Forth's built-in I/O primitives are either blocking or polling based,
+we will need to define some other primitives. With gforth, we are able to
+define additional functionality in C.
+
+|section: The Basics
+
+|: required headers
 \c #include <assert.h>
 \c #include <fcntl.h>
 \c #include <pthread.h>
@@ -16,6 +25,166 @@
 \c #include <stdlib.h>
 \c #include <string.h>
 \c #include <unistd.h>
+|;
+
+|chapter: Request Types
+
+|section: Shutdown
+|: event types
+\c     SHUTDOWN,
+|;
+|: handle requests
+\c     case SHUTDOWN:
+\c       free(req);
+\c       return;
+|;
+|: issue requests
+\c void async_shutdown(void) {
+\c   REQUEST *req;
+\c   int i;
+\c   for (i = 0; i < WORKERS; ++i) {
+\c     req = (REQUEST*) calloc(1, sizeof(REQUEST));
+\c     req->operation = SHUTDOWN;
+\c     async_request_enqueue(req);
+\c   }
+\c   for (i = 0; i < WORKERS; ++i) {
+\c     pthread_join(g_worker_pool[i], NULL);
+\c     pthread_mutex_destroy(&g_lock);
+\c     pthread_cond_destroy(&g_requests_ready);
+\c     pthread_mutex_destroy(&g_lock);
+\c     pthread_cond_destroy(&g_results_ready);
+\c   }
+\c }
+|;
+
+|section: Open
+|: event types
+\c     OPEN,
+|;
+|: handle requests
+\c     case OPEN:
+\c       tmp = malloc(req->args[1].number + 1);
+\c       assert(tmp);
+\c       memcpy(tmp, req->args[0].pointer, req->args[1].number);
+\c       tmp[req->args[1].number] = 0;
+\c       req->result = open(tmp, req->args[2].number, req->args[3].number);
+\c       free(tmp);
+\c       break;
+|;
+|: issue requests
+\c void async_open(char *path, int path_len,
+\c                 int oflag, int mode, int callback) {
+\c   REQUEST *req;
+\c   req = (REQUEST*) calloc(1, sizeof(REQUEST));
+\c   assert(req);
+\c   req->operation = OPEN;
+\c   req->args[0].pointer = path;
+\c   req->args[1].number = path_len;
+\c   req->args[2].number = oflag;
+\c   req->args[3].number = mode;
+\c   req->callback = callback;
+\c   async_request_enqueue(req);
+\c }
+|;
+
+|section: Close
+|: event types
+\c     CLOSE,
+|;
+|: handle requests
+\c     case CLOSE:
+\c       req->result = close(req->args[0].number);
+\c       break;
+|;
+|: issue requests
+\c void async_close(int fd, int callback) {
+\c   REQUEST *req;
+\c   req = (REQUEST*) calloc(1, sizeof(REQUEST));
+\c   assert(req);
+\c   req->operation = CLOSE;
+\c   req->args[0].number = fd;
+\c   req->callback = callback;
+\c   async_request_enqueue(req);
+\c }
+|;
+
+|section: Read
+|: event types
+\c     READ,
+|;
+|: handle requests
+\c     case READ:
+\c       req->result = read(req->args[0].number, req->args[1].pointer,
+\c                          req->args[2].number);
+\c       break;
+|;
+|: issue requests
+\c void async_read(int fd, void *buf, int len, int callback) {
+\c   REQUEST *req;
+\c   req = (REQUEST*) calloc(1, sizeof(REQUEST));
+\c   assert(req);
+\c   req->operation = READ;
+\c   req->args[0].number = fd;
+\c   req->args[1].pointer = buf;
+\c   req->args[2].number = len;
+\c   req->callback = callback;
+\c   async_request_enqueue(req);
+\c }
+|;
+
+|section: Write
+|: event types
+\c     WRITE,
+|;
+|: handle requests
+\c     case WRITE:
+\c       req->result = write(req->args[0].number, req->args[1].pointer,
+\c                           req->args[2].number);
+\c       break;
+|;
+|: issue requests
+\c void async_write(int fd, void *buf, int len, int callback) {
+\c   REQUEST *req;
+\c   req = (REQUEST*) calloc(1, sizeof(REQUEST));
+\c   assert(req);
+\c   req->operation = WRITE;
+\c   req->args[0].number = fd;
+\c   req->args[1].pointer = buf;
+\c   req->args[2].number = len;
+\c   req->callback = callback;
+\c   async_request_enqueue(req);
+\c }
+|;
+
+|section: System
+|: event types
+\c     SYSTEM,
+|;
+|: handle requests
+\c     case SYSTEM:
+\c       tmp = malloc(req->args[1].number + 1);
+\c       assert(tmp);
+\c       memcpy(tmp, req->args[0].pointer, req->args[1].number);
+\c       tmp[req->args[1].number] = 0;
+\c       req->result = system(tmp);
+\c       free(tmp);
+\c       break;
+|;
+|: issue requests
+\c void async_system(char *cmd, int cmd_len, int callback) {
+\c   REQUEST *req;
+\c   req = (REQUEST*) calloc(1, sizeof(REQUEST));
+\c   assert(req);
+\c   req->operation = SYSTEM;
+\c   req->args[0].pointer = cmd;
+\c   req->args[1].number = cmd_len;
+\c   req->callback = callback;
+\c   async_request_enqueue(req);
+\c }
+|;
+
+|: *
+|@ required headers
 \c
 \c #define WORKERS 10
 \c
@@ -27,12 +196,7 @@
 \c typedef struct _REQUEST {
 \c   struct _REQUEST *next;
 \c   enum {
-\c     SHUTDOWN,
-\c     OPEN,
-\c     READ,
-\c     WRITE,
-\c     CLOSE,
-\c     SYSTEM,
+|@ event types
 \c   } operation;
 \c   VARIANT args[10];
 \c   int callback;
@@ -67,36 +231,7 @@
 \c     pthread_mutex_unlock(&g_lock);
 \c
 \c     switch (req->operation) {
-\c     case SHUTDOWN:
-\c       free(req);
-\c       return;
-\c     case OPEN:
-\c       tmp = malloc(req->args[1].number + 1);
-\c       assert(tmp);
-\c       memcpy(tmp, req->args[0].pointer, req->args[1].number);
-\c       tmp[req->args[1].number] = 0;
-\c       req->result = open(tmp, req->args[2].number, req->args[3].number);
-\c       free(tmp);
-\c       break;
-\c     case CLOSE:
-\c       req->result = close(req->args[0].number);
-\c       break;
-\c     case READ:
-\c       req->result = read(req->args[0].number, req->args[1].pointer,
-\c                          req->args[2].number);
-\c       break;
-\c     case WRITE:
-\c       req->result = write(req->args[0].number, req->args[1].pointer,
-\c                           req->args[2].number);
-\c       break;
-\c     case SYSTEM:
-\c       tmp = malloc(req->args[1].number + 1);
-\c       assert(tmp);
-\c       memcpy(tmp, req->args[0].pointer, req->args[1].number);
-\c       tmp[req->args[1].number] = 0;
-\c       req->result = system(tmp);
-\c       free(tmp);
-\c       break;
+|@ handle requests
 \c     default:
 \c       assert(0);
 \c       break;
@@ -147,81 +282,7 @@
 \c   pthread_mutex_unlock(&g_lock);
 \c }
 \c
-\c void async_shutdown(void) {
-\c   REQUEST *req;
-\c   int i;
-\c   for (i = 0; i < WORKERS; ++i) {
-\c     req = (REQUEST*) calloc(1, sizeof(REQUEST));
-\c     req->operation = SHUTDOWN;
-\c     async_request_enqueue(req);
-\c   }
-\c   for (i = 0; i < WORKERS; ++i) {
-\c     pthread_join(g_worker_pool[i], NULL);
-\c     pthread_mutex_destroy(&g_lock);
-\c     pthread_cond_destroy(&g_requests_ready);
-\c     pthread_mutex_destroy(&g_lock);
-\c     pthread_cond_destroy(&g_results_ready);
-\c   }
-\c }
-\c
-\c void async_open(char *path, int path_len,
-\c                 int oflag, int mode, int callback) {
-\c   REQUEST *req;
-\c   req = (REQUEST*) calloc(1, sizeof(REQUEST));
-\c   assert(req);
-\c   req->operation = OPEN;
-\c   req->args[0].pointer = path;
-\c   req->args[1].number = path_len;
-\c   req->args[2].number = oflag;
-\c   req->args[3].number = mode;
-\c   req->callback = callback;
-\c   async_request_enqueue(req);
-\c }
-\c
-\c void async_close(int fd, int callback) {
-\c   REQUEST *req;
-\c   req = (REQUEST*) calloc(1, sizeof(REQUEST));
-\c   assert(req);
-\c   req->operation = CLOSE;
-\c   req->args[0].number = fd;
-\c   req->callback = callback;
-\c   async_request_enqueue(req);
-\c }
-\c
-\c void async_read(int fd, void *buf, int len, int callback) {
-\c   REQUEST *req;
-\c   req = (REQUEST*) calloc(1, sizeof(REQUEST));
-\c   assert(req);
-\c   req->operation = READ;
-\c   req->args[0].number = fd;
-\c   req->args[1].pointer = buf;
-\c   req->args[2].number = len;
-\c   req->callback = callback;
-\c   async_request_enqueue(req);
-\c }
-\c
-\c void async_write(int fd, void *buf, int len, int callback) {
-\c   REQUEST *req;
-\c   req = (REQUEST*) calloc(1, sizeof(REQUEST));
-\c   assert(req);
-\c   req->operation = WRITE;
-\c   req->args[0].number = fd;
-\c   req->args[1].pointer = buf;
-\c   req->args[2].number = len;
-\c   req->callback = callback;
-\c   async_request_enqueue(req);
-\c }
-\c
-\c void async_system(char *cmd, int cmd_len, int callback) {
-\c   REQUEST *req;
-\c   req = (REQUEST*) calloc(1, sizeof(REQUEST));
-\c   assert(req);
-\c   req->operation = SYSTEM;
-\c   req->args[0].pointer = cmd;
-\c   req->args[1].number = cmd_len;
-\c   req->callback = callback;
-\c   async_request_enqueue(req);
-\c }
+|@ issue requests
 \c
 \c void async_wait(int *result, int *callback) {
 \c   REQUEST *req;
