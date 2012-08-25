@@ -361,6 +361,10 @@ variable callback
 ;
 
 
+: '[:   postpone ['] postpone [: ; immediate
+: ;]'   postpone ;] postpone swap postpone execute ; immediate
+
+
 async-startup
 
 
@@ -410,6 +414,17 @@ test2
 ;
 5 4 special-adder invoke 9 assert=
 5 8 special-adder invoke 256 assert=
+
+: test3
+    s" ls -l out" '[: async-system
+      0= assert
+      1 s" Sugar Test!" '[: async-write
+        drop cr ." And Done with Sugar!" cr
+      ;]'
+    ;]'
+    async-run
+;
+test3
 
 
 async-shutdown

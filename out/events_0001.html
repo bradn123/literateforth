@@ -511,6 +511,20 @@ test2
 5 4 special-adder invoke 9 assert=
 5 8 special-adder invoke 256 assert=
 </pre></div><p>
+</p></div><div class="section"><h2>Sugar</h2><p></p><tt><b>add sugar</b> +&equiv;</tt><div class="chunk"><pre>: '[:   postpone ['] postpone [: ; immediate
+: ;]'   postpone ;] postpone swap postpone execute ; immediate
+</pre></div><p>
+</p></div><div class="section"><h2>Test Sugar</h2><p></p><tt><b>general tests</b> +&equiv;</tt><div class="chunk"><pre>: test3
+    s&quot; ls -l out&quot; '[: async-system
+      0= assert
+      1 s&quot; Sugar Test!&quot; '[: async-write
+        drop cr .&quot; And Done with Sugar!&quot; cr
+      ;]'
+    ;]'
+    async-run
+;
+test3
+</pre></div><p>
 </p></div><div class="section"><h2>Question?</h2><p>Questions?
 
 </p></div></body></html>
