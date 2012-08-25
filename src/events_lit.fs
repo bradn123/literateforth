@@ -67,13 +67,23 @@ function handleRequest(request, done) {
 
 |section: Twisted
 |{- Python framework for event drive programming
-|-- Uses 'futures' / 'promises'
-|-- TODO
+|-- Closer to explicit event handling
+|-- Uses reactor + deferred
+|-- Attach callbacks to promises (to be called when ready)
 |-}
 
 |section: Twisted (example)
 |code{
-TODO
+from twisted.internet import reactor, defer
+def getSlowSquare(x):
+  d = defer.Defered()
+  reactor.callLater(100, d.callback, x * x)
+def printValue(x):
+  print d
+d = getSlowSquare(4)
+d.addCallback(printValue)
+reactor.callLater(200, reactor.stop)
+reactor.run()
 |}code
 
 |section: Traditional Forth Approach
@@ -82,14 +92,100 @@ TODO
 |-- Global variables for shared state
 |-- Blocked tasks mitigate waiting
 |-}
-PROS:
+PROs:
 |{- Flow of a task is in one place
 |-- Tasks can spawn subtasks
+|-- Easier synchronization than threads
 |-}
-CONS:
+CONs:
 |{- Tasks have thread-like overhead
 |-- Cross task communication is ad-hoc
 |-}
+
+|section: Closures
+|: closures
+|@ carnal knowledge
+|@ scope stack
+|@ scope flow control
+|@ bind and invoke
+|@ start and end scope
+|;
+
+|section: Carnal Knowledge
+For gforth we know control-sys is on the data stack and 3 cells:
+|: carnal knowledge
+3 constant control-sys-size
+|;
+
+|section: Scope Stack
+|{- Nested scopes
+|-- Can't use dstack or rstack as flow control is in the way
+|-- Define our own
+|-- Assume it won't get too deep
+|-- Store the size in the first cell
+|-- Leak like mad for now
+|-}
+
+|section: Scope Stack (implementation)
+|: scope stack
+control-sys-size 20 * constant scope-cells
+: scope-alloc ( -- s) scope-cells allocate 0= assert
+              0 over ! ;
+variable scope
+scope-alloc scope !
+|;
+Add some push / pop operations.
+|: scope stack
+: scope+! ( n -- ) cells scope @ @ +! ;
+: >s ( n -- ) scope @ @ !  1 scope+! ;
+: s> ( -- n ) -1 scope+!  scope @ @ @ ;
+|;
+Push and pop a whole control-sys.
+|: scope stack
+: scope{ ( cs -- ) control-sys-size 0 do >s loop ;
+: }scope ( -- cs ) control-sys-size 0 do s> loop ;
+|;
+
+|section: Cloning Scopes
+|: scope stack
+: scope-clone ( s -- s' )
+    scope-alloc dup >r over @ @ cells move r>
+;
+|;
+
+|section: :noname
+Alternate version of |tt{ :noname|}tt .
+|: scope flow control
+: :noname2 ( -- control-sys xt )
+    :noname control-sys-size 1+ roll ;
+|;
+Even simpler:
+|: scope flow control
+: :headless ( -- control-sys ) :noname2 drop ;
+|;
+
+|section: Bind and Invoke
+|: bind and invoke
+: bind ( xt -- closure )
+    >s scope-clone
+;
+: invoke ( closure -- )
+    scope @ >r scope ! s> execute r> scope !
+;
+|;
+
+|section: Start and End Scope
+We want:
+|code{
+: foo a b c [: x y z ;] d e f ;
+|}code
+|: start and end scope
+: [:   postpone ahead scope{
+       postpone ; :noname2 >s ; immediate
+: ;]   postpone ; :headless s> >r }scope
+       postpone then r> postpone literal
+       postpone bind ; immediate
+|;
 
 |section: Asynchronous I/O
 |{- Use gforth's c-function words
@@ -506,65 +602,6 @@ Some tests are in order.
     async-run
 ;
 \ async-test
-|;
-
-|section: Closures
-|: closures
-|@ carnal knowledge
-|@ scope stack
-|@ scope flow control
-|@ start and end scope
-|;
-
-|section: Carnal Knowledge
-Assume we know control-sys is on the data stack and 3 cells:
-|: carnal knowledge
-3 constant control-sys-size
-|;
-
-|section: Scope Stack
-|{- Nested scopes
-|-- Can't use dstack or rstack as flow control is in the way
-|-- Define our own
-|-}
-|: scope stack
-create scope-stack   control-sys-size 100 * cells allot
-variable scope-ptr   scope-stack scope-ptr !
-|;
-Add some push / pop operations.
-|: scope stack
-: scope+!   cells scope-ptr +! ;
-: >scope   scope-ptr @ !  1 scope+! ;
-: scope>   -1 scope+!  scope-ptr @ @ ;
-|;
-Push and pop a whole control-sys.
-|: scope stack
-: scope{   control-sys-size 0 do >scope loop ;
-: }scope   control-sys-size 0 do scope> loop ;
-|;
-
-|section: :noname
-Alternate version of |tt{ :noname|}tt .
-|: scope flow control
-: :noname2 ( -- control-sys xt )
-    :noname control-sys-size 1+ roll ;
-|;
-Even simpler:
-|: scope flow control
-: :headless ( -- control-sys ) :noname2 drop ;
-|;
-
-|section: Start and End Scope
-We want:
-|code{
-: foo a b c [: x y z ;] d e f ;
-|}code
-
-|: start and end scope
-: [:   postpone ahead scope{
-       postpone ; :noname2 >scope ; immediate
-: ;]   postpone ; :headless scope> >r }scope
-       postpone then r> postpone literal ; immediate
 |;
 
 |chapter: Supplemental Material
