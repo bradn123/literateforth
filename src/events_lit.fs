@@ -32,6 +32,7 @@ In your browser, press |<-|  and |->|  to move through the slides,
 |{- Intro to Event Driven Programming
 |-- Asynchronous I/O in Forth
 |-- Closures in Forth
+|-- Putting it Together
 |-}
 
 |section: Event Driven Programming
@@ -130,15 +131,16 @@ For gforth we know control-sys is on the data stack and 3 cells:
 |: scope stack
 control-sys-size 20 * constant scope-cells
 : scope-alloc ( -- s) scope-cells allocate 0= assert
-              0 over ! ;
-variable scope
-scope-alloc scope !
+              1 cells over ! ;
+variable myscope
+scope-alloc myscope !
 |;
 Add some push / pop operations.
 |: scope stack
-: scope+! ( n -- ) cells scope @ @ +! ;
-: >s ( n -- ) scope @ @ !  1 scope+! ;
-: s> ( -- n ) -1 scope+!  scope @ @ @ ;
+: scope+! ( n -- ) cells myscope @ +! ;
+: scope-ptr ( -- n ) myscope @ @ myscope @ + ;
+: >s ( n -- ) scope-ptr !  1 scope+! ;
+: s> ( -- n ) -1 scope+!  scope-ptr @ ;
 |;
 Push and pop a whole control-sys.
 |: scope stack
@@ -146,11 +148,13 @@ Push and pop a whole control-sys.
 : }scope ( -- cs ) control-sys-size 0 do s> loop ;
 |;
 
-|section: Cloning Scopes
+|section: Cloning Scopes and Freeing
 |: scope stack
+: scope. ( s -- ) dup @ cell ?do dup i + @ . cell +loop drop cr ;
 : scope-clone ( s -- s' )
-    scope-alloc dup >r over @ @ cells move r>
+    scope-alloc dup >r over @ cmove r>
 ;
+: scope-free ( s -- ) free 0= assert ;
 |;
 
 |section: :noname
@@ -167,10 +171,12 @@ Even simpler:
 |section: Bind and Invoke
 |: bind and invoke
 : bind ( xt -- closure )
-    >s scope-clone
+    >s myscope @ scope-clone
 ;
 : invoke ( closure -- )
-    scope @ >r scope ! s> execute r> scope !
+    myscope @ >r ( leak ) scope-clone myscope !
+    s> execute
+    myscope @ scope-free r> myscope !
 ;
 |;
 
@@ -324,7 +330,6 @@ Requests will then be enqueued on demand.
 |;
 |: forth to c declarations
 c-function async-startup async_startup -- void
-async-startup
 |;
 
 |section: Shutdown
@@ -585,24 +590,53 @@ variable callback
 : async-run
   begin
     result callback async-wait
-\    result @ callback @ invoke
-    callback @ 0=
-  until
-  async-shutdown
+    callback @ 0= if exit then
+    result @ callback @ invoke
+  again
 ;
 |;
 
-|section: Testing Async
+|section: Putting it together
 Some tests are in order.
 |: general tests
-: async-test
-\    10 0 do s" ls >/dev/null" i 1+ async-system loop
-\    s" test1.txt" O_CREAT O_TRUNC or O_WRONLY or rwx 1234 async-open
-\    1 s" Hello world!" 5555 async-write
+: test1
+    async-startup
+    s" ls -l out" [:
+      0= assert
+      1 s" Hello world!" [:
+        drop cr ." And Done!" cr
+      ;] async-write
+    ;] async-system
     async-run
+    async-shutdown
 ;
-\ async-test
+test1
 |;
+
+|section: Using Scope
+|: general tests
+: write-whole-file ( data filename next -- )
+    >s >r >r >s >s r> r>
+    O_CREAT O_TRUNC or O_WRONLY or rwx [:
+      dup 0>= assert
+      dup >r s> s> r> >s [:
+        drop s> [: s> invoke ;] async-close
+      ;] async-write
+    ;] async-open
+;
+: test2
+    async-startup
+    s" Hello there!" s" out/test1.txt" [:
+      ." Written file." cr
+    ;] write-whole-file 
+    async-run
+    async-shutdown
+;
+test2
+|;
+
+|section: Question?
+Questions?
 
 |chapter: Supplemental Material
 
@@ -622,6 +656,7 @@ It will contain everything that is normally run.
 
 |section: Overall Order
 |: *
+|@ test tools
 |@ required headers
 |@ worker count
 |@ request structure
@@ -635,9 +670,8 @@ It will contain everything that is normally run.
 |@ implement waiting
 |@ relevant constants
 |@ forth to c declarations
-|@ dispatch events
-|@ test tools
 |@ closures
+|@ dispatch events
 |@ general tests
 |;
 
@@ -648,14 +682,19 @@ We'll also define some generic test tools.
 : assert= ( a b -- ) = assert ;
 |;
 
-|section: Scope Test
+|section: Scope Tests
 |: general tests
 : scope-test 1 [: 2 [: 3 ;] 4 ;] 5 ;
 scope-test 5 assert=
-execute 4 assert=
-execute 3 assert=
+invoke 4 assert=
+invoke 3 assert=
 2 assert=
 1 assert=
+|;
+
+|: general tests
+: test-adder >s [: s> + ;] ;
+5 4 test-adder invoke 9 assert=
 |;
 
 |.
