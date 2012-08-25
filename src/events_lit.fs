@@ -611,7 +611,6 @@ variable callback
 Some tests are in order.
 |: general tests
 : test1
-    async-startup
     s" ls -l out" [:
       0= assert
       1 s" Hello world!" [:
@@ -619,7 +618,6 @@ Some tests are in order.
       ;] async-write
     ;] async-system
     async-run
-    async-shutdown
 ;
 test1
 |;
@@ -636,12 +634,10 @@ test1
     ;] async-open
 ;
 : test2
-    async-startup
     s" Hello there!" s" out/test1.txt" [:
       ." Written file." cr
     ;] write-whole-file 
     async-run
-    async-shutdown
 ;
 test2
 |;
@@ -695,7 +691,9 @@ It will contain everything that is normally run.
 |@ forth to c declarations
 |@ closures
 |@ dispatch events
+|@ do startup
 |@ general tests
+|@ do shutdown
 |;
 
 |section: Testing Tools
@@ -703,6 +701,16 @@ We'll also define some generic test tools.
 |: test tools
 : assert ( n -- ) 0= if abort then ;
 : assert= ( a b -- ) = assert ;
+|;
+
+|section: Startup and Shutdown
+
+|: do startup
+async-startup
+|;
+
+|: do shutdown
+async-shutdown
 |;
 
 |.
