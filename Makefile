@@ -52,7 +52,8 @@ publish:
 	git merge master
 	make clean
 	make
-	git commit -a -m "Publish"
+	git add `find out -type f`
+	git commit -m "Publish"
 	make clean
 	git checkout master
 	git push
