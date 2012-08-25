@@ -5,43 +5,99 @@
 |document-base: events
 
 |chapter: Introduction
+This document describes an approach to event driven programming in Forth, in
+the literate programming style.
+Unlike a typical literate program written in full prose, this document is
+was written to be used as a slide deck for a deep drive code tour.
+While the presentation attempts to be comprehensive,
+some supplemental information is included in a non-slide chapter
+at the end of this document.
+
+|slide-chapter: Event Driven Programming in Forth
+
+Brad Nelson
+|$
+August 25, 2012
+|$
+|i{
+In your browser, press |<-|  and |->|  to move through the slides,
+|^|  and |v|  jump to the beginning and end.
+|}i
+|$
+|i{
+(On eBook readers, browse normally.)
+|}i
 
 |section: Overview
-|: *
-|@ required headers
-|@ worker count
-|@ request structure
-|@ lock and count
-|@ requests queue
-|@ results queue
-|@ worker implementation
-|@ startup routine
-|@ enqueue a request
-|@ issue requests
-|@ implement waiting
-|@ relevant constants
-|@ forth to c declarations
-|@ dispatch events
-|@ test tools
-|@ closures
-|@ general tests
-|;
+|{- Intro to Event Driven Programming
+|-- Asynchronous I/O in Forth
+|-- Closures in Forth
+|-}
 
-events.fs will get the tangled version.
-|file: events.fs
-|: events.fs
-|@ *
-|;
+|section: Event Driven Programming
+|{- Computers spend a lot of time waiting
+|-- Real concurrency can be HARD
+|-- Lots of threads can be expensive
+|-}
 
-|chapter: Asynchronous System I/O
+|section: Node.js
+|{- Server side Javascript
+|-- Chrome's V8 engine for speed
+|-- Closures used to chain asynchronous events
+|-- Standard library mostly asynch instead of an afterthought
+|-- Event loop implicit (program runs until nothing pending)
+|-}
 
-|section: Overview
-As Forth's built-in I/O primitives are either blocking or polling based,
-we will need to define some other primitives. With gforth, we are able to
-define additional functionality in C.
+|section: Node.js (example)
+|code{
+function handleRequest(request, done) {
+  if (request.style == 1) {
+    getThing(request.name, function(result, err) {
+      getThing(result, function(result, err) {
+        done(result);
+      });
+    });
+  } else {
+    getThing('default', function(result, err) {
+      done(result);
+    });
+  }
+}
+|}code
 
-|section: The Basics
+|section: Twisted
+|{- Python framework for event drive programming
+|-- Uses 'futures' / 'promises'
+|-- TODO
+|-}
 
+|section: Twisted (example)
+|code{
+TODO
+|}code
+
+|section: Traditional Forth Approach
+|{- Tasks
+|-- User variables for per task state
+|-- Global variables for shared state
+|-- Blocked tasks mitigate waiting
+|-}
+PROS:
+|{- Flow of a task is in one place
+|-- Tasks can spawn subtasks
+|-}
+CONS:
+|{- Tasks have thread-like overhead
+|-- Cross task communication is ad-hoc
+|-}
+
+|section: Asynchronous I/O
+|{- Use gforth's c-function words
+|-- Single threaded forth
+|-- C side I/O worker pool
+|-}
+
+|section: Required Headers
 |: required headers
 \c #include <assert.h>
 \c #include <fcntl.h>
@@ -52,36 +108,47 @@ define additional functionality in C.
 \c #include <unistd.h>
 |;
 
+|section: Standard Constants
 Some standard constants will be brought over from C.
 |: relevant constants
 \c #define DEFINT(name) int name##_int(void) { return name; }
 \c DEFINT(O_CREAT)
-c-function O_CREAT O_CREAT_int -- n
 \c DEFINT(O_TRUNC)
-c-function O_TRUNC O_TRUNC_int -- n
 \c DEFINT(O_WRONLY)
-c-function O_WRONLY O_WRONLY_int -- n
 \c DEFINT(O_RDONLY)
+c-function O_CREAT O_CREAT_int -- n
+c-function O_TRUNC O_TRUNC_int -- n
+c-function O_WRONLY O_WRONLY_int -- n
 c-function O_RDONLY O_RDONLY_int -- n
 |;
 
-Others declared to avoid switching base (for permissions).
-
+|section: File Permissions
+Declare full octal permissions:
 |: relevant constants
 : octal 8 base ! ;
 octal
-777 constant 0777
+777 constant rwx
 decimal
 |;
 
-We'll also define some generic test tools.
-|: test tools
-: assert ( n -- ) 0= if abort then ;
-: assert= ( a b -- ) = assert ;
+|section: Workers
+We will for now assume a fixed number of workers.
+|: worker count
+\c #define WORKERS 10
+\c static pthread_t g_worker_pool[WORKERS];
 |;
 
-|chapter: Requests
+|section: Worker Startup
+The workers are started when the system is initialized.
+|: start all workers
+\c   for (i = 0; i < WORKERS; ++i) {
+\c     if (pthread_create(&g_worker_pool[i], NULL, Worker, NULL)) {
+\c       assert(0);
+\c     }
+\c   }
+|;
 
+|section: Requests
 |: request structure
 \c typedef union {
 \c   int number;
@@ -91,12 +158,77 @@ We'll also define some generic test tools.
 \c typedef struct _REQUEST {
 \c   struct _REQUEST *next;
 \c   enum {
-|@ event types
+       |@ event types
 \c   } operation;
-\c   VARIANT args[10];
+\c   VARIANT args[4];
 \c   int callback;
 \c   int result;
 \c } REQUEST;
+|;
+
+|section: Queues
+Two queues are involved in the system.
+Guarded by a single lock so that a single pending count for the complete
+pipeline can be kept.
+|: lock and count
+\c static pthread_mutex_t g_lock;
+\c static int g_pending_count;
+|;
+
+|section: Request Queue
+One to receive pending requests.
+|: requests queue
+\c static pthread_cond_t g_requests_ready;
+\c static REQUEST *g_requests_head;
+\c static REQUEST *g_requests_tail;
+|;
+
+|section: Result Queue
+Another to gather processed requests for processing in the main event loop.
+|: results queue
+\c static pthread_cond_t g_results_ready;
+\c static REQUEST *g_results_head;
+\c static REQUEST *g_results_tail;
+|;
+
+|section: Queue Setup
+These will be initialized on startup.
+|: startup routine
+\c void async_startup(void) {
+\c   int i;
+\c   pthread_mutex_init(&g_lock, NULL);
+\c   pthread_cond_init(&g_requests_ready, NULL);
+\c   pthread_mutex_init(&g_lock, NULL);
+\c   pthread_cond_init(&g_results_ready, NULL);
+\c   g_requests_head = 0;
+\c   g_requests_tail = 0;
+\c   g_results_head = 0;
+\c   g_results_tail = 0;
+\c   g_pending_count = 0;
+|@ start all workers
+\c }
+|;
+
+|section: Enqueue Requests
+Requests will then be enqueued on demand.
+|: enqueue a request
+\c void async_request_enqueue(REQUEST *req) {
+\c   pthread_mutex_lock(&g_lock);
+\c   ++g_pending_count;
+\c   if (g_requests_tail) {
+\c     g_requests_tail->next = req;
+\c   } else {
+\c     g_requests_head = req;
+\c   }
+\c   g_requests_tail = req;
+\c   req->next = 0;
+\c   pthread_cond_signal(&g_requests_ready);
+\c   pthread_mutex_unlock(&g_lock);
+\c }
+|;
+|: forth to c declarations
+c-function async-startup async_startup -- void
+async-startup
 |;
 
 |section: Shutdown
@@ -271,29 +403,7 @@ c-function async-system async_system a n n -- void
 \c }
 |;
 
-|chapter: Workers and Queues
-
-|section: Workers
-
-A number of worker threads will be started so that they can block on pending
-requests. We will for now assume a fixed number of workers.
-|: worker count
-\c #define WORKERS 10
-\c static pthread_t g_worker_pool[WORKERS];
-|;
-
-The workers are started when the system is initialized.
-|: start all workers
-\c   for (i = 0; i < WORKERS; ++i) {
-\c     if (pthread_create(&g_worker_pool[i], NULL, Worker, NULL)) {
-\c       assert(0);
-\c     }
-\c   }
-|;
-
-A worker draws requests from a single queue, executes it, then posts the result
-to another queue.
-
+|section: Worker Implementation
 |: worker implementation
 \c void *Worker(void *arg) {
 \c   REQUEST *req;
@@ -330,69 +440,7 @@ to another queue.
 \c }
 |;
 
-|section: Queues
-
-Two queues are involved in the system.
-Guarded by a single lock so that a single pending count for the complete
-pipeline can be kept.
-|: lock and count
-\c static pthread_mutex_t g_lock;
-\c static int g_pending_count;
-|;
-
-One to receive pending requests.
-|: requests queue
-\c static pthread_cond_t g_requests_ready;
-\c static REQUEST *g_requests_head;
-\c static REQUEST *g_requests_tail;
-|;
-
-Another to gather processed requests for processing in the main event loop.
-|: results queue
-\c static pthread_cond_t g_results_ready;
-\c static REQUEST *g_results_head;
-\c static REQUEST *g_results_tail;
-|;
-
-These will be initialized on startup.
-
-|: startup routine
-\c void async_startup(void) {
-\c   int i;
-\c   pthread_mutex_init(&g_lock, NULL);
-\c   pthread_cond_init(&g_requests_ready, NULL);
-\c   pthread_mutex_init(&g_lock, NULL);
-\c   pthread_cond_init(&g_results_ready, NULL);
-\c   g_requests_head = 0;
-\c   g_requests_tail = 0;
-\c   g_results_head = 0;
-\c   g_results_tail = 0;
-\c   g_pending_count = 0;
-|@ start all workers
-\c }
-|;
-
-Requests will then be enqueued on demand.
-|: enqueue a request
-\c void async_request_enqueue(REQUEST *req) {
-\c   pthread_mutex_lock(&g_lock);
-\c   ++g_pending_count;
-\c   if (g_requests_tail) {
-\c     g_requests_tail->next = req;
-\c   } else {
-\c     g_requests_head = req;
-\c   }
-\c   g_requests_tail = req;
-\c   req->next = 0;
-\c   pthread_cond_signal(&g_requests_ready);
-\c   pthread_mutex_unlock(&g_lock);
-\c }
-|;
-
-|: forth to c declarations
-c-function async-startup async_startup -- void
-|;
-
+|section: Waiting for Results
 Waiting then occurs on the main thread.
 |: implement waiting
 \c void async_wait(int *result, int *callback) {
@@ -417,42 +465,36 @@ Waiting then occurs on the main thread.
 \c   pthread_mutex_unlock(&g_lock);
 \c }
 |;
-
 |: forth to c declarations
 c-function async-wait async_wait a a -- void
 |;
 
-|chapter: Dispatch
-
-|section: Run loop
+|section: Run Loop
 |: dispatch events
 variable result
 variable callback
 : async-run
   begin
     result callback async-wait
-\    result @ . callback @ . cr
+\    result @ callback @ invoke
     callback @ 0=
   until ;
+  async-shutdown
 |;
 
-|chapter: Testing
-
+|section: Testing Async
 Some tests are in order.
 |: general tests
 : async-test
-    async-startup
 \    10 0 do s" ls >/dev/null" i 1+ async-system loop
-\    s" test1.txt" O_CREAT O_TRUNC or O_WRONLY or 0777 1234 async-open
+\    s" test1.txt" O_CREAT O_TRUNC or O_WRONLY or rwx 1234 async-open
 \    1 s" Hello world!" 5555 async-write
     async-run
-    async-shutdown
 ;
-async-test
+\ async-test
 |;
 
-|chapter: Closures
-
+|section: Closures
 |: closures
 |@ carnal knowledge
 |@ scope stack
@@ -461,24 +503,22 @@ async-test
 |;
 
 |section: Carnal Knowledge
-To implement closures, we will need some carnal knowledge of our Forth
-implementation's internals.
-Gforth's control-sys entries are on the data stack and take up 3 cells.
+Assume we know control-sys is on the data stack and 3 cells:
 |: carnal knowledge
 3 constant control-sys-size
 |;
 
 |section: Scope Stack
-
-We'll want to build up nested scope info.
-We can't easily do that on the data stack, as control flow stuff will get in
-the way. We'll define our own instead.
-
+|{- Nested scopes
+|-- Can't use dstack or rstack as flow control is in the way
+|-- Define our own
+|-}
 |: scope stack
 create scope-stack   control-sys-size 100 * cells allot
 variable scope-ptr   scope-stack scope-ptr !
 |;
 
+|section: Scope Stack (push/pop)
 Add some push / pop operations.
 |: scope stack
 : scope+!   cells scope-ptr +! ;
@@ -486,14 +526,14 @@ Add some push / pop operations.
 : scope>   -1 scope+!  scope-ptr @ @ ;
 |;
 
+|section: Scope Stack (control-sys)
 Push and pop a whole control-sys.
 |: scope stack
 : scope{   control-sys-size 0 do >scope loop ;
 : }scope   control-sys-size 0 do scope> loop ;
 |;
 
-|section: Flow Control
-
+|section: :noname2
 |tt{ :noname|}tt normally yields an execution token followed by a control-sys.
 We'll be happier with a version that has the control-sys and then the
 excution token.
@@ -501,6 +541,7 @@ excution token.
 : :noname2   :noname control-sys-size 1+ roll ;
 |;
 
+|section: :headless
 We'll often use |tt{ ahead|}tt and |tt{ then|}tt to bypass the entry point
 entirely. So we'll want a version of |tt{ :noname|}tt that returns just a
 control-sys with no execution token.
@@ -509,9 +550,6 @@ control-sys with no execution token.
 |;
 
 |section: Start and End Scope
-
-We can know define start and end scope words.
-
 |: start and end scope
 : [:   postpone ahead scope{
        postpone ; :noname2 >scope ; immediate
@@ -519,7 +557,51 @@ We can know define start and end scope words.
        postpone then r> postpone literal ; immediate
 |;
 
-Test it.
+|chapter: Supplemental Material
+
+This chapter contains things that didn't make sense to include in the
+main presentation.
+
+|section: Tangled Output
+
+We would like to generate a tangled (runnable) version of this document.
+It should be written to:
+|file: events.fs
+
+It will contain everything that is normally run.
+|: events.fs
+|@ *
+|;
+
+|section: Overall Order
+|: *
+|@ required headers
+|@ worker count
+|@ request structure
+|@ lock and count
+|@ requests queue
+|@ results queue
+|@ worker implementation
+|@ startup routine
+|@ enqueue a request
+|@ issue requests
+|@ implement waiting
+|@ relevant constants
+|@ forth to c declarations
+|@ dispatch events
+|@ test tools
+|@ closures
+|@ general tests
+|;
+
+|section: Testing Tools
+We'll also define some generic test tools.
+|: test tools
+: assert ( n -- ) 0= if abort then ;
+: assert= ( a b -- ) = assert ;
+|;
+
+|section: Scope Test
 |: general tests
 : scope-test 1 [: 2 [: 3 ;] 4 ;] 5 ;
 scope-test 5 assert=
