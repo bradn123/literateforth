@@ -646,6 +646,18 @@ test1
 test2
 |;
 
+|section: Closures with Conditions
+|: general tests
+: special-adder dup 8 = if
+     drop [: 256 ;]
+   else
+     >s [: s> + ;]
+   then
+;
+5 4 special-adder invoke 9 assert=
+5 8 special-adder invoke 256 assert=
+|;
+
 |section: Question?
 Questions?
 
@@ -691,20 +703,6 @@ We'll also define some generic test tools.
 |: test tools
 : assert ( n -- ) 0= if abort then ;
 : assert= ( a b -- ) = assert ;
-|;
-
-|section: Closures with Conditions
-|: general tests
-(
-: special-adder dup 8 = if
-     drop [: 256 ;]
-   else
-     >s [: s> + ;]
-   then
-;
-5 4 special-adder invoke 9 assert=
-5 8 special-adder invoke 256 assert=
-)
 |;
 
 |.
