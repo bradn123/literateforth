@@ -515,7 +515,10 @@ we adopt noweb's convention that the root for evaluation is
 the chunk named "*".
 |: run implementation
 : run
-    atom" *" means run-filename file!-tmp
+    atom" *" means
+    run-filename file!-tmp
+    forth-wordlist 1 set-order
+    forth-wordlist set-current
     include-file
     run-cleanup
 ;

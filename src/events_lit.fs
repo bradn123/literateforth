@@ -491,8 +491,9 @@ variable callback
     result callback async-wait
 \    result @ callback @ invoke
     callback @ 0=
-  until ;
+  until
   async-shutdown
+;
 |;
 
 |section: Testing Async
