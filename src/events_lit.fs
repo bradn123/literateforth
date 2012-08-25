@@ -148,11 +148,16 @@ Add some push / pop operations.
 : s> ( -- n ) -1 scope+!  scope-ptr @ ;
 |;
 
+|section: Printing a Scope
+|: scope stack
+: scope. ( s -- ) ." scope(" dup @ cell / 1- . ." ) "
+    dup @ cell ?do dup i + @ . cell +loop drop cr ;
+|;
+
 |section: Cloning Scopes and Freeing
 |: scope stack
-: scope. ( s -- ) dup @ cell ?do dup i + @ . cell +loop drop cr ;
 : scope-clone ( s -- s' )
-    scope-alloc dup >r over @ cmove r>
+    scope-alloc dup >r scope-cells cmove r>
 ;
 : scope-free ( s -- ) free 0= assert ;
 |;
@@ -167,7 +172,7 @@ Alternate version of |tt{ :noname|}tt .
 |section: Bind and Invoke
 |: bind and invoke
 : bind ( xt -- closure )
-    >s myscope @ scope-clone
+    >s myscope @ scope-clone s> drop
 ;
 : invoke ( closure -- )
     myscope @ >r ( leak ) scope-clone myscope !
@@ -183,7 +188,7 @@ We want:
 |}code
 |: start and end scope
 : [:   postpone ahead postpone exit
-       :noname2 >s ; immediate
+       postpone [ :noname2 >s ; immediate
 : ;]   postpone exit postpone then
        s> postpone literal postpone bind ; immediate
 |;
@@ -274,7 +279,7 @@ The workers are started when the system is initialized.
        |@ event types
 \c   } operation;
 \c   VARIANT args[4];
-\c   int callback;
+\c   void *callback;
 \c   int result;
 \c } REQUEST;
 |;
@@ -379,7 +384,7 @@ c-function async-shutdown async_shutdown -- void
 \c     OPEN,
 |;
 |: forth to c declarations
-c-function async-open async_open a n n n n -- void
+c-function async-open async_open a n n n a -- void
 |;
 |: handle request types
 \c     case OPEN:
@@ -393,7 +398,7 @@ c-function async-open async_open a n n n n -- void
 |;
 |: issue requests
 \c void async_open(char *path, int path_len,
-\c                 int oflag, int mode, int callback) {
+\c                 int oflag, int mode, void *callback) {
 \c   REQUEST *req;
 \c   req = (REQUEST*) calloc(1, sizeof(REQUEST));
 \c   assert(req);
@@ -412,7 +417,7 @@ c-function async-open async_open a n n n n -- void
 \c     CLOSE,
 |;
 |: forth to c declarations
-c-function async-close async_close n n -- void
+c-function async-close async_close n a -- void
 |;
 |: handle request types
 \c     case CLOSE:
@@ -420,7 +425,7 @@ c-function async-close async_close n n -- void
 \c       break;
 |;
 |: issue requests
-\c void async_close(int fd, int callback) {
+\c void async_close(int fd, void *callback) {
 \c   REQUEST *req;
 \c   req = (REQUEST*) calloc(1, sizeof(REQUEST));
 \c   assert(req);
@@ -436,7 +441,7 @@ c-function async-close async_close n n -- void
 \c     READ,
 |;
 |: forth to c declarations
-c-function async-read async_read n a n n -- void
+c-function async-read async_read n a n a -- void
 |;
 |: handle request types
 \c     case READ:
@@ -445,7 +450,7 @@ c-function async-read async_read n a n n -- void
 \c       break;
 |;
 |: issue requests
-\c void async_read(int fd, void *buf, int len, int callback) {
+\c void async_read(int fd, void *buf, int len, void *callback) {
 \c   REQUEST *req;
 \c   req = (REQUEST*) calloc(1, sizeof(REQUEST));
 \c   assert(req);
@@ -463,7 +468,7 @@ c-function async-read async_read n a n n -- void
 \c     WRITE,
 |;
 |: forth to c declarations
-c-function async-write async_write n a n n -- void
+c-function async-write async_write n a n a -- void
 |;
 |: handle request types
 \c     case WRITE:
@@ -472,7 +477,7 @@ c-function async-write async_write n a n n -- void
 \c       break;
 |;
 |: issue requests
-\c void async_write(int fd, void *buf, int len, int callback) {
+\c void async_write(int fd, void *buf, int len, void *callback) {
 \c   REQUEST *req;
 \c   req = (REQUEST*) calloc(1, sizeof(REQUEST));
 \c   assert(req);
@@ -490,7 +495,7 @@ c-function async-write async_write n a n n -- void
 \c     SYSTEM,
 |;
 |: forth to c declarations
-c-function async-system async_system a n n -- void
+c-function async-system async_system a n a -- void
 |;
 |: handle request types
 \c     case SYSTEM:
@@ -503,7 +508,7 @@ c-function async-system async_system a n n -- void
 \c       break;
 |;
 |: issue requests
-\c void async_system(char *cmd, int cmd_len, int callback) {
+\c void async_system(char *cmd, int cmd_len, void *callback) {
 \c   REQUEST *req;
 \c   req = (REQUEST*) calloc(1, sizeof(REQUEST));
 \c   assert(req);
@@ -568,7 +573,7 @@ c-function async-system async_system a n n -- void
 |section: Waiting for Results
 Waiting then occurs on the main thread.
 |: implement waiting
-\c void async_wait(int *result, int *callback) {
+\c void async_wait(int *result, void **callback) {
 \c   REQUEST *req;
 \c   pthread_mutex_lock(&g_lock);
 \c   if (g_pending_count <= 0) {
