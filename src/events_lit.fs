@@ -1,8 +1,8 @@
 0 s" literate_lit.fs" included
 
-|title: Asynchronous Programming in Forth
+|title: Event Driven Programming in Forth
 |author: Brad Nelson
-|document-base: async
+|document-base: events
 
 |chapter: Introduction
 
@@ -27,9 +27,9 @@
 |@ general tests
 |;
 
-async.fs will get the tangled version.
-|file: async.fs
-|: async.fs
+events.fs will get the tangled version.
+|file: events.fs
+|: events.fs
 |@ *
 |;
 

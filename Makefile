@@ -1,14 +1,14 @@
 OUT=out
 VPATH=src
 
-all: test1 literate async
+all: test1 literate events
 
 .SECONDARY:
 
 test1: $(OUT)/test1.stamp
 literate: $(OUT)/literate.stamp
-async: $(OUT)/async.stamp
-	gforth src/async_lit.fs -e bye
+events: $(OUT)/events.stamp
+	gforth src/events_lit.fs -e bye
 
 LITERATE_TOOL=src/literate_lit.fs
 
