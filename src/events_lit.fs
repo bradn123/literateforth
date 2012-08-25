@@ -156,7 +156,7 @@ Add a word to drop a colon-sys.
 
 |section: Scope Stack (implementation)
 |: scope stack
-colon-sys-size 20 * constant scope-cells
+1000 cells constant scope-cells
 : scope-alloc ( -- s) scope-cells allocate 0= assert
               1 cells over ! ;
 variable myscope
@@ -703,10 +703,57 @@ test2
 test3
 |;
 
+|section: Man or Boy Test (Alogol)
+|code{
+begin
+  real procedure A(k, x1, x2, x3, x4, x5);
+  value k; integer k;
+  begin
+    real procedure B;
+    begin k := k - 1;
+          B := A := A(k, B, x1, x2, x3, x4);
+    end;
+    if k <= 0 then A := x4 + x5 else B;
+  end;
+  outreal(A(10, 1, -1, -1, 1, 0));
+end;
+|}code
+
+|section: Man or Boy Test (Javascript)
+|code{
+function A(k, x1, x2, x3, x4, x5) { 
+    function B() { return A(--k, B, x1, x2, x3, x4); }
+    return k <= 0 ? x4() + x5() : B();
+}
+function K(n) { function() { return n; } }
+alert(A(10, K(1), K(-1), K(-1), K(1), K(0)));
+|}code
+
+|section: Man or Boy Test (Forth)
+|code{
+: A
+    >s >s >s >s >s >s
+    [: [ s> dup >s bind ] s> 1- swap s> s> s> s> recurse ;]
+    s> s> >r >r sdrop sdrop sdrop
+    s> 0<= if
+      drop
+      r> invoke r> invoke +
+    else
+      rdrop rdrop
+      invoke
+    then
+;
+: K >s [: s> ;] sdrop ;
+
+10 1 K -1 K 1 K 0 K A
+-67 assert=
+|}code
+|;
+
 |section: Future Directions
 |{- Plug the leaks
 |-- Add named scope variables
-|-- Convert the Man Boy Test
+|-- Get Man or Boy Test working
 |-}
 
 |section: Question?
