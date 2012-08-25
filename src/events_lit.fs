@@ -113,10 +113,15 @@ CONs:
 |;
 
 |section: Carnal Knowledge
-For gforth we know control-sys is on the data stack and 3 cells:
+For gforth we know colon-sys is on the data stack and 3 cells:
 |: carnal knowledge
-3 constant control-sys-size
+4 constant colon-sys-size
 |;
+Add a word to drop a colon-sys.
+|: carnal knowledge
+: colon-sys-drop ( colon-sys -- ) colon-sys-size 0 do drop loop ;
+|;
+
 
 |section: Scope Stack
 |{- Nested scopes
@@ -129,7 +134,7 @@ For gforth we know control-sys is on the data stack and 3 cells:
 
 |section: Scope Stack (implementation)
 |: scope stack
-control-sys-size 20 * constant scope-cells
+colon-sys-size 20 * constant scope-cells
 : scope-alloc ( -- s) scope-cells allocate 0= assert
               1 cells over ! ;
 variable myscope
@@ -142,17 +147,17 @@ Add some push / pop operations.
 : >s ( n -- ) scope-ptr !  1 scope+! ;
 : s> ( -- n ) -1 scope+!  scope-ptr @ ;
 |;
-Push and pop a whole control-sys.
+
+|section: Printing a Scope
 |: scope stack
-: scope{ ( cs -- ) control-sys-size 0 do >s loop ;
-: }scope ( -- cs ) control-sys-size 0 do s> loop ;
+: scope. ( s -- ) ." scope(" dup @ cell / 1- . ." ) "
+    dup @ cell ?do dup i + @ . cell +loop drop cr ;
 |;
 
 |section: Cloning Scopes and Freeing
 |: scope stack
-: scope. ( s -- ) dup @ cell ?do dup i + @ . cell +loop drop cr ;
 : scope-clone ( s -- s' )
-    scope-alloc dup >r over @ cmove r>
+    scope-alloc dup >r scope-cells cmove r>
 ;
 : scope-free ( s -- ) free 0= assert ;
 |;
@@ -160,18 +165,14 @@ Push and pop a whole control-sys.
 |section: :noname
 Alternate version of |tt{ :noname|}tt .
 |: scope flow control
-: :noname2 ( -- control-sys xt )
-    :noname control-sys-size 1+ roll ;
-|;
-Even simpler:
-|: scope flow control
-: :headless ( -- control-sys ) :noname2 drop ;
+: :noname2 ( -- xt )
+    :noname colon-sys-drop ;
 |;
 
 |section: Bind and Invoke
 |: bind and invoke
 : bind ( xt -- closure )
-    >s myscope @ scope-clone
+    >s myscope @ scope-clone s> drop
 ;
 : invoke ( closure -- )
     myscope @ >r ( leak ) scope-clone myscope !
@@ -186,11 +187,10 @@ We want:
 : foo a b c [: x y z ;] d e f ;
 |}code
 |: start and end scope
-: [:   postpone ahead scope{
-       postpone ; :noname2 >s ; immediate
-: ;]   postpone ; :headless s> >r }scope
-       postpone then r> postpone literal
-       postpone bind ; immediate
+: [:   postpone ahead postpone exit
+       postpone [ :noname2 >s ; immediate
+: ;]   postpone exit postpone then
+       s> postpone literal postpone bind ; immediate
 |;
 
 |section: Try Out Closures
@@ -279,7 +279,7 @@ The workers are started when the system is initialized.
        |@ event types
 \c   } operation;
 \c   VARIANT args[4];
-\c   int callback;
+\c   void *callback;
 \c   int result;
 \c } REQUEST;
 |;
@@ -384,7 +384,7 @@ c-function async-shutdown async_shutdown -- void
 \c     OPEN,
 |;
 |: forth to c declarations
-c-function async-open async_open a n n n n -- void
+c-function async-open async_open a n n n a -- void
 |;
 |: handle request types
 \c     case OPEN:
@@ -398,7 +398,7 @@ c-function async-open async_open a n n n n -- void
 |;
 |: issue requests
 \c void async_open(char *path, int path_len,
-\c                 int oflag, int mode, int callback) {
+\c                 int oflag, int mode, void *callback) {
 \c   REQUEST *req;
 \c   req = (REQUEST*) calloc(1, sizeof(REQUEST));
 \c   assert(req);
@@ -417,7 +417,7 @@ c-function async-open async_open a n n n n -- void
 \c     CLOSE,
 |;
 |: forth to c declarations
-c-function async-close async_close n n -- void
+c-function async-close async_close n a -- void
 |;
 |: handle request types
 \c     case CLOSE:
@@ -425,7 +425,7 @@ c-function async-close async_close n n -- void
 \c       break;
 |;
 |: issue requests
-\c void async_close(int fd, int callback) {
+\c void async_close(int fd, void *callback) {
 \c   REQUEST *req;
 \c   req = (REQUEST*) calloc(1, sizeof(REQUEST));
 \c   assert(req);
@@ -441,7 +441,7 @@ c-function async-close async_close n n -- void
 \c     READ,
 |;
 |: forth to c declarations
-c-function async-read async_read n a n n -- void
+c-function async-read async_read n a n a -- void
 |;
 |: handle request types
 \c     case READ:
@@ -450,7 +450,7 @@ c-function async-read async_read n a n n -- void
 \c       break;
 |;
 |: issue requests
-\c void async_read(int fd, void *buf, int len, int callback) {
+\c void async_read(int fd, void *buf, int len, void *callback) {
 \c   REQUEST *req;
 \c   req = (REQUEST*) calloc(1, sizeof(REQUEST));
 \c   assert(req);
@@ -468,7 +468,7 @@ c-function async-read async_read n a n n -- void
 \c     WRITE,
 |;
 |: forth to c declarations
-c-function async-write async_write n a n n -- void
+c-function async-write async_write n a n a -- void
 |;
 |: handle request types
 \c     case WRITE:
@@ -477,7 +477,7 @@ c-function async-write async_write n a n n -- void
 \c       break;
 |;
 |: issue requests
-\c void async_write(int fd, void *buf, int len, int callback) {
+\c void async_write(int fd, void *buf, int len, void *callback) {
 \c   REQUEST *req;
 \c   req = (REQUEST*) calloc(1, sizeof(REQUEST));
 \c   assert(req);
@@ -495,7 +495,7 @@ c-function async-write async_write n a n n -- void
 \c     SYSTEM,
 |;
 |: forth to c declarations
-c-function async-system async_system a n n -- void
+c-function async-system async_system a n a -- void
 |;
 |: handle request types
 \c     case SYSTEM:
@@ -508,7 +508,7 @@ c-function async-system async_system a n n -- void
 \c       break;
 |;
 |: issue requests
-\c void async_system(char *cmd, int cmd_len, int callback) {
+\c void async_system(char *cmd, int cmd_len, void *callback) {
 \c   REQUEST *req;
 \c   req = (REQUEST*) calloc(1, sizeof(REQUEST));
 \c   assert(req);
@@ -573,7 +573,7 @@ c-function async-system async_system a n n -- void
 |section: Waiting for Results
 Waiting then occurs on the main thread.
 |: implement waiting
-\c void async_wait(int *result, int *callback) {
+\c void async_wait(int *result, void **callback) {
 \c   REQUEST *req;
 \c   pthread_mutex_lock(&g_lock);
 \c   if (g_pending_count <= 0) {
@@ -616,7 +616,6 @@ variable callback
 Some tests are in order.
 |: general tests
 : test1
-    async-startup
     s" ls -l out" [:
       0= assert
       1 s" Hello world!" [:
@@ -624,7 +623,6 @@ Some tests are in order.
       ;] async-write
     ;] async-system
     async-run
-    async-shutdown
 ;
 test1
 |;
@@ -641,14 +639,24 @@ test1
     ;] async-open
 ;
 : test2
-    async-startup
     s" Hello there!" s" out/test1.txt" [:
       ." Written file." cr
     ;] write-whole-file 
     async-run
-    async-shutdown
 ;
 test2
+|;
+
+|section: Closures with Conditions
+|: general tests
+: special-adder dup 8 = if
+     drop [: 256 ;]
+   else
+     >s [: s> + ;]
+   then
+;
+5 4 special-adder invoke 9 assert=
+5 8 special-adder invoke 256 assert=
 |;
 
 |section: Question?
@@ -688,7 +696,9 @@ It will contain everything that is normally run.
 |@ forth to c declarations
 |@ closures
 |@ dispatch events
+|@ do startup
 |@ general tests
+|@ do shutdown
 |;
 
 |section: Testing Tools
@@ -698,18 +708,14 @@ We'll also define some generic test tools.
 : assert= ( a b -- ) = assert ;
 |;
 
-|section: Closures with Conditions
-|: general tests
-(
-: special-adder dup 8 = if
-     drop [: 256 ;]
-   else
-     >s [: s> + ;]
-   then
-;
-5 4 special-adder invoke 9 assert=
-5 8 special-adder invoke 256 assert=
-)
+|section: Startup and Shutdown
+
+|: do startup
+async-startup
+|;
+
+|: do shutdown
+async-shutdown
 |;
 
 |.
