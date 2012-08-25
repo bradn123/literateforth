@@ -113,7 +113,7 @@ CONs:
 |;
 
 |section: Carnal Knowledge
-For gforth we know colon-sys is on the data stack and 3 cells:
+For gforth we know colon-sys is on the data stack and 4 cells:
 |: carnal knowledge
 4 constant colon-sys-size
 |;
