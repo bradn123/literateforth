@@ -53,6 +53,7 @@ publish:
 	make clean
 	make
 	git commit -a -m "Publish"
+	make clean
 	git checkout master
 	git push
 
