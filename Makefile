@@ -49,6 +49,7 @@ deploy:
 publish:
 	make clean
 	git checkout gh-pages
+	git merge master
 	make clean
 	make
 	git commit -a -m "Publish"
