@@ -659,6 +659,26 @@ test2
 5 8 special-adder invoke 256 assert=
 |;
 
+|section: Sugar
+|: add sugar
+: '[:   postpone ['] postpone [: ; immediate
+: ;]'   postpone ;] postpone swap postpone execute ; immediate
+|;
+
+|section: Test Sugar
+|: general tests
+: test3
+    s" ls -l out" '[: async-system
+      0= assert
+      1 s" Sugar Test!" '[: async-write
+        drop cr ." And Done with Sugar!" cr
+      ;]'
+    ;]'
+    async-run
+;
+test3
+|;
+
 |section: Question?
 Questions?
 
@@ -696,6 +716,7 @@ It will contain everything that is normally run.
 |@ forth to c declarations
 |@ closures
 |@ dispatch events
+|@ add sugar
 |@ do startup
 |@ general tests
 |@ do shutdown
