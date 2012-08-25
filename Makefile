@@ -1,7 +1,7 @@
 OUT=out
 VPATH=src
 
-all: test1 literate events
+all: $(OUT)/index.html test1 literate events
 
 .SECONDARY:
 
@@ -38,6 +38,9 @@ install: $(OUT)/literate.fs
 
 uninstall:
 	git checkout src/literate_tangled.fs
+
+$(OUT)/index.html: src/index.html | $(OUT)
+	cp $< $@
 
 deploy:
 	cp $(OUT)/literate.mobi /Volumes/Kindle/documents
