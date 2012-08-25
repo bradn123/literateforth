@@ -1436,7 +1436,7 @@ This allows us to construct each chapter.
 We want to be able apply the literate programming tool from inside itself.
 To that end, we need to isolate it from the base vocabulary.
 |: isolate in wordlist
-vocabulary literate also literate definitions
+forth-wordlist wordlist dup set-current 2 set-order
 |;
 
 

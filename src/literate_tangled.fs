@@ -1,6 +1,6 @@
 
 
-vocabulary literate also literate definitions
+forth-wordlist wordlist dup set-current 2 set-order
 
 
 
