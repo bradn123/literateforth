@@ -309,7 +309,7 @@ c-function async-wait async_wait a a -- void
 : colon-sys-drop ( colon-sys -- ) colon-sys-size 0 do drop loop ;
 
 
-colon-sys-size 20 * constant scope-cells
+1000 cells constant scope-cells
 : scope-alloc ( -- s) scope-cells allocate 0= assert
               1 cells over ! ;
 variable myscope

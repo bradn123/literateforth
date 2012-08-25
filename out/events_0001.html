@@ -148,7 +148,7 @@ reactor.run()
 </li><li>Store the size in the first cell
 </li><li>Leak like mad for now
 </li></ul><p>
-</p></div><div class="section"><h2>Scope Stack (implementation)</h2><p></p><tt><b>scope stack</b> +&equiv;</tt><div class="chunk"><pre>colon-sys-size 20 * constant scope-cells
+</p></div><div class="section"><h2>Scope Stack (implementation)</h2><p></p><tt><b>scope stack</b> +&equiv;</tt><div class="chunk"><pre>1000 cells constant scope-cells
 : scope-alloc ( -- s) scope-cells allocate 0= assert
               1 cells over ! ;
 variable myscope
@@ -543,9 +543,46 @@ test2
 ;
 test3
 </pre></div><p>
+</p></div><div class="section"><h2>Man or Boy Test (Alogol)</h2><p><div class="chunk"><pre>begin
+  real procedure A(k, x1, x2, x3, x4, x5);
+  value k; integer k;
+  begin
+    real procedure B;
+    begin k := k - 1;
+          B := A := A(k, B, x1, x2, x3, x4);
+    end;
+    if k &lt;= 0 then A := x4 + x5 else B;
+  end;
+  outreal(A(10, 1, -1, -1, 1, 0));
+end;
+</pre></div>
+</p></div><div class="section"><h2>Man or Boy Test (Javascript)</h2><p><div class="chunk"><pre>function A(k, x1, x2, x3, x4, x5) { 
+    function B() { return A(--k, B, x1, x2, x3, x4); }
+    return k &lt;= 0 ? x4() + x5() : B();
+}
+function K(n) { function() { return n; } }
+alert(A(10, K(1), K(-1), K(-1), K(1), K(0)));
+</pre></div>
+</p></div><div class="section"><h2>Man or Boy Test (Forth)</h2><p><div class="chunk"><pre>: A
+    &gt;s &gt;s &gt;s &gt;s &gt;s &gt;s
+    [: [ s&gt; dup &gt;s bind ] s&gt; 1- swap s&gt; s&gt; s&gt; s&gt; recurse ;]
+    s&gt; s&gt; &gt;r &gt;r sdrop sdrop sdrop
+    s&gt; 0&lt;= if
+      drop
+      r&gt; invoke r&gt; invoke +
+    else
+      rdrop rdrop
+      invoke
+    then
+;
+: K &gt;s [: s&gt; ;] sdrop ;
+
+10 1 K -1 K 1 K 0 K A
+-67 assert=
+</pre></div></pre></div><p>
 </p></div><div class="section"><h2>Future Directions</h2><p></p><ul><li>Plug the leaks
 </li><li>Add named scope variables
-</li><li>Convert the Man Boy Test
+</li><li>Get Man or Boy Test working
 </li></ul><p>
 </p></div><div class="section"><h2>Question?</h2><p>Questions?
 
