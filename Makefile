@@ -54,6 +54,7 @@ publish:
 	make
 	git commit -a -m "Publish"
 	git checkout master
+	git push
 
 snap: all
 	rm -rf snapshot
