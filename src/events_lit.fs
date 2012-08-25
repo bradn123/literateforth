@@ -113,10 +113,15 @@ CONs:
 |;
 
 |section: Carnal Knowledge
-For gforth we know control-sys is on the data stack and 3 cells:
+For gforth we know colon-sys is on the data stack and 3 cells:
 |: carnal knowledge
-3 constant control-sys-size
+4 constant colon-sys-size
 |;
+Add a word to drop a colon-sys.
+|: carnal knowledge
+: colon-sys-drop ( colon-sys -- ) colon-sys-size 0 do drop loop ;
+|;
+
 
 |section: Scope Stack
 |{- Nested scopes
@@ -129,7 +134,7 @@ For gforth we know control-sys is on the data stack and 3 cells:
 
 |section: Scope Stack (implementation)
 |: scope stack
-control-sys-size 20 * constant scope-cells
+colon-sys-size 20 * constant scope-cells
 : scope-alloc ( -- s) scope-cells allocate 0= assert
               1 cells over ! ;
 variable myscope
@@ -141,11 +146,6 @@ Add some push / pop operations.
 : scope-ptr ( -- n ) myscope @ @ myscope @ + ;
 : >s ( n -- ) scope-ptr !  1 scope+! ;
 : s> ( -- n ) -1 scope+!  scope-ptr @ ;
-|;
-Push and pop a whole control-sys.
-|: scope stack
-: scope{ ( cs -- ) control-sys-size 0 do >s loop ;
-: }scope ( -- cs ) control-sys-size 0 do s> loop ;
 |;
 
 |section: Cloning Scopes and Freeing
@@ -160,12 +160,8 @@ Push and pop a whole control-sys.
 |section: :noname
 Alternate version of |tt{ :noname|}tt .
 |: scope flow control
-: :noname2 ( -- control-sys xt )
-    :noname control-sys-size 1+ roll ;
-|;
-Even simpler:
-|: scope flow control
-: :headless ( -- control-sys ) :noname2 drop ;
+: :noname2 ( -- xt )
+    :noname colon-sys-drop ;
 |;
 
 |section: Bind and Invoke
@@ -186,11 +182,10 @@ We want:
 : foo a b c [: x y z ;] d e f ;
 |}code
 |: start and end scope
-: [:   postpone ahead scope{
-       postpone ; :noname2 >s ; immediate
-: ;]   postpone ; :headless s> >r }scope
-       postpone then r> postpone literal
-       postpone bind ; immediate
+: [:   postpone ahead postpone exit
+       :noname2 >s ; immediate
+: ;]   postpone exit postpone then
+       s> postpone literal postpone bind ; immediate
 |;
 
 |section: Try Out Closures
