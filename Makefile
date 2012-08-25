@@ -46,6 +46,14 @@ deploy:
 	cp $(OUT)/literate.mobi /Volumes/Kindle/documents
 	diskutil eject Kindle
 
+publish:
+	make clean
+	git checkout gh-pages
+	make clean
+	make
+	git commit -a -m "Publish"
+	git checkout master
+
 snap: all
 	rm -rf snapshot
 	mkdir snapshot
