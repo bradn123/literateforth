@@ -319,6 +319,7 @@ scope-alloc myscope !
 : scope-ptr ( -- n ) myscope @ @ myscope @ + ;
 : >s ( n -- ) scope-ptr !  1 scope+! ;
 : s> ( -- n ) -1 scope+!  scope-ptr @ ;
+: sdrop ( -- ) -1 scope+! ;
 
 : scope. ( s -- ) ." scope(" dup @ cell / 1- . ." ) "
     dup @ cell ?do dup i + @ . cell +loop drop cr ;
@@ -397,6 +398,7 @@ test1
         drop s> [: s> invoke ;] async-close
       ;] async-write
     ;] async-open
+    sdrop sdrop sdrop
 ;
 : test2
     s" Hello there!" s" out/test1.txt" [:
@@ -409,7 +411,7 @@ test2
 : special-adder dup 8 = if
      drop [: 256 ;]
    else
-     >s [: s> + ;]
+     >s [: s> + ;] sdrop
    then
 ;
 5 4 special-adder invoke 9 assert=

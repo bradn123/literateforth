@@ -67,7 +67,7 @@ Brad Nelson
 </li></ul><p>
 </p></div><div class="section"><h2>Node.js</h2><p></p><ul><li>Server side Javascript
 </li><li>Chrome's V8 engine for speed
-</li><li>Closures used to chain asynchronous events
+</li><li>Closures used to chain asynchronous events (continuation passing style)
 </li><li>Standard library mostly asynch instead of an afterthought
 </li><li>Event loop implicit (program runs until nothing pending)
 </li></ul><p>
@@ -113,7 +113,15 @@ reactor.run()
 </p><ul><li>Tasks have thread-like overhead
 </li><li>Cross task communication is ad-hoc
 </li></ul><p>
-</p></div><div class="section"><h2>Closures</h2><p></p><tt><b>closures</b> +&equiv;</tt><div class="chunk"><pre><b>carnal knowledge</b>
+</p></div><div class="section"><h2>Closures</h2><p><div class="chunk"><pre>: func1
+   &gt;s ( add to scope stack )
+   [:
+     s&gt; ( pull out of scope )
+   ;]
+   sdrop ( drop in the parent scope )
+;
+</pre></div>
+</p></div><div class="section"><h2>Closures Implementation</h2><p></p><tt><b>closures</b> +&equiv;</tt><div class="chunk"><pre><b>carnal knowledge</b>
 <b>scope stack</b>
 <b>scope flow control</b>
 <b>bind and invoke</b>
@@ -142,6 +150,7 @@ scope-alloc myscope !
 : scope-ptr ( -- n ) myscope @ @ myscope @ + ;
 : &gt;s ( n -- ) scope-ptr !  1 scope+! ;
 : s&gt; ( -- n ) -1 scope+!  scope-ptr @ ;
+: sdrop ( -- ) -1 scope+! ;
 </pre></div><p>
 </p></div><div class="section"><h2>Printing a Scope</h2><p></p><tt><b>scope stack</b> +&equiv;</tt><div class="chunk"><pre>: scope. ( s -- ) .&quot; scope(&quot; dup @ cell / 1- . .&quot; ) &quot;
     dup @ cell ?do dup i + @ . cell +loop drop cr ;
@@ -493,6 +502,7 @@ test1
         drop s&gt; [: s&gt; invoke ;] async-close
       ;] async-write
     ;] async-open
+    sdrop sdrop sdrop
 ;
 : test2
     s&quot; Hello there!&quot; s&quot; out/test1.txt&quot; [:
@@ -505,7 +515,7 @@ test2
 </p></div><div class="section"><h2>Closures with Conditions</h2><p></p><tt><b>general tests</b> +&equiv;</tt><div class="chunk"><pre>: special-adder dup 8 = if
      drop [: 256 ;]
    else
-     &gt;s [: s&gt; + ;]
+     &gt;s [: s&gt; + ;] sdrop
    then
 ;
 5 4 special-adder invoke 9 assert=
@@ -525,6 +535,10 @@ test2
 ;
 test3
 </pre></div><p>
+</p></div><div class="section"><h2>Future Directions</h2><p></p><ul><li>Plug the leaks
+</li><li>Add named scope variables
+</li><li>Convert the Man Boy Test
+</li></ul><p>
 </p></div><div class="section"><h2>Question?</h2><p>Questions?
 
 </p></div></body></html>
