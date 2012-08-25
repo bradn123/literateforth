@@ -238,7 +238,7 @@ async-startup
 |: forth to c declarations
 c-function async-shutdown async_shutdown -- void
 |;
-|: handle requests
+|: handle request types
 \c     case SHUTDOWN:
 \c       free(req);
 \c       return;
@@ -269,7 +269,7 @@ c-function async-shutdown async_shutdown -- void
 |: forth to c declarations
 c-function async-open async_open a n n n n -- void
 |;
-|: handle requests
+|: handle request types
 \c     case OPEN:
 \c       tmp = malloc(req->args[1].number + 1);
 \c       assert(tmp);
@@ -302,7 +302,7 @@ c-function async-open async_open a n n n n -- void
 |: forth to c declarations
 c-function async-close async_close n n -- void
 |;
-|: handle requests
+|: handle request types
 \c     case CLOSE:
 \c       req->result = close(req->args[0].number);
 \c       break;
@@ -326,7 +326,7 @@ c-function async-close async_close n n -- void
 |: forth to c declarations
 c-function async-read async_read n a n n -- void
 |;
-|: handle requests
+|: handle request types
 \c     case READ:
 \c       req->result = read(req->args[0].number, req->args[1].pointer,
 \c                          req->args[2].number);
@@ -353,7 +353,7 @@ c-function async-read async_read n a n n -- void
 |: forth to c declarations
 c-function async-write async_write n a n n -- void
 |;
-|: handle requests
+|: handle request types
 \c     case WRITE:
 \c       req->result = write(req->args[0].number, req->args[1].pointer,
 \c                           req->args[2].number);
@@ -380,7 +380,7 @@ c-function async-write async_write n a n n -- void
 |: forth to c declarations
 c-function async-system async_system a n n -- void
 |;
-|: handle requests
+|: handle request types
 \c     case SYSTEM:
 \c       tmp = malloc(req->args[1].number + 1);
 \c       assert(tmp);
@@ -410,6 +410,15 @@ c-function async-system async_system a n n -- void
 \c   char *tmp;
 \c
 \c   for (;;) {
+       |@ get a pending request
+       |@ handle a request
+       |@ pass on result
+\c   }
+\c }
+|;
+
+|section: Get a Pending Request
+|: get a pending request
 \c     pthread_mutex_lock(&g_lock);
 \c     while (!g_requests_head) {
 \c       pthread_cond_wait(&g_requests_ready, &g_lock);
@@ -418,14 +427,20 @@ c-function async-system async_system a n n -- void
 \c     g_requests_head = req->next;
 \c     if (!g_requests_head) { g_requests_tail = 0; }
 \c     pthread_mutex_unlock(&g_lock);
-\c
+|;
+
+|section: Handle a Result
+|: handle a request
 \c     switch (req->operation) {
-|@ handle requests
+       |@ handle request types
 \c     default:
 \c       assert(0);
 \c       break;
 \c     }
-\c
+|;
+
+|section: Pass on Result
+|: pass on result
 \c     pthread_mutex_lock(&g_lock);
 \c     if (g_results_tail) {
 \c       g_results_tail->next = req;
@@ -436,8 +451,6 @@ c-function async-system async_system a n n -- void
 \c     req->next = 0;
 \c     pthread_cond_signal(&g_results_ready);
 \c     pthread_mutex_unlock(&g_lock);
-\c   }
-\c }
 |;
 
 |section: Waiting for Results
@@ -517,39 +530,35 @@ Assume we know control-sys is on the data stack and 3 cells:
 create scope-stack   control-sys-size 100 * cells allot
 variable scope-ptr   scope-stack scope-ptr !
 |;
-
-|section: Scope Stack (push/pop)
 Add some push / pop operations.
 |: scope stack
 : scope+!   cells scope-ptr +! ;
 : >scope   scope-ptr @ !  1 scope+! ;
 : scope>   -1 scope+!  scope-ptr @ @ ;
 |;
-
-|section: Scope Stack (control-sys)
 Push and pop a whole control-sys.
 |: scope stack
 : scope{   control-sys-size 0 do >scope loop ;
 : }scope   control-sys-size 0 do scope> loop ;
 |;
 
-|section: :noname2
-|tt{ :noname|}tt normally yields an execution token followed by a control-sys.
-We'll be happier with a version that has the control-sys and then the
-excution token.
+|section: :noname
+Alternate version of |tt{ :noname|}tt .
 |: scope flow control
-: :noname2   :noname control-sys-size 1+ roll ;
+: :noname2 ( -- control-sys xt )
+    :noname control-sys-size 1+ roll ;
 |;
-
-|section: :headless
-We'll often use |tt{ ahead|}tt and |tt{ then|}tt to bypass the entry point
-entirely. So we'll want a version of |tt{ :noname|}tt that returns just a
-control-sys with no execution token.
+Even simpler:
 |: scope flow control
-: :headless   :noname2 drop ;
+: :headless ( -- control-sys ) :noname2 drop ;
 |;
 
 |section: Start and End Scope
+We want:
+|code{
+: foo a b c [: x y z ;] d e f ;
+|}code
+
 |: start and end scope
 : [:   postpone ahead scope{
        postpone ; :noname2 >scope ; immediate
