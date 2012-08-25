@@ -44,7 +44,7 @@ In your browser, press |<-|  and |->|  to move through the slides,
 |section: Node.js
 |{- Server side Javascript
 |-- Chrome's V8 engine for speed
-|-- Closures used to chain asynchronous events
+|-- Closures used to chain asynchronous events (continuation passing style)
 |-- Standard library mostly asynch instead of an afterthought
 |-- Event loop implicit (program runs until nothing pending)
 |-}
@@ -104,6 +104,17 @@ CONs:
 |-}
 
 |section: Closures
+|code{
+: func1
+   >s ( add to scope stack )
+   [:
+     s> ( pull out of scope )
+   ;]
+   sdrop ( drop in the parent scope )
+;
+|}code
+
+|section: Closures Implementation
 |: closures
 |@ carnal knowledge
 |@ scope stack
@@ -146,6 +157,7 @@ Add some push / pop operations.
 : scope-ptr ( -- n ) myscope @ @ myscope @ + ;
 : >s ( n -- ) scope-ptr !  1 scope+! ;
 : s> ( -- n ) -1 scope+!  scope-ptr @ ;
+: sdrop ( -- ) -1 scope+! ;
 |;
 
 |section: Printing a Scope
@@ -637,6 +649,7 @@ test1
         drop s> [: s> invoke ;] async-close
       ;] async-write
     ;] async-open
+    sdrop sdrop sdrop
 ;
 : test2
     s" Hello there!" s" out/test1.txt" [:
@@ -652,7 +665,7 @@ test2
 : special-adder dup 8 = if
      drop [: 256 ;]
    else
-     >s [: s> + ;]
+     >s [: s> + ;] sdrop
    then
 ;
 5 4 special-adder invoke 9 assert=
@@ -678,6 +691,12 @@ test2
 ;
 test3
 |;
+
+|section: Future Directions
+|{- Plug the leaks
+|-- Add named scope variables
+|-- Convert the Man Boy Test
+|-}
 
 |section: Question?
 Questions?
