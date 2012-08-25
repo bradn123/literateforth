@@ -959,7 +959,10 @@ xmlns:opf="http://www.idpf.org/2007/opf">
 : bye   run-cleanup bye ;
 
 : run
-    atom" *" means run-filename file!-tmp
+    atom" *" means
+    run-filename file!-tmp
+    forth-wordlist 1 set-order
+    forth-wordlist set-current
     include-file
     run-cleanup
 ;
