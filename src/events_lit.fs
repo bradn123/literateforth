@@ -193,6 +193,22 @@ We want:
        postpone bind ; immediate
 |;
 
+|section: Try Out Closures
+|: general tests
+: scope-test 1 [: 2 [: 3 ;] 4 ;] 5 ;
+scope-test 5 assert=
+invoke 4 assert=
+invoke 3 assert=
+2 assert=
+1 assert=
+|;
+
+|section: Closures with Scope
+|: general tests
+: test-adder >s [: s> + ;] ;
+5 4 test-adder invoke 9 assert=
+|;
+
 |section: Asynchronous I/O
 |{- Use gforth's c-function words
 |-- Single threaded forth
@@ -682,19 +698,18 @@ We'll also define some generic test tools.
 : assert= ( a b -- ) = assert ;
 |;
 
-|section: Scope Tests
+|section: Closures with Conditions
 |: general tests
-: scope-test 1 [: 2 [: 3 ;] 4 ;] 5 ;
-scope-test 5 assert=
-invoke 4 assert=
-invoke 3 assert=
-2 assert=
-1 assert=
-|;
-
-|: general tests
-: test-adder >s [: s> + ;] ;
-5 4 test-adder invoke 9 assert=
+(
+: special-adder dup 8 = if
+     drop [: 256 ;]
+   else
+     >s [: s> + ;]
+   then
+;
+5 4 special-adder invoke 9 assert=
+5 8 special-adder invoke 256 assert=
+)
 |;
 
 |.
