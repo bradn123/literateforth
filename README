@@ -1,0 +1,6 @@
+Literate Forth
+
+A Forth based system for literate programming.
+Includes several literate programs:
+* literate - The system itself in literate style.
+* events - Event driven programming.
