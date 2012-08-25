@@ -103,7 +103,18 @@ CONs:
 |-- Cross task communication is ad-hoc
 |-}
 
-|section: Closures
+|section: Closures (Plan A)
+|code{
+: func1
+   value A
+   [:
+     A ( Reference A above )
+     123 to A
+   ;]
+;
+|}code
+
+|section: Closures (Plan B)
 |code{
 : func1
    >s ( add to scope stack )
