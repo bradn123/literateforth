@@ -113,7 +113,15 @@ reactor.run()
 </p><ul><li>Tasks have thread-like overhead
 </li><li>Cross task communication is ad-hoc
 </li></ul><p>
-</p></div><div class="section"><h2>Closures</h2><p><div class="chunk"><pre>: func1
+</p></div><div class="section"><h2>Closures (Plan A)</h2><p><div class="chunk"><pre>: func1
+   value A
+   [:
+     A ( Reference A above )
+     123 to A
+   ;]
+;
+</pre></div>
+</p></div><div class="section"><h2>Closures (Plan B)</h2><p><div class="chunk"><pre>: func1
    &gt;s ( add to scope stack )
    [:
      s&gt; ( pull out of scope )
