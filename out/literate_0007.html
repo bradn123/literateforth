@@ -1,0 +1,337 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"
+ "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+<html>
+<head>
+
+<style type="text/css">
+  div.chunk {
+    margin: 0em 0.5em;
+  }
+  pre {
+    margin: 0em 0em;
+  }
+
+</style>
+
+<title>MOBI Format</title></head><body><div class="section"><h1>MOBI Format</h1><p>
+</p></div><div class="section"><h2>Mobipocket file format</h2><p>
+The Mobipocket format (.mobi) files is a common format for eBook readers.
+In particular, it is the primary native format for Amazon's Kindle.
+Amazon uses a variant of the format with DRM (Digital Rights Management)
+features added. Amazon provides a tool called kindlegen which converts
+a human readable set of files into a single .mobi file.
+The inputs consist of:
+
+</p><ul><li>an .opf file (an xml manifest listing all the other files)
+</li><li>an .ncx file (an xml index file listing document divisions)
+</li><li>an XHTML table of contents
+</li><li>one or more XHTML files, each containing a chapter of the book
+</li></ul><p>
+Thus the process of weaving to the MOBI format looks like this:
+</p><tt><b>weaving implementation</b> +&equiv;</tt><div class="chunk"><pre><b>weaving toc</b>
+<b>weaving ncx</b>
+<b>weaving cover</b>
+<b>weaving opf</b>
+<b>weaving chapter xhtml</b>
+: weave ( -- )
+    weave-opf
+    weave-ncx
+    weave-cover
+    weave-toc
+    weave-chapters
+;
+</pre></div><p>
+</p></div><div class="section"><h2>OPF files</h2><p>
+The OPF file provided to kindlegen is the primary input file.
+In fact, it is the file listed as an argument when running kindlegen
+from the command line.
+</p><p>We will assume a single OPF file which will be generated into the
+&quot;meaning&quot; of a reserved atom.
+</p><tt><b>weaving opf</b> +&equiv;</tt><div class="chunk"><pre>atom&quot; ~~~OPF&quot; constant atom-opf
+</pre></div><p>
+We will append .opf to the document base name to select the output file.
+</p><tt><b>weaving opf</b> +&equiv;</tt><div class="chunk"><pre>: opf-filename ( -- A )
+    doc-base @ atom&quot; .opf&quot; atom+ ;
+</pre></div><p>
+Weaving the opf file involves changing the focus
+chunk to the opf file.
+</p><tt><b>weaving opf</b> +&equiv;</tt><div class="chunk"><pre><b>weaving opf manifest chapters</b>
+<b>weaving opf chapter itemref</b>
+: weave-opf
+    atom-opf documentation-chunk ! doc!
+</pre></div><p>
+Emitting the opf header.
+</p><tt><b>weaving opf</b> +&equiv;</tt><div class="chunk"><pre>.d| &lt;?xml version=&quot;1.0&quot; encoding=&quot;utf-8&quot;?&gt;
+&lt;package xmlns=&quot;http://www.idpf.org/2007/opf&quot; version=&quot;2.0&quot;
+unique-identifier=&quot;BookId&quot;&gt;
+&lt;metadata xmlns:dc=&quot;http://purl.org/dc/elements/1.1/&quot;
+xmlns:opf=&quot;http://www.idpf.org/2007/opf&quot;&gt;
+|.d
+</pre></div><p>
+Add in metadata fields about the document in general like:
+title, isbn, author, subject, date, and description.
+</p><tt><b>weaving opf</b> +&equiv;</tt><div class="chunk"><pre>    .d{ &lt;dc:title&gt;} title @ doc+=$ .d{ &lt;/dc:title&gt;} .dcr
+    .d{ &lt;dc:language&gt;en-us&lt;/dc:language&gt;} .dcr
+    .d{ &lt;meta name=&quot;cover&quot; content=&quot;My_Cover&quot;/&gt; } .dcr
+    .d{ &lt;dc:identifier id=&quot;BookId&quot; opf:scheme=&quot;ISBN&quot;&gt;}
+    isbn @ doc+=$ .d{ &lt;/dc:identifier&gt;} .dcr
+    .d{ &lt;dc:creator&gt;} author @ doc+=$ .d{ &lt;/dc:creator&gt;} .dcr
+    .d{ &lt;dc:publisher&gt;} author @ doc+=$ .d{ &lt;/dc:publisher&gt;} .dcr
+    .d{ &lt;dc:subject&gt;} subject @ doc+=$ .d{ &lt;/dc:subject&gt;} .dcr
+    .d{ &lt;dc:date&gt;} doc-date @ doc+=$ .d{ &lt;/dc:date&gt;} .dcr
+    .d{ &lt;dc:description&gt;} description @ doc+=$ .d{ &lt;/dc:description&gt;} .dcr
+.d|
+&lt;/metadata&gt;
+</pre></div><p>
+Then add in a table of contents listing all the files in the book,
+including table of contents and chapters.
+</p><tt><b>weaving opf</b> +&equiv;</tt><div class="chunk"><pre>&lt;manifest&gt;
+   &lt;item id=&quot;My_Table_of_Contents&quot; media-type=&quot;application/x-dtbncx+xml&quot;
+   href=&quot;|.d ncx-filename doc+=$ .d| &quot;/&gt;
+  &lt;item id=&quot;toc&quot; media-type=&quot;application/xhtml+xml&quot; href=&quot;|.d
+    toc-filename doc+=$ .d{ &quot;&gt;&lt;/item&gt;}
+    chapters @ begin dup while
+        dup chapter-filename opf-chapter -&gt;next
+    repeat drop
+    .d{ &lt;item id=&quot;My_Cover&quot; media-type=&quot;image/gif&quot;} .dcr
+    .d{  href=&quot;} cover-filename doc+=$ .d{ &quot;/&gt;} .dcr
+    .d{ &lt;/manifest&gt;}
+</pre></div><p>
+One entry per chapter.
+</p><tt><b>weaving opf manifest chapters</b> +&equiv;</tt><div class="chunk"><pre>: opf-chapter ( A -- )
+    .d{ &lt;item id=&quot;}
+    dup doc+=$
+    .d{ &quot; media-type=&quot;application/xhtml+xml&quot; href=&quot;}
+    doc+=$
+    .d{ &quot;&gt;&lt;/item&gt;} .dcr
+;
+</pre></div><p>
+Then list each chapter and TOC again for the spine.
+</p><tt><b>weaving opf</b> +&equiv;</tt><div class="chunk"><pre>    .d{ &lt;spine toc=&quot;My_Table_of_Contents&quot;&gt;&lt;itemref idref=&quot;toc&quot;/&gt;}
+    chapters @ begin dup while
+        dup chapter-filename opf-chapter' -&gt;next
+    repeat drop
+   .d{ &lt;/spine&gt;}
+</pre></div><p>
+Each itemref in the spine looks like this.
+</p><tt><b>weaving opf chapter itemref</b> +&equiv;</tt><div class="chunk"><pre>: opf-chapter' ( A -- )
+    .d{ &lt;itemref idref=&quot;} doc+=$ .d{ &quot;/&gt;} .dcr ;
+</pre></div><p>
+Finally the guide can just consist of the table of contents.
+</p><tt><b>weaving opf</b> +&equiv;</tt><div class="chunk"><pre>.d|
+&lt;guide&gt;
+  &lt;reference type=&quot;toc&quot; title=&quot;Table of Contents&quot;
+   href=&quot;|.d toc-filename doc+=$ .d| &quot;&gt;&lt;/reference&gt;
+&lt;/guide&gt;
+&lt;/package&gt;
+|.d
+</pre></div><p>
+Then write out the file.
+</p><tt><b>weaving opf</b> +&equiv;</tt><div class="chunk"><pre>   documentation means opf-filename file!
+;
+</pre></div><p>
+
+</p></div><div class="section"><h2>NCX files</h2><p>
+The NCX file relists each chapter to select the navigation points in
+the document.
+</p><p>As with the OPF, accumulate into the &quot;meaning&quot; of a reserved atom.
+</p><tt><b>weaving ncx</b> +&equiv;</tt><div class="chunk"><pre>atom&quot; ~~~NCX&quot; constant atom-ncx
+</pre></div><p>
+Output to the document base with .ncx appended.
+</p><tt><b>weaving ncx</b> +&equiv;</tt><div class="chunk"><pre>: ncx-filename ( -- A )
+    doc-base @ atom&quot; .ncx&quot; atom+ ;
+</pre></div><p>
+We then can write to the reserved atom.
+</p><tt><b>weaving ncx</b> +&equiv;</tt><div class="chunk"><pre><b>weaving ncx chapter</b>
+: weave-ncx
+    atom-ncx documentation-chunk ! doc!
+</pre></div><p>
+Writing out the ncx header.
+</p><tt><b>weaving ncx</b> +&equiv;</tt><div class="chunk"><pre>.d| &lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;
+&lt;!DOCTYPE ncx PUBLIC &quot;-//NISO//DTD ncx 2005-1//EN&quot;
+&quot;http://www.daisy.org/z3986/2005/ncx-2005-1.dtd&quot;&gt;
+&lt;ncx xmlns=&quot;http://www.daisy.org/z3986/2005/ncx/&quot;
+ version=&quot;2005-1&quot; xml:lang=&quot;en-US&quot;&gt;
+&lt;head&gt;
+&lt;meta name=&quot;dtb:uid&quot; content=&quot;BookId&quot;/&gt;
+&lt;meta name=&quot;dtb:depth&quot; content=&quot;2&quot;/&gt;
+&lt;meta name=&quot;dtb:totalPageCount&quot; content=&quot;0&quot;/&gt;
+&lt;meta name=&quot;dtb:maxPageNumber&quot; content=&quot;0&quot;/&gt;
+&lt;/head&gt;
+</pre></div><p>
+Including the a few fields like title and author.
+</p><tt><b>weaving ncx</b> +&equiv;</tt><div class="chunk"><pre>|.d
+.d{ &lt;docTitle&gt;&lt;text&gt;} title @ doc+=$
+.d| &lt;/text&gt;&lt;/docTitle&gt;
+&lt;docAuthor&gt;&lt;text&gt;me&lt;/text&gt;&lt;/docAuthor&gt;
+</pre></div><p>
+Then the main navmap.
+</p><tt><b>weaving ncx</b> +&equiv;</tt><div class="chunk"><pre>  &lt;navMap&gt;
+    &lt;navPoint class=&quot;toc&quot; id=&quot;toc&quot; playOrder=&quot;1&quot;&gt;
+      &lt;navLabel&gt;
+        &lt;text&gt;Table of Contents&lt;/text&gt;
+      &lt;/navLabel&gt;
+</pre></div><p>
+Add in the table of contents.
+</p><tt><b>weaving ncx</b> +&equiv;</tt><div class="chunk"><pre>     &lt;content src=&quot;|.d toc-filename doc+=$ .d| &quot;/&gt;
+     &lt;/navPoint&gt;
+|.d
+</pre></div><p>
+And each chapter.
+</p><tt><b>weaving ncx</b> +&equiv;</tt><div class="chunk"><pre>    chapters @ begin dup while
+    dup weave-ncx-chapter -&gt;next repeat drop
+</pre></div><p>
+A chapter looks like this.
+</p><tt><b>weaving ncx chapter</b> +&equiv;</tt><div class="chunk"><pre>: weave-ncx-chapter ( chapter -- )
+   .d{ &lt;navPoint class=&quot;chapter&quot; id=&quot;}
+    dup chapter-filename doc+=$
+    .d{ &quot; playOrder=&quot;}
+    dup chapter-filename doc+=$
+    .d{ &quot;&gt;&lt;navLabel&gt;&lt;text&gt;}
+    dup chapter-name doc+=$
+    .d{ &lt;/text&gt;&lt;/navLabel&gt;&lt;content src=&quot;}
+    chapter-filename doc+=$
+    .d{ &quot;/&gt;&lt;/navPoint&gt;}
+;
+</pre></div><p>
+Then close out the file and write it.
+</p><tt><b>weaving ncx</b> +&equiv;</tt><div class="chunk"><pre>    .d{ &lt;/navMap&gt;&lt;/ncx&gt;}
+    documentation means ncx-filename file!
+;
+</pre></div><p>
+
+</p></div><div class="section"><h2>table of contents</h2><p>
+The table of contents is an XHTML file like the chapters.
+XHTML is like HTML but strictly XML like in format.
+We use a subset that is constrained by MOBI's limitations.
+</p><p>We will accumulate the table of contents to a reserved atom.
+</p><tt><b>weaving toc</b> +&equiv;</tt><div class="chunk"><pre>atom&quot; ~~~TOC&quot; constant atom-toc
+</pre></div><p>
+And write this to a filename based on the document base with
+the .html extension added.
+</p><tt><b>weaving toc</b> +&equiv;</tt><div class="chunk"><pre>: toc-filename doc-base @ atom&quot; .html&quot; atom+ ;
+</pre></div><p>
+We change the focus chunk to the TOC.
+</p><tt><b>weaving toc</b> +&equiv;</tt><div class="chunk"><pre><b>weaving toc chapter</b>
+: weave-toc
+    atom-toc documentation-chunk ! doc!
+</pre></div><p>
+Then write out the header for the TOC.
+</p><tt><b>weaving toc</b> +&equiv;</tt><div class="chunk"><pre>.d| &lt;!DOCTYPE html PUBLIC &quot;-//W3C//DTD XHTML 1.1//EN&quot;
+&quot;http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd&quot;&gt;
+&lt;html xmlns=&quot;http://www.w3.org/1999/xhtml&quot;&gt;
+&lt;head&gt;&lt;title&gt;Table of Contents&lt;/title&gt;&lt;/head&gt;
+&lt;body&gt;
+&lt;div&gt;
+  &lt;h1&gt;&lt;b&gt;TABLE OF CONTENTS&lt;/b&gt;&lt;/h1&gt;
+|.d
+</pre></div><p>
+Then write out each chapter.
+</p><tt><b>weaving toc</b> +&equiv;</tt><div class="chunk"><pre>    chapters @ begin dup while
+    dup weave-toc-chapter -&gt;next repeat drop
+</pre></div><p>
+Where a chapter looks like this.
+</p><tt><b>weaving toc chapter</b> +&equiv;</tt><div class="chunk"><pre>: weave-toc-chapter ( chapter -- )
+    .d{ &lt;h4&gt;&lt;b&gt;&lt;a href=&quot;}
+    dup chapter-filename doc+=$
+    .d{ &quot;&gt;}
+    chapter-name doc+=$
+    .d{ &lt;/a&gt;&lt;/b&gt;&lt;/h4&gt;} .dcr
+ ;
+</pre></div><p>
+Then close out the TOC and write it out.
+</p><tt><b>weaving toc</b> +&equiv;</tt><div class="chunk"><pre>    .d{ &lt;/div&gt;&lt;/body&gt;&lt;/html&gt;} .dcr
+
+    documentation means toc-filename file!
+;
+</pre></div><p>
+
+</p></div><div class="section"><h2>Chapter HTML</h2><p>
+Each chapter is accumulated into a link list of chapters.
+</p><tt><b>chapter implementation</b> +&equiv;</tt><div class="chunk"><pre>variable slide-chapter
+variable chapter-count
+linked-list chapters
+</pre></div><p>
+Accessors for chapters are provided.
+</p><tt><b>chapter implementation</b> +&equiv;</tt><div class="chunk"><pre>: chapter-name ( chp -- A )
+    cell+ @ ;
+: chapter-text ( chp -- A )
+    cell+ @ means ;
+: chapter-number ( chp -- n )
+    2 cells + @ ;
+</pre></div><p>
+Chapters are output to the base document name, followed by an
+underscore, then a zero extended number, and .html at the end.
+</p><tt><b>chapter implementation</b> +&equiv;</tt><div class="chunk"><pre>atom&quot; .html&quot; constant .html
+: chapter-filename ( chp -- A )
+     chapter-number s&gt;d &lt;# # # # #s #&gt; atom
+     doc-base @ atom&quot; _&quot; atom+ swap .html atom+ atom+ ;
+</pre></div><p>
+A raw chapter can be either normal or for slides.
+It is added to the list of chapters.
+</p><tt><b>chapter implementation</b> +&equiv;</tt><div class="chunk"><pre><b>chapter implementation finish</b>
+: raw-chapter ( -- )
+     chapter-finish
+     parse-cr
+     chapter-count @   1 chapter-count +!
+     over 2 chapters chain
+     dup documentation-chunk ! doc!
+</pre></div><p>
+Then a the xhtml header is written.
+</p><tt><b>chapter implementation</b> +&equiv;</tt><div class="chunk"><pre>.d| &lt;!DOCTYPE html PUBLIC &quot;-//W3C//DTD XHTML 1.1//EN&quot;
+ &quot;http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd&quot;&gt;
+&lt;html&gt;
+&lt;head&gt;
+|.d
+</pre></div><p>
+Then potentially slide show Javascript.
+</p><tt><b>chapter implementation</b> +&equiv;</tt><div class="chunk"><pre>slide-chapter @ if
+<b>slide show logic</b>
+then
+</pre></div><p>
+Then some CSS.
+</p><tt><b>chapter implementation</b> +&equiv;</tt><div class="chunk"><pre>.d|
+&lt;style type=&quot;text/css&quot;&gt;
+  div.chunk {
+    margin: 0em 0.5em;
+  }
+  pre {
+    margin: 0em 0em;
+  }
+|.d
+</pre></div><p>
+Potentially with a page break for slide shows.
+</p><tt><b>chapter implementation</b> +&equiv;</tt><div class="chunk"><pre>slide-chapter @ if
+.d|
+  div.section {
+    page-break-before: always;
+  }
+|.d
+then
+</pre></div><p>
+Finally chapter headings.
+</p><tt><b>chapter implementation</b> +&equiv;</tt><div class="chunk"><pre>.d|
+&lt;/style&gt;
+&lt;title&gt;|.d
+    dup doc+=$
+    .d{ &lt;/title&gt;&lt;/head&gt;}
+    slide-chapter @ if .d{ &lt;body onload=&quot;Load()&quot;&gt;} else .d{ &lt;body&gt;} then
+    .d{ &lt;div class=&quot;section&quot;&gt;&lt;h1&gt;}
+    doc+=$
+    .d{ &lt;/h1&gt;&lt;p&gt;}
+
+    feed
+;
+</pre></div><p>
+Each chapter also has a short footer.
+</p><tt><b>chapter implementation finish</b> +&equiv;</tt><div class="chunk"><pre>: chapter-finish   .d{ &lt;/p&gt;&lt;/div&gt;&lt;/body&gt;&lt;/html&gt;} ;
+</pre></div><p>
+This allows us to construct each chapter.
+</p><tt><b>weaving chapter xhtml</b> +&equiv;</tt><div class="chunk"><pre>: weave-chapter ( chapter -- )
+    dup chapter-text swap chapter-filename file! ;
+: weave-chapters
+    chapters @ begin dup while
+    dup weave-chapter -&gt;next repeat drop ;
+</pre></div><p>
+
+</p></div></body></html>

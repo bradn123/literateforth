@@ -1,0 +1,59 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"
+ "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+<html>
+<head>
+
+<style type="text/css">
+  div.chunk {
+    margin: 0em 0.5em;
+  }
+  pre {
+    margin: 0em 0em;
+  }
+
+</style>
+
+<title>Parsing</title></head><body><div class="section"><h1>Parsing</h1><p>
+</p></div><div class="section"><h2>Parsing Pipe</h2><p>
+As we will use the pipe (|) character as a divider,
+we will need tools to parse around it.
+Something like this:
+</p><tt><b>testing parsing</b> +&equiv;</tt><div class="chunk"><pre>: |halt! ;
+parse..| testing
+Hello there
+123|halt!
+atom&quot; testing&quot; atom-cr+
+atom&quot; Hello there&quot; atom+ atom-cr+
+atom&quot; 123&quot; atom+ = assert
+</pre></div><p>
+</p></div><div class="section"><h2>Implement Parsing Pipe</h2><p>
+We'll need to manipulate the input buffer.
+</p><tt><b>parsing</b> +&equiv;</tt><div class="chunk"><pre>: source@ source ( -- a )
+    drop &gt;in @ + ;
+: source-remaining ( -- n )
+   source nip &gt;in @ - ;
+</pre></div><p>
+Then parse through multiple lines until (but not including),
+the next pipe character.
+</p><tt><b>parsing</b> +&equiv;</tt><div class="chunk"><pre>: drop| ( -- )
+    source@ 1- c@ [char] | = if -1 &gt;in +! then ;
+: need-refill? ( -- f)
+    source nip &gt;in @ &lt;= ;
+: on|? ( -- f )
+    need-refill? if false exit then source@ c@ [char] | = ;
+: replenish ( -- f )
+    need-refill? if refill else true then ;
+: ?atom-cr+ ( A -- A )
+    on|? 0= if atom-cr+ then ;
+: eat| ( -- )
+    [char] | parse drop| atom atom+ ?atom-cr+ ;
+: parse..| ( -- A )
+    atom&quot;&quot; begin replenish 0=
+    if exit then eat| on|? until ;
+</pre></div><p>
+We'll also have some words that grab input until the end of the line.
+</p><tt><b>parsing</b> +&equiv;</tt><div class="chunk"><pre>: parse-cr ( -- A )
+    source@ source-remaining atom   source nip &gt;in ! ;
+</pre></div><p>
+
+</p></div></body></html>

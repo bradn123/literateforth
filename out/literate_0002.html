@@ -1,0 +1,126 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"
+ "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+<html>
+<head>
+
+<style type="text/css">
+  div.chunk {
+    margin: 0em 0.5em;
+  }
+  pre {
+    margin: 0em 0em;
+  }
+
+</style>
+
+<title>Weaving, Tangling, and Running</title></head><body><div class="section"><h1>Weaving, Tangling, and Running</h1><p>
+</p></div><div class="section"><h2>Modes of operation</h2><p>
+There are three actions typically taken on literate programs:
+weave, tangle, and running.
+Weaving is the generation of documentation from a literate program.
+Tangling is the generation of macro expanded source code from
+a literate program.
+Running is the act of tangling followed by evaluation of the tangled
+output.
+Most of the plumbing to handle these modes is executed on each run,
+for simplicity and to ensure failures are detected early.
+The pieces look like this:
+
+</p><tt><b>primary program flow</b> +&equiv;</tt><div class="chunk"><pre><b>setup mode flags</b>
+<b>weaving implementation</b>
+<b>tangle implementation</b>
+<b>run implementation</b>
+<b>apply literate mode</b>
+</pre></div><p>
+
+</p></div><div class="section"><h2>Mode selection</h2><p>
+We will need to decide which mode in which to operate.
+The properties we desire are:
+</p><ul><li>Portable to ANSFORTHs.
+</li><li>Allows recursive use as literate_lit.fs self bootstraps.
+</li><li>Default behavior should be to run the tangled program.
+</li></ul><p>One way to achieve this is to look for a mode code on the stack.
+Systems like gforth can then be invoked like this:
+<tt>gforth -e <i>mode-code</i>program_lit.fs</tt>.
+Recursive use is possible bye passing the code for running mode
+to before importing <tt>literate_lit.fs</tt>.
+By using <tt>depth</tt>the default action of running can be
+preserved.
+A small drawback of this approach is that it precludes programs
+which need to use a similar mechanism.
+We'll use the following codes:
+</p><ul><li>0 &rarr; Running mode (the default)
+</li><li>1 &rarr; Weaving mode
+</li><li>2 &rarr; Tangling mode
+</li></ul><p>Let's setup a variable containing the current mode.
+</p><tt><b>setup mode flags</b> +&equiv;</tt><div class="chunk"><pre>variable literate-mode
+: literate-setup
+    depth 0&lt;= if 0 then literate-mode ! ;
+literate-setup
+</pre></div><p>
+Setup flags based on this.
+</p><tt><b>setup mode flags</b> +&equiv;</tt><div class="chunk"><pre>literate-mode @ 0 = constant running?
+literate-mode @ 1 = constant tangling?
+literate-mode @ 2 = constant weaving?
+</pre></div><p>
+As a sanity check, we will insist we are in at least one mode.
+</p><tt><b>setup mode flags</b> +&equiv;</tt><div class="chunk"><pre>weaving? tangling? or running? or assert
+</pre></div><p>
+
+</p></div><div class="section"><h2>Tangling</h2><p>
+The process of tangling can generate one or more files depending on user input.
+At the point we are doing final tangling, all filenames will have a
+&quot;meaning&quot; associated with them that is their desired content.
+
+</p><tt><b>tangle implementation</b> +&equiv;</tt><div class="chunk"><pre>: tangle-file ( file -- )
+    file-name@ dup means swap file! ;
+</pre></div><p>
+Each file is then iterated thru.
+
+</p><tt><b>tangle implementation</b> +&equiv;</tt><div class="chunk"><pre>: tangle
+    out-files @ begin dup while
+    dup tangle-file -&gt;next repeat drop ;
+</pre></div><p>
+
+</p></div><div class="section"><h2>Running</h2><p>
+Running involves tangling followed by evaluation.
+Ideally, evaluation could happen in memory. Unfortunately,
+ANSFORTH's EVALUATE word can only be used to fill in one &quot;line&quot;
+in the input buffer. This precludes the use of multi-line parsing words
+which are line aware (such as \). Since we would like to support Forth's
+full syntax, we will instead output a temporary file and use INCLUDED.
+</p><p>We will select a temporary filename based on the document base.
+This can cause problems if multiple instances are running at once from the
+same directory. However, pre-tangling can be used in this case.
+</p><tt><b>run implementation</b> +&equiv;</tt><div class="chunk"><pre>: run-filename ( -- A )
+    doc-base @ atom&quot; _running.tmp&quot; atom+ ;
+</pre></div><p>
+After evaluation we will want to cleanup the temporary file.
+</p><tt><b>run implementation</b> +&equiv;</tt><div class="chunk"><pre>: run-cleanup
+    run-filename atom-string@ delete-file drop ;
+</pre></div><p>
+We will override bye to attempt to make sure cleanup happens even
+if the evaluated program exits early.
+</p><tt><b>run implementation</b> +&equiv;</tt><div class="chunk"><pre>: bye   run-cleanup bye ;
+</pre></div><p>
+When running, as there can be many tangled output files,
+we adopt noweb's convention that the root for evaluation is
+the chunk named &quot;*&quot;.
+</p><tt><b>run implementation</b> +&equiv;</tt><div class="chunk"><pre>: run
+    atom&quot; *&quot; means
+    run-filename file!-tmp
+    forth-wordlist 1 set-order
+    forth-wordlist set-current
+    include-file
+    run-cleanup
+;
+</pre></div><p>
+</p></div><div class="section"><h2>Commence operation</h2><p>
+</p><tt><b>apply literate mode</b> +&equiv;</tt><div class="chunk"><pre>: |. ( exit literate mode )
+     chapter-finish
+     weaving? if weave bye then
+     tangling? if tangle bye then
+     running? if run then ;
+</pre></div><p>
+
+</p></div></body></html>

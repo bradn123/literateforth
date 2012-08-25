@@ -1,0 +1,182 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"
+ "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+<html>
+<head>
+
+<style type="text/css">
+  div.chunk {
+    margin: 0em 0.5em;
+  }
+  pre {
+    margin: 0em 0em;
+  }
+
+</style>
+
+<title>Book Cover</title></head><body><div class="section"><h1>Book Cover</h1><p>
+</p></div><div class="section"><h2>Introduction</h2><p>We will want to produce interesting images for the book cover.
+To this end we will use &quot;Forth Haiku&quot; which produce images with
+small snippets of Forth code.
+
+
+</p></div><div class="section"><h2>Forth Haiku</h2><p>
+Forth Haiku are described in terms of a current coordinate.
+We will call them x and y for simplicity.
+The Haiku cannot mutate the coordinates, so we'll provide accessors.
+We'll also keep the pixel coordinates for dithering (see below).
+
+</p><tt><b>implement haiku</b> +&equiv;</tt><div class="chunk"><pre>fvariable xx
+fvariable yy
+: x ( -- f ) xx f@ ;
+: y ( -- f ) yy f@ ;
+variable xn
+variable yn
+</pre></div><p>
+As Forth Haiku are canonically square, we will need to decide how to handle
+rectangular output. We will select a global aspect ratio, defaulting to 1.
+It will be take to mean the ratio between the width and the height.
+</p><tt><b>implement haiku</b> +&equiv;</tt><div class="chunk"><pre>fvariable aspect
+1e aspect f!
+</pre></div><p>
+We will implement haiku by calling a per-pixel execution token for each pixel
+in the current image. We will assume the width corresponds to the 0-1 range,
+and adjust the scaling along the height to match the selected aspect ratio.
+We will shift things over by half a pixel to avoid certain integer artifacts.
+</p><tt><b>implement haiku</b> +&equiv;</tt><div class="chunk"><pre>: haiku ( f -- )
+  image-height @ 0 do
+    i yn !
+    i s&gt;f 0.5e f+ image-width @ s&gt;f aspect f@ f/ f/ yy f!
+    image-width @ 0 do
+      i xn !
+      i s&gt;f 0.5e f+ image-width @ s&gt;f f/ xx f!
+      dup execute
+      rgbf i j plot
+    loop
+  loop
+  drop
+;
+</pre></div><p>
+</p></div><div class="section"><h2>Grayscale</h2><p>Sometimes we will want to convert a haiku to grayscale.
+For this we'll need the the luminance of each primary.
+We can then implement an rgb to grayscale conversion word.
+</p><tt><b>implement haiku</b> +&equiv;</tt><div class="chunk"><pre>0.0722e fconstant red-luminance
+0.7152e fconstant green-luminance
+0.2126e fconstant blue-luminance
+: luminance ( rf gf bf -- f )
+    blue-luminance f* fswap
+    green-luminance f* f+ fswap
+    red-luminance f* f+ ;
+</pre></div><p>
+</p></div><div class="section"><h2>Dithering</h2><p>As the resulting image may end up being quantized to 8 shades of gray,
+we will probably want to apply an ordered dither filter.
+To do this we will need a table describing the dithering perturbation.
+</p><tt><b>implement haiku</b> +&equiv;</tt><div class="chunk"><pre>create dither-table
+ 1 , 49 , 13 , 61 ,  4 , 52 , 16 , 64 ,
+33 , 17 , 45 , 29 , 36 , 20 , 48 , 32 ,
+ 9 , 57 ,  5 , 53 , 12 , 60 ,  8 , 56 ,
+41 , 25 , 37 , 21 , 44 , 28 , 40 , 24 ,
+ 3 , 51 , 15 , 63 ,  2 , 50 , 14 , 62 ,
+35 , 19 , 47 , 31 , 34 , 18 , 46 , 30 ,
+11 , 59 ,  7 , 55 , 10 , 58 ,  6 , 54 ,
+43 , 27 , 39 , 23 , 42 , 26 , 38 , 22 ,
+</pre></div><p>We can then repeat this infinitely and provide a word to access it by (x, y)
+coordinate.
+</p><tt><b>implement haiku</b> +&equiv;</tt><div class="chunk"><pre>: dither-map ( x y -- f )
+  8 mod 8 * swap 8 mod + cells dither-table + @ s&gt;f 65e f/ 0.5e f- ;
+</pre></div><p>Then we provide the actual dither based on the current pixel position.
+</p><tt><b>implement haiku</b> +&equiv;</tt><div class="chunk"><pre>: dither ( -- f )
+  xn @ yn @ dither-map 7e f/ ;
+</pre></div><p>We may want to do this for color images (so that they can be down
+converted to grayscale and look ok).
+We should do so in proportion to the luminance weight of each RGB component.
+(Add in a magic factor of 1/7 that seems to yield the desired result.)
+</p><tt><b>implement haiku</b> +&equiv;</tt><div class="chunk"><pre>: 3dither-scale ( f -- f ) 7e f/ ;
+: 3dither ( rgb -- rgb' )
+  dither blue-luminance f/ 3dither-scale f+ frot
+  dither green-luminance f/ 3dither-scale f+ frot
+  dither red-luminance f/ 3dither-scale f+ frot ;
+</pre></div><p>
+
+</p></div><div class="section"><h2>4spire</h2><p>
+My favorite Forth Haiku of my own devising is called <b>4spire </b>.
+</p><tt><b>4spire haiku</b> +&equiv;</tt><div class="chunk"><pre>: 4spire
+  x x 23e f* fsin 2e f/ y fmax f/ fsin
+  y x 23e f* fsin 2e f/ y fmax f/ fsin
+  fover fover f/ fsin
+;
+</pre></div><p>
+</p></div><div class="section"><h2>Scales</h2><p>
+Another attractive Haiku is called &quot;scales&quot;.
+</p><tt><b>scales haiku</b> +&equiv;</tt><div class="chunk"><pre>: scales-x' x 0.3e f- ;
+: scales-y' y 0.1e f+ ;
+: scales
+  scales-x' scales-y' f* 40e f* fsin
+  1e scales-x' f- scales-y' f* 30e f* fsin f*
+  scales-x' 1e scales-y' f- f* 20e f* fsin f*
+  fdup scales-x' f/ fsin
+  fdup scales-y' f/ fcos 1e x f- 1e y f- f+ f*
+;
+</pre></div><p>
+</p></div><div class="section"><h2>Mixing 4spire and scales</h2><p>
+We will want a general facility for multiplying a haiku by a gradient.
+</p><tt><b>mixing 4spire and scales</b> +&equiv;</tt><div class="chunk"><pre>fvariable gradient-scale
+: 3fg* ( f f f -- f f f )
+   gradient-scale f@ f* frot
+   gradient-scale f@ f* frot
+   gradient-scale f@ f* frot
+;
+: gradient-invert
+  1e gradient-scale f@ f- gradient-scale f! ;
+</pre></div><p>
+And a particular gradient that highlights the towers of 4spire,
+but mainly focuses on scales.
+</p><tt><b>mixing 4spire and scales</b> +&equiv;</tt><div class="chunk"><pre>: gradient1
+   1e x f- 0.3e f* y f+ 0.5e f+ 10e f**
+   0e fmax 1e fmin
+   gradient-scale f! ;
+</pre></div><p>
+We will also need t be able to add rgb triples on the floating point stack.
+</p><tt><b>mixing 4spire and scales</b> +&equiv;</tt><div class="chunk"><pre>fvariable 3f+temp
+: 3f+ ( xyz abc -- x+a y+b z+c )
+  fswap 3f+temp f! frot f+ ( x y a z+c )
+  frot 3f+temp f@ f+ ( x a z+c y+b )
+  3f+temp f! frot frot f+ ( z+c x+a )
+  3f+temp f@ frot ( x+a y+b z+c )
+;
+</pre></div><p>
+We will mix 4spire and scales.
+</p><tt><b>mixing 4spire and scales</b> +&equiv;</tt><div class="chunk"><pre><b>4spire haiku</b>
+<b>scales haiku</b>
+: scales-4spire
+  scales gradient1 3fg*
+  4spire gradient1 gradient-invert 3fg* 3f+
+;
+</pre></div><p>
+Add a dithered version.
+</p><tt><b>mixing 4spire and scales</b> +&equiv;</tt><div class="chunk"><pre>: scales-4spire-dithered
+  scales-4spire 3dither
+;
+</pre></div><p>
+And a grayscale version.
+</p><tt><b>mixing 4spire and scales</b> +&equiv;</tt><div class="chunk"><pre>: scales-4spire-gray
+  scales-4spire luminance dither f+ fdup fdup
+;
+</pre></div><p>
+</p></div><div class="section"><h2>Weaving the cover</h2><p>
+We will have a cover based on the document base.
+</p><tt><b>weaving cover</b> +&equiv;</tt><div class="chunk"><pre>: cover-filename doc-base @ atom&quot; _cover.bmp&quot; atom+ ;
+</pre></div><p>
+We can now weave the cover, using our mixed cover.
+It is a 600x800 image.
+</p><tt><b>weaving cover</b> +&equiv;</tt><div class="chunk"><pre><b>implement images</b>
+<b>writing bmp files</b>
+<b>implement haiku</b>
+<b>mixing 4spire and scales</b>
+: weave-cover
+  600 800 image-setup
+  ['] scales-4spire-dithered haiku
+  cover-filename bmp-save
+;
+</pre></div><p>
+
+</p></div></body></html>

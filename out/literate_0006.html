@@ -1,0 +1,61 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"
+ "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+<html>
+<head>
+
+<style type="text/css">
+  div.chunk {
+    margin: 0em 0.5em;
+  }
+  pre {
+    margin: 0em 0em;
+  }
+
+</style>
+
+<title>Chunks</title></head><body><div class="section"><h1>Chunks</h1><p>
+</p></div><div class="section"><h2>Implementing Chunks</h2><p>As text is parsed it is accumulated into chunks.
+</p><tt><b>chunks</b> +&equiv;</tt><div class="chunk"><pre>variable chunk
+: chunk+=$ ( A -- )
+    chunk @ if chunk @ atom+=$ else drop then ;
+: chunk+=ref ( A -- )
+    chunk @ if chunk @ atom+=ref else drop then ;
+</pre></div><p>
+A special primary chunk is kept for the main document.
+</p><tt><b>chunks</b> +&equiv;</tt><div class="chunk"><pre>atom&quot; ~~~DOC&quot; constant main-documentation
+variable documentation-chunk
+main-documentation documentation-chunk !
+</pre></div><p>
+A number of words are provided to write to the current
+documentation chunk or to set it.
+</p><tt><b>chunks</b> +&equiv;</tt><div class="chunk"><pre>: documentation ( -- A )
+    documentation-chunk @ ;
+: doc! ( back to documentation)
+    0 chunk ! ;
+: doc+=$ ( A -- )
+    documentation atom+=$ ;
+: .d{ ( -- )
+    postpone atom{ postpone doc+=$ ; immediate
+: .d| ( -- )
+    parse..| ; immediate
+: |.d ( -- )
+    postpone literal postpone doc+=$ ; immediate
+: .dcr   atom-cr doc+=$ ;
+: doc+=ref ( A -- )
+    documentation atom+=ref ;
+: doc+=use
+    ( A -- ) .d{ &lt;b&gt;} doc+=$ .d{ &lt;/b&gt;} ;
+: doc+=def ( A -- )
+    .d{ &lt;/p&gt;&lt;tt&gt;&lt;b&gt;} doc+=$
+    .d{ &lt;/b&gt; +&amp;equiv;&lt;/tt&gt;&lt;div class=&quot;chunk&quot;&gt;&lt;pre&gt;} ;
+</pre></div><p>
+This is critically use by nearly every tag to parse until the next tag
+using the word <tt>feed </tt>.
+</p><tt><b>chunks</b> +&equiv;</tt><div class="chunk"><pre>: feed ( read into current chunk )
+    parse..| dup ?atom-cr+ escape doc+=$ atom-cr+ chunk+=$ ;
+</pre></div><p>
+
+
+
+
+</p></div></body></html>

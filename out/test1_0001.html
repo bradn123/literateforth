@@ -1,0 +1,34 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"
+ "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+<html>
+<head>
+
+<style type="text/css">
+  div.chunk {
+    margin: 0em 0.5em;
+  }
+  pre {
+    margin: 0em 0em;
+  }
+
+</style>
+
+<title>Implementation</title></head><body><div class="section"><h1>Implementation</h1><p>
+</p></div><div class="section"><h2>Basic Approach</h2><p>
+In total it will work like this:
+</p><tt><b>use it</b> +&equiv;</tt><div class="chunk"><pre>  4 4^ . cr
+  bye
+</pre></div><p>
+</p></div><div class="section"><h2>Details of the implementation</h2><p>
+Here's how we define 4^:
+</p><tt><b>define 4^</b> +&equiv;</tt><div class="chunk"><pre>  <b>define square</b>
+  : 4^ ( n -- n^4 ) square dup * ; 
+</pre></div><p>
+</p><p>
+Here's how we define square:
+</p><tt><b>define square</b> +&equiv;</tt><div class="chunk"><pre>  : square ( n -- n^2 ) dup * ; 
+</pre></div><p>
+</p><p>
+That's it!
+
+</p></div></body></html>

@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://www.idpf.org/2007/opf" version="2.0"
+unique-identifier="BookId">
+<metadata xmlns:dc="http://purl.org/dc/elements/1.1/"
+xmlns:opf="http://www.idpf.org/2007/opf">
+
+<dc:title>Literate Forth</dc:title>
+<dc:language>en-us</dc:language>
+<meta name="cover" content="My_Cover"/> 
+<dc:identifier id="BookId" opf:scheme="ISBN">9999999999</dc:identifier>
+<dc:creator>Brad Nelson</dc:creator>
+<dc:publisher>Brad Nelson</dc:publisher>
+<dc:subject>Literate Programming in Forth</dc:subject>
+<dc:date>2012-02-23</dc:date>
+<dc:description>Literate programming implementation in Forth.</dc:description>
+</metadata>
+
+<manifest>
+   <item id="My_Table_of_Contents" media-type="application/x-dtbncx+xml"
+
+   href="literate.ncx"/>
+
+  <item id="toc" media-type="application/xhtml+xml" href="literate.html"></item><item id="literate_0000.html" media-type="application/xhtml+xml" href="literate_0000.html"></item>
+<item id="literate_0001.html" media-type="application/xhtml+xml" href="literate_0001.html"></item>
+<item id="literate_0002.html" media-type="application/xhtml+xml" href="literate_0002.html"></item>
+<item id="literate_0003.html" media-type="application/xhtml+xml" href="literate_0003.html"></item>
+<item id="literate_0004.html" media-type="application/xhtml+xml" href="literate_0004.html"></item>
+<item id="literate_0005.html" media-type="application/xhtml+xml" href="literate_0005.html"></item>
+<item id="literate_0006.html" media-type="application/xhtml+xml" href="literate_0006.html"></item>
+<item id="literate_0007.html" media-type="application/xhtml+xml" href="literate_0007.html"></item>
+<item id="literate_0008.html" media-type="application/xhtml+xml" href="literate_0008.html"></item>
+<item id="literate_0009.html" media-type="application/xhtml+xml" href="literate_0009.html"></item>
+<item id="literate_0010.html" media-type="application/xhtml+xml" href="literate_0010.html"></item>
+<item id="literate_0011.html" media-type="application/xhtml+xml" href="literate_0011.html"></item>
+<item id="literate_0012.html" media-type="application/xhtml+xml" href="literate_0012.html"></item>
+<item id="literate_0013.html" media-type="application/xhtml+xml" href="literate_0013.html"></item>
+<item id="My_Cover" media-type="image/gif"
+ href="literate_cover.bmp"/>
+</manifest><spine toc="My_Table_of_Contents"><itemref idref="toc"/><itemref idref="literate_0000.html"/>
+<itemref idref="literate_0001.html"/>
+<itemref idref="literate_0002.html"/>
+<itemref idref="literate_0003.html"/>
+<itemref idref="literate_0004.html"/>
+<itemref idref="literate_0005.html"/>
+<itemref idref="literate_0006.html"/>
+<itemref idref="literate_0007.html"/>
+<itemref idref="literate_0008.html"/>
+<itemref idref="literate_0009.html"/>
+<itemref idref="literate_0010.html"/>
+<itemref idref="literate_0011.html"/>
+<itemref idref="literate_0012.html"/>
+<itemref idref="literate_0013.html"/>
+</spine><guide>
+  <reference type="toc" title="Table of Contents"
+
+   href="literate.html"></reference>
+</guide>
+</package>
+

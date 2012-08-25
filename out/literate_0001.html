@@ -1,0 +1,207 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"
+ "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+<html>
+<head>
+
+<style type="text/css">
+  div.chunk {
+    margin: 0em 0.5em;
+  }
+  pre {
+    margin: 0em 0em;
+  }
+
+</style>
+
+<title>Tags</title></head><body><div class="section"><h1>Tags</h1><p>
+</p></div><div class="section"><h2>Overview</h2><p>Tags are the user facing set of words provided by this tool.
+All tags are preceded by the pipe (|) character.
+They are cataloged herein.
+
+</p></div><div class="section"><h2>Formatting Tags</h2><p>
+Tags are provided for:
+</p><ul><li><b>bold</b> &larr;<tt> |b{ bold|}b
+</tt>
+</li><li><i>italics</i> &larr;<tt> |i{ italics|}i
+</tt>
+</li><li><u>underline</u> &larr;<tt> |u{ underline|}u
+</tt>
+</li><li><sup>superscript</sup> &larr;<tt> |sup{ superscript|}sup
+</tt>
+</li><li><sub>subscript</sub> &larr;<tt> |sub{ subscript|}sub
+</tt>
+</li><li><tt>teletype</tt> &larr;<tt> |tt{ teletype|}tt
+</tt>
+</li><li><div class="chunk"><pre>Preformatted source code
+in multiple lines.
+</pre></div> &larr;<div class="chunk"><pre>|code{
+Preformatted source code
+in multiple lines.
+|}code
+</pre></div>
+</li></ul><p>
+</p><tt><b>formatting tags</b> +&equiv;</tt><div class="chunk"><pre>: |b{   .d{ &lt;b&gt;} feed ;
+: |}b   .d{ &lt;/b&gt;} feed ;
+: |i{   .d{ &lt;i&gt;} feed ;
+: |}i   .d{ &lt;/i&gt;} feed ;
+: |u{   .d{ &lt;u&gt;} feed ;
+: |}u   .d{ &lt;/u&gt;} feed ;
+: |sup{   .d{ &lt;sup&gt;} feed ;
+: |}sup   .d{ &lt;/sup&gt;} feed ;
+: |sub{   .d{ &lt;sub&gt;} feed ;
+: |}sub   .d{ &lt;/sub&gt;} feed ;
+: |tt{   .d{ &lt;tt&gt;} feed ;
+: |}tt   .d{ &lt;/tt&gt;} feed ;
+: |code{   .d{ &lt;div class=&quot;chunk&quot;&gt;&lt;pre&gt;} feed ;
+: |}code   .d{ &lt;/pre&gt;&lt;/div&gt;} feed ;
+</pre></div><p>
+
+</p></div><div class="section"><h2>Bullet Lists</h2><p>
+Tags are provided for bullet lists.
+<div class="chunk"><pre>|{- Item A
+|-- Item B
+    |{- Subitem 1
+    |-- Subitem 2
+    |-- Subitem 3
+    |-}
+|-- Item C
+|-}
+</pre></div>&rarr;</p><ul><li>Item A
+</li><li>Item B
+    <ul><li>Subitem 1
+    </li><li>Subitem 2
+    </li><li>Subitem 3
+    </li></ul></li><li>Item C
+</li></ul><p>
+</p><tt><b>bullet lists</b> +&equiv;</tt><div class="chunk"><pre>variable bullet-depth
+: bullet+   1 bullet-depth +!   bullet-depth @ 1 = if .d{ &lt;/p&gt;} then ;
+: bullet-   -1 bullet-depth +!   bullet-depth @ 0 = if .d{ &lt;p&gt;} then ;
+: |{-   bullet+ .d{ &lt;ul&gt;&lt;li&gt;} feed ;
+: |--   .d{ &lt;/li&gt;&lt;li&gt;} feed ;
+: |-}   .d{ &lt;/li&gt;&lt;/ul&gt;} bullet- feed ;
+</pre></div><p>
+
+</p></div><div class="section"><h2>TeX and LaTeX</h2><p>
+As <span>T<sub><big>E</big></sub>X</span> and <span>L<sup><small>A</small></sup>T<sub><big>E</big></sub>X</span> are widely referenced in material related to
+literate programming, we will want to be able to mention them in
+way that has some semblance of typographical accuracy.
+Unfortunately, precise duplication would require images
+(which don't scale).
+</p><p>Use of subscript and big text gives use this for <span>T<sub><big>E</big></sub>X</span>:
+</p><tt><b>tex and latex shortcuts</b> +&equiv;</tt><div class="chunk"><pre>: |TeX .d{ &lt;span&gt;T&lt;sub&gt;&lt;big&gt;E&lt;/big&gt;&lt;/sub&gt;X&lt;/span&gt;} feed ;
+</pre></div><p></p><p>Adding in small text and superscript then brings us to this for <span>L<sup><small>A</small></sup>T<sub><big>E</big></sub>X</span>:
+</p><tt><b>tex and latex shortcuts</b> +&equiv;</tt><div class="chunk"><pre>: |LaTeX
+    .d{ &lt;span&gt;L&lt;sup&gt;&lt;small&gt;A&lt;/small&gt;&lt;/sup&gt;T&lt;sub&gt;&lt;big&gt;E&lt;/big&gt;&lt;/sub&gt;X&lt;/span&gt;}
+    feed
+;
+</pre></div><p>
+
+</p></div><div class="section"><h2>Symbols</h2><p>
+We provide some tags for arrow symbols ( &larr;, &rarr;, &uarr;, &darr;).
+</p><tt><b>arrow symbols</b> +&equiv;</tt><div class="chunk"><pre>: |&lt;-| .d{ &amp;larr;} feed ;
+: |-&gt;| .d{ &amp;rarr;} feed ;
+: |^| .d{ &amp;uarr;} feed ;
+: |v| .d{ &amp;darr;} feed ;
+</pre></div><p>
+
+
+</p></div><div class="section"><h2>Document Boundaries</h2><p>Documents need logical division markers.
+</p><p>We provide tags for regular and slide show chapters.
+</p><tt><b>document boundaries</b> +&equiv;</tt><div class="chunk"><pre><b>chapter implementation</b>
+: |chapter:   false slide-chapter !  raw-chapter ;
+: |slide-chapter:   true slide-chapter !  raw-chapter ;
+</pre></div><p>
+Sections.
+</p><tt><b>document boundaries</b> +&equiv;</tt><div class="chunk"><pre>: |section:   parse-cr .d{ &lt;/p&gt;&lt;/div&gt;&lt;div class=&quot;section&quot;&gt;&lt;h2&gt;} doc+=$
+                 .d{ &lt;/h2&gt;&lt;p&gt;} feed ;
+</pre></div><p>
+Page breaks.
+</p><tt><b>document boundaries</b> +&equiv;</tt><div class="chunk"><pre>: |page   parse-cr .d{ &lt;/p&gt;&lt;p style=&quot;page-break-before:always;&quot;&gt;} feed ;
+</pre></div><p>
+Line breaks.
+</p><tt><b>document boundaries</b> +&equiv;</tt><div class="chunk"><pre>: |br   parse-cr .d{ &lt;br/&gt;} feed ;
+</pre></div><p>
+Paragraph boundaries.
+</p><tt><b>document boundaries</b> +&equiv;</tt><div class="chunk"><pre>: |$ ( paragraph )
+    .d{ &lt;/p&gt;&lt;p&gt;} feed ;
+</pre></div><p>
+And pipe (|) escaping whole line.
+</p><tt><b>document boundaries</b> +&equiv;</tt><div class="chunk"><pre>: |\ ( whole line)
+    parse-cr atom-cr+ dup chunk+=$ escape doc+=$ feed ;
+</pre></div><p>
+
+</p></div><div class="section"><h2>Chunk Tags</h2><p>
+Crucial to literate programming.
+Tags are provided to manipulate chunks.
+</p><p>Adding to their definition (in a Forth-y way).
+</p><tt><b>chunk tags</b> +&equiv;</tt><div class="chunk"><pre>: |: ( add to a chunk )
+    parse-cr dup chunk ! doc+=def feed ;
+: |; ( documentation )
+    .d{ &lt;/pre&gt;&lt;/div&gt;&lt;p&gt;} doc! feed ;
+</pre></div><p>
+Using them (in a Forth-y way).
+</p><tt><b>chunk tags</b> +&equiv;</tt><div class="chunk"><pre>: |@ ( use a chunk )
+    parse-cr dup chunk+=ref doc+=use .dcr feed ;
+</pre></div><p>
+It may also be useful to expand a chunk in documentation
+(for example listing full source code in the appendix).
+For now, we will do the expansion at the point of use.
+This, unfortunately, will require references to follow all definitions.
+</p><tt><b>chunk tags</b> +&equiv;</tt><div class="chunk"><pre>: |@@ ( use a chunk in documentation )
+    parse-cr means escape doc+=$ feed ;
+</pre></div><p>
+</p></div><div class="section"><h2>Output Files</h2><p>
+Tangled output can be directed to multiple files using a special tag.
+A linked list of output files is kept.
+Their &quot;meaning&quot; is consulted to know what to emit.
+</p><tt><b>output files</b> +&equiv;</tt><div class="chunk"><pre>linked-list out-files
+: |file: ( add a new output file )
+    parse-cr dup 1 out-files chain
+    .d{ &lt;tt&gt;&lt;i&gt;} doc+=$ .d{ &lt;/i&gt;&lt;/tt&gt;} feed ;
+: file-name@ ( file -- A )
+    cell+ @ ;
+</pre></div><p>
+
+</p></div><div class="section"><h2>Global Fields</h2><p>Most documents will begin with a number of document wide field
+tags.
+</p><p>
+The <i>document base</i> is the prefix put in front of each output file in
+weaving mode.
+</p><tt><b>global fields</b> +&equiv;</tt><div class="chunk"><pre>variable doc-base
+atom&quot; index&quot; doc-base !
+: |document-base:   parse-cr doc-base ! feed ;
+</pre></div><p>
+The document has a <i>title</i>.
+</p><tt><b>global fields</b> +&equiv;</tt><div class="chunk"><pre>variable title
+atom&quot; Untitled&quot; title !
+: |title:   parse-cr title ! feed ;
+</pre></div><p>
+And an <i>author</i> (used for the publisher for now too).
+</p><tt><b>global fields</b> +&equiv;</tt><div class="chunk"><pre>variable author
+atom&quot; Anonymous&quot; author !
+: |author:   parse-cr author ! feed ;
+</pre></div><p>
+A frivolous <i>ISBN</i> number.
+</p><tt><b>global fields</b> +&equiv;</tt><div class="chunk"><pre>variable isbn
+atom&quot; 9999999999&quot; isbn !
+: |isbn:   parse-cr isbn ! feed ;
+</pre></div><p>
+A <i>subject</i>.
+</p><tt><b>global fields</b> +&equiv;</tt><div class="chunk"><pre>variable subject
+atom&quot; Article&quot; subject !
+: |subject:   parse-cr subject ! feed ;
+</pre></div><p>
+A <i>date</i> of authorship.
+</p><tt><b>global fields</b> +&equiv;</tt><div class="chunk"><pre>variable doc-date
+atom&quot; Unknown&quot; doc-date !
+: |date:   parse-cr doc-date ! feed ;
+</pre></div><p>
+And a <i>description</i>.
+</p><tt><b>global fields</b> +&equiv;</tt><div class="chunk"><pre>variable description
+atom&quot; No description available.&quot; description !
+: |description:   parse-cr description ! feed ;
+</pre></div><p>
+
+
+
+</p></div></body></html>

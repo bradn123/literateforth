@@ -1,0 +1,512 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"
+ "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+<html>
+<head>
+
+<script type="text/javascript">
+function SlideCount() {
+  var sections = document.getElementsByClassName('section');
+  return sections.length;
+}
+
+function ShowSlide(index) {
+  var sections = document.getElementsByClassName('section');
+  for (var i = 0; i < sections.length; i++) {
+    sections[i].style.display = ((i == index) ? 'inline' : 'none');
+  }
+}
+
+var current_slide = 0;
+
+function Load() {
+  ShowSlide(0);
+  window.onkeydown = function(e) {
+    if (e.keyCode == 37) {  // left
+      current_slide = Math.max(0, current_slide - 1);
+    } else if (e.keyCode == 39) {  // right
+      current_slide = Math.min(SlideCount() - 1, current_slide + 1);
+    } else if (e.keyCode == 38) {  // up
+      current_slide = 0;
+    } else if (e.keyCode == 40) {  // down
+      current_slide = SlideCount() - 1;
+    }
+    ShowSlide(current_slide);
+  };
+}
+</script>
+
+<style type="text/css">
+  div.chunk {
+    margin: 0em 0.5em;
+  }
+  pre {
+    margin: 0em 0em;
+  }
+
+  div.section {
+    page-break-before: always;
+  }
+
+</style>
+
+<title>Event Driven Programming in Forth</title></head><body onload="Load()"><div class="section"><h1>Event Driven Programming in Forth</h1><p>
+Brad Nelson
+</p><p>August 25, 2012
+</p><p><i>In your browser, press &larr; and &rarr; to move through the slides,
+&uarr; and &darr; jump to the beginning and end.
+</i></p><p><i>(On eBook readers, browse normally.)
+</i>
+</p></div><div class="section"><h2>Overview</h2><p></p><ul><li>Intro to Event Driven Programming
+</li><li>Asynchronous I/O in Forth
+</li><li>Closures in Forth
+</li><li>Putting it Together
+</li></ul><p>
+</p></div><div class="section"><h2>Event Driven Programming</h2><p></p><ul><li>Computers spend a lot of time waiting
+</li><li>Real concurrency can be HARD
+</li><li>Lots of threads can be expensive
+</li></ul><p>
+</p></div><div class="section"><h2>Node.js</h2><p></p><ul><li>Server side Javascript
+</li><li>Chrome's V8 engine for speed
+</li><li>Closures used to chain asynchronous events
+</li><li>Standard library mostly asynch instead of an afterthought
+</li><li>Event loop implicit (program runs until nothing pending)
+</li></ul><p>
+</p></div><div class="section"><h2>Node.js (example)</h2><p><div class="chunk"><pre>function handleRequest(request, done) {
+  if (request.style == 1) {
+    getThing(request.name, function(result, err) {
+      getThing(result, function(result, err) {
+        done(result);
+      });
+    });
+  } else {
+    getThing('default', function(result, err) {
+      done(result);
+    });
+  }
+}
+</pre></div>
+</p></div><div class="section"><h2>Twisted</h2><p></p><ul><li>Python framework for event drive programming
+</li><li>Closer to explicit event handling
+</li><li>Uses reactor + deferred
+</li><li>Attach callbacks to promises (to be called when ready)
+</li></ul><p>
+</p></div><div class="section"><h2>Twisted (example)</h2><p><div class="chunk"><pre>from twisted.internet import reactor, defer
+def getSlowSquare(x):
+  d = defer.Defered()
+  reactor.callLater(100, d.callback, x * x)
+def printValue(x):
+  print d
+d = getSlowSquare(4)
+d.addCallback(printValue)
+reactor.callLater(200, reactor.stop)
+reactor.run()
+</pre></div>
+</p></div><div class="section"><h2>Traditional Forth Approach</h2><p></p><ul><li>Tasks
+</li><li>User variables for per task state
+</li><li>Global variables for shared state
+</li><li>Blocked tasks mitigate waiting
+</li></ul><p>PROs:
+</p><ul><li>Flow of a task is in one place
+</li><li>Tasks can spawn subtasks
+</li><li>Easier synchronization than threads
+</li></ul><p>CONs:
+</p><ul><li>Tasks have thread-like overhead
+</li><li>Cross task communication is ad-hoc
+</li></ul><p>
+</p></div><div class="section"><h2>Closures</h2><p></p><tt><b>closures</b> +&equiv;</tt><div class="chunk"><pre><b>carnal knowledge</b>
+<b>scope stack</b>
+<b>scope flow control</b>
+<b>bind and invoke</b>
+<b>start and end scope</b>
+</pre></div><p>
+</p></div><div class="section"><h2>Carnal Knowledge</h2><p>For gforth we know control-sys is on the data stack and 3 cells:
+</p><tt><b>carnal knowledge</b> +&equiv;</tt><div class="chunk"><pre>3 constant control-sys-size
+</pre></div><p>
+</p></div><div class="section"><h2>Scope Stack</h2><p></p><ul><li>Nested scopes
+</li><li>Can't use dstack or rstack as flow control is in the way
+</li><li>Define our own
+</li><li>Assume it won't get too deep
+</li><li>Store the size in the first cell
+</li><li>Leak like mad for now
+</li></ul><p>
+</p></div><div class="section"><h2>Scope Stack (implementation)</h2><p></p><tt><b>scope stack</b> +&equiv;</tt><div class="chunk"><pre>control-sys-size 20 * constant scope-cells
+: scope-alloc ( -- s) scope-cells allocate 0= assert
+              1 cells over ! ;
+variable myscope
+scope-alloc myscope !
+</pre></div><p>Add some push / pop operations.
+</p><tt><b>scope stack</b> +&equiv;</tt><div class="chunk"><pre>: scope+! ( n -- ) cells myscope @ +! ;
+: scope-ptr ( -- n ) myscope @ @ myscope @ + ;
+: &gt;s ( n -- ) scope-ptr !  1 scope+! ;
+: s&gt; ( -- n ) -1 scope+!  scope-ptr @ ;
+</pre></div><p>Push and pop a whole control-sys.
+</p><tt><b>scope stack</b> +&equiv;</tt><div class="chunk"><pre>: scope{ ( cs -- ) control-sys-size 0 do &gt;s loop ;
+: }scope ( -- cs ) control-sys-size 0 do s&gt; loop ;
+</pre></div><p>
+</p></div><div class="section"><h2>Cloning Scopes and Freeing</h2><p></p><tt><b>scope stack</b> +&equiv;</tt><div class="chunk"><pre>: scope. ( s -- ) dup @ cell ?do dup i + @ . cell +loop drop cr ;
+: scope-clone ( s -- s' )
+    scope-alloc dup &gt;r over @ cmove r&gt;
+;
+: scope-free ( s -- ) free 0= assert ;
+</pre></div><p>
+</p></div><div class="section"><h2>:noname</h2><p>Alternate version of <tt>:noname</tt>.
+</p><tt><b>scope flow control</b> +&equiv;</tt><div class="chunk"><pre>: :noname2 ( -- control-sys xt )
+    :noname control-sys-size 1+ roll ;
+</pre></div><p>Even simpler:
+</p><tt><b>scope flow control</b> +&equiv;</tt><div class="chunk"><pre>: :headless ( -- control-sys ) :noname2 drop ;
+</pre></div><p>
+</p></div><div class="section"><h2>Bind and Invoke</h2><p></p><tt><b>bind and invoke</b> +&equiv;</tt><div class="chunk"><pre>: bind ( xt -- closure )
+    &gt;s myscope @ scope-clone
+;
+: invoke ( closure -- )
+    myscope @ &gt;r ( leak ) scope-clone myscope !
+    s&gt; execute
+    myscope @ scope-free r&gt; myscope !
+;
+</pre></div><p>
+</p></div><div class="section"><h2>Start and End Scope</h2><p>We want:
+<div class="chunk"><pre>: foo a b c [: x y z ;] d e f ;
+</pre></div></p><tt><b>start and end scope</b> +&equiv;</tt><div class="chunk"><pre>: [:   postpone ahead scope{
+       postpone ; :noname2 &gt;s ; immediate
+: ;]   postpone ; :headless s&gt; &gt;r }scope
+       postpone then r&gt; postpone literal
+       postpone bind ; immediate
+</pre></div><p>
+</p></div><div class="section"><h2>Try Out Closures</h2><p></p><tt><b>general tests</b> +&equiv;</tt><div class="chunk"><pre>: scope-test 1 [: 2 [: 3 ;] 4 ;] 5 ;
+scope-test 5 assert=
+invoke 4 assert=
+invoke 3 assert=
+2 assert=
+1 assert=
+</pre></div><p>
+</p></div><div class="section"><h2>Closures with Scope</h2><p></p><tt><b>general tests</b> +&equiv;</tt><div class="chunk"><pre>: test-adder &gt;s [: s&gt; + ;] ;
+5 4 test-adder invoke 9 assert=
+</pre></div><p>
+</p></div><div class="section"><h2>Asynchronous I/O</h2><p></p><ul><li>Use gforth's c-function words
+</li><li>Single threaded forth
+</li><li>C side I/O worker pool
+</li></ul><p>
+</p></div><div class="section"><h2>Required Headers</h2><p></p><tt><b>required headers</b> +&equiv;</tt><div class="chunk"><pre>\c #include &lt;assert.h&gt;
+\c #include &lt;fcntl.h&gt;
+\c #include &lt;pthread.h&gt;
+\c #include &lt;stdio.h&gt;
+\c #include &lt;stdlib.h&gt;
+\c #include &lt;string.h&gt;
+\c #include &lt;unistd.h&gt;
+</pre></div><p>
+</p></div><div class="section"><h2>Standard Constants</h2><p>Some standard constants will be brought over from C.
+</p><tt><b>relevant constants</b> +&equiv;</tt><div class="chunk"><pre>\c #define DEFINT(name) int name##_int(void) { return name; }
+\c DEFINT(O_CREAT)
+\c DEFINT(O_TRUNC)
+\c DEFINT(O_WRONLY)
+\c DEFINT(O_RDONLY)
+c-function O_CREAT O_CREAT_int -- n
+c-function O_TRUNC O_TRUNC_int -- n
+c-function O_WRONLY O_WRONLY_int -- n
+c-function O_RDONLY O_RDONLY_int -- n
+</pre></div><p>
+</p></div><div class="section"><h2>File Permissions</h2><p>Declare full octal permissions:
+</p><tt><b>relevant constants</b> +&equiv;</tt><div class="chunk"><pre>: octal 8 base ! ;
+octal
+777 constant rwx
+decimal
+</pre></div><p>
+</p></div><div class="section"><h2>Workers</h2><p>We will for now assume a fixed number of workers.
+</p><tt><b>worker count</b> +&equiv;</tt><div class="chunk"><pre>\c #define WORKERS 10
+\c static pthread_t g_worker_pool[WORKERS];
+</pre></div><p>
+</p></div><div class="section"><h2>Worker Startup</h2><p>The workers are started when the system is initialized.
+</p><tt><b>start all workers</b> +&equiv;</tt><div class="chunk"><pre>\c   for (i = 0; i &lt; WORKERS; ++i) {
+\c     if (pthread_create(&amp;g_worker_pool[i], NULL, Worker, NULL)) {
+\c       assert(0);
+\c     }
+\c   }
+</pre></div><p>
+</p></div><div class="section"><h2>Requests</h2><p></p><tt><b>request structure</b> +&equiv;</tt><div class="chunk"><pre>\c typedef union {
+\c   int number;
+\c   void *pointer;
+\c } VARIANT;
+\c
+\c typedef struct _REQUEST {
+\c   struct _REQUEST *next;
+\c   enum {
+       <b>event types</b>
+\c   } operation;
+\c   VARIANT args[4];
+\c   int callback;
+\c   int result;
+\c } REQUEST;
+</pre></div><p>
+</p></div><div class="section"><h2>Queues</h2><p>Two queues are involved in the system.
+Guarded by a single lock so that a single pending count for the complete
+pipeline can be kept.
+</p><tt><b>lock and count</b> +&equiv;</tt><div class="chunk"><pre>\c static pthread_mutex_t g_lock;
+\c static int g_pending_count;
+</pre></div><p>
+</p></div><div class="section"><h2>Request Queue</h2><p>One to receive pending requests.
+</p><tt><b>requests queue</b> +&equiv;</tt><div class="chunk"><pre>\c static pthread_cond_t g_requests_ready;
+\c static REQUEST *g_requests_head;
+\c static REQUEST *g_requests_tail;
+</pre></div><p>
+</p></div><div class="section"><h2>Result Queue</h2><p>Another to gather processed requests for processing in the main event loop.
+</p><tt><b>results queue</b> +&equiv;</tt><div class="chunk"><pre>\c static pthread_cond_t g_results_ready;
+\c static REQUEST *g_results_head;
+\c static REQUEST *g_results_tail;
+</pre></div><p>
+</p></div><div class="section"><h2>Queue Setup</h2><p>These will be initialized on startup.
+</p><tt><b>startup routine</b> +&equiv;</tt><div class="chunk"><pre>\c void async_startup(void) {
+\c   int i;
+\c   pthread_mutex_init(&amp;g_lock, NULL);
+\c   pthread_cond_init(&amp;g_requests_ready, NULL);
+\c   pthread_mutex_init(&amp;g_lock, NULL);
+\c   pthread_cond_init(&amp;g_results_ready, NULL);
+\c   g_requests_head = 0;
+\c   g_requests_tail = 0;
+\c   g_results_head = 0;
+\c   g_results_tail = 0;
+\c   g_pending_count = 0;
+<b>start all workers</b>
+\c }
+</pre></div><p>
+</p></div><div class="section"><h2>Enqueue Requests</h2><p>Requests will then be enqueued on demand.
+</p><tt><b>enqueue a request</b> +&equiv;</tt><div class="chunk"><pre>\c void async_request_enqueue(REQUEST *req) {
+\c   pthread_mutex_lock(&amp;g_lock);
+\c   ++g_pending_count;
+\c   if (g_requests_tail) {
+\c     g_requests_tail-&gt;next = req;
+\c   } else {
+\c     g_requests_head = req;
+\c   }
+\c   g_requests_tail = req;
+\c   req-&gt;next = 0;
+\c   pthread_cond_signal(&amp;g_requests_ready);
+\c   pthread_mutex_unlock(&amp;g_lock);
+\c }
+</pre></div><p></p><tt><b>forth to c declarations</b> +&equiv;</tt><div class="chunk"><pre>c-function async-startup async_startup -- void
+</pre></div><p>
+</p></div><div class="section"><h2>Shutdown</h2><p></p><tt><b>event types</b> +&equiv;</tt><div class="chunk"><pre>\c     SHUTDOWN,
+</pre></div><p></p><tt><b>forth to c declarations</b> +&equiv;</tt><div class="chunk"><pre>c-function async-shutdown async_shutdown -- void
+</pre></div><p></p><tt><b>handle request types</b> +&equiv;</tt><div class="chunk"><pre>\c     case SHUTDOWN:
+\c       free(req);
+\c       return;
+</pre></div><p></p><tt><b>issue requests</b> +&equiv;</tt><div class="chunk"><pre>\c void async_shutdown(void) {
+\c   REQUEST *req;
+\c   int i;
+\c   for (i = 0; i &lt; WORKERS; ++i) {
+\c     req = (REQUEST*) calloc(1, sizeof(REQUEST));
+\c     req-&gt;operation = SHUTDOWN;
+\c     async_request_enqueue(req);
+\c   }
+\c   for (i = 0; i &lt; WORKERS; ++i) {
+\c     pthread_join(g_worker_pool[i], NULL);
+\c     pthread_mutex_destroy(&amp;g_lock);
+\c     pthread_cond_destroy(&amp;g_requests_ready);
+\c     pthread_mutex_destroy(&amp;g_lock);
+\c     pthread_cond_destroy(&amp;g_results_ready);
+\c   }
+\c }
+</pre></div><p>
+</p></div><div class="section"><h2>Open</h2><p></p><tt><b>event types</b> +&equiv;</tt><div class="chunk"><pre>\c     OPEN,
+</pre></div><p></p><tt><b>forth to c declarations</b> +&equiv;</tt><div class="chunk"><pre>c-function async-open async_open a n n n n -- void
+</pre></div><p></p><tt><b>handle request types</b> +&equiv;</tt><div class="chunk"><pre>\c     case OPEN:
+\c       tmp = malloc(req-&gt;args[1].number + 1);
+\c       assert(tmp);
+\c       memcpy(tmp, req-&gt;args[0].pointer, req-&gt;args[1].number);
+\c       tmp[req-&gt;args[1].number] = 0;
+\c       req-&gt;result = open(tmp, req-&gt;args[2].number, req-&gt;args[3].number);
+\c       free(tmp);
+\c       break;
+</pre></div><p></p><tt><b>issue requests</b> +&equiv;</tt><div class="chunk"><pre>\c void async_open(char *path, int path_len,
+\c                 int oflag, int mode, int callback) {
+\c   REQUEST *req;
+\c   req = (REQUEST*) calloc(1, sizeof(REQUEST));
+\c   assert(req);
+\c   req-&gt;operation = OPEN;
+\c   req-&gt;args[0].pointer = path;
+\c   req-&gt;args[1].number = path_len;
+\c   req-&gt;args[2].number = oflag;
+\c   req-&gt;args[3].number = mode;
+\c   req-&gt;callback = callback;
+\c   async_request_enqueue(req);
+\c }
+</pre></div><p>
+</p></div><div class="section"><h2>Close</h2><p></p><tt><b>event types</b> +&equiv;</tt><div class="chunk"><pre>\c     CLOSE,
+</pre></div><p></p><tt><b>forth to c declarations</b> +&equiv;</tt><div class="chunk"><pre>c-function async-close async_close n n -- void
+</pre></div><p></p><tt><b>handle request types</b> +&equiv;</tt><div class="chunk"><pre>\c     case CLOSE:
+\c       req-&gt;result = close(req-&gt;args[0].number);
+\c       break;
+</pre></div><p></p><tt><b>issue requests</b> +&equiv;</tt><div class="chunk"><pre>\c void async_close(int fd, int callback) {
+\c   REQUEST *req;
+\c   req = (REQUEST*) calloc(1, sizeof(REQUEST));
+\c   assert(req);
+\c   req-&gt;operation = CLOSE;
+\c   req-&gt;args[0].number = fd;
+\c   req-&gt;callback = callback;
+\c   async_request_enqueue(req);
+\c }
+</pre></div><p>
+</p></div><div class="section"><h2>Read</h2><p></p><tt><b>event types</b> +&equiv;</tt><div class="chunk"><pre>\c     READ,
+</pre></div><p></p><tt><b>forth to c declarations</b> +&equiv;</tt><div class="chunk"><pre>c-function async-read async_read n a n n -- void
+</pre></div><p></p><tt><b>handle request types</b> +&equiv;</tt><div class="chunk"><pre>\c     case READ:
+\c       req-&gt;result = read(req-&gt;args[0].number, req-&gt;args[1].pointer,
+\c                          req-&gt;args[2].number);
+\c       break;
+</pre></div><p></p><tt><b>issue requests</b> +&equiv;</tt><div class="chunk"><pre>\c void async_read(int fd, void *buf, int len, int callback) {
+\c   REQUEST *req;
+\c   req = (REQUEST*) calloc(1, sizeof(REQUEST));
+\c   assert(req);
+\c   req-&gt;operation = READ;
+\c   req-&gt;args[0].number = fd;
+\c   req-&gt;args[1].pointer = buf;
+\c   req-&gt;args[2].number = len;
+\c   req-&gt;callback = callback;
+\c   async_request_enqueue(req);
+\c }
+</pre></div><p>
+</p></div><div class="section"><h2>Write</h2><p></p><tt><b>event types</b> +&equiv;</tt><div class="chunk"><pre>\c     WRITE,
+</pre></div><p></p><tt><b>forth to c declarations</b> +&equiv;</tt><div class="chunk"><pre>c-function async-write async_write n a n n -- void
+</pre></div><p></p><tt><b>handle request types</b> +&equiv;</tt><div class="chunk"><pre>\c     case WRITE:
+\c       req-&gt;result = write(req-&gt;args[0].number, req-&gt;args[1].pointer,
+\c                           req-&gt;args[2].number);
+\c       break;
+</pre></div><p></p><tt><b>issue requests</b> +&equiv;</tt><div class="chunk"><pre>\c void async_write(int fd, void *buf, int len, int callback) {
+\c   REQUEST *req;
+\c   req = (REQUEST*) calloc(1, sizeof(REQUEST));
+\c   assert(req);
+\c   req-&gt;operation = WRITE;
+\c   req-&gt;args[0].number = fd;
+\c   req-&gt;args[1].pointer = buf;
+\c   req-&gt;args[2].number = len;
+\c   req-&gt;callback = callback;
+\c   async_request_enqueue(req);
+\c }
+</pre></div><p>
+</p></div><div class="section"><h2>System</h2><p></p><tt><b>event types</b> +&equiv;</tt><div class="chunk"><pre>\c     SYSTEM,
+</pre></div><p></p><tt><b>forth to c declarations</b> +&equiv;</tt><div class="chunk"><pre>c-function async-system async_system a n n -- void
+</pre></div><p></p><tt><b>handle request types</b> +&equiv;</tt><div class="chunk"><pre>\c     case SYSTEM:
+\c       tmp = malloc(req-&gt;args[1].number + 1);
+\c       assert(tmp);
+\c       memcpy(tmp, req-&gt;args[0].pointer, req-&gt;args[1].number);
+\c       tmp[req-&gt;args[1].number] = 0;
+\c       req-&gt;result = system(tmp);
+\c       free(tmp);
+\c       break;
+</pre></div><p></p><tt><b>issue requests</b> +&equiv;</tt><div class="chunk"><pre>\c void async_system(char *cmd, int cmd_len, int callback) {
+\c   REQUEST *req;
+\c   req = (REQUEST*) calloc(1, sizeof(REQUEST));
+\c   assert(req);
+\c   req-&gt;operation = SYSTEM;
+\c   req-&gt;args[0].pointer = cmd;
+\c   req-&gt;args[1].number = cmd_len;
+\c   req-&gt;callback = callback;
+\c   async_request_enqueue(req);
+\c }
+</pre></div><p>
+</p></div><div class="section"><h2>Worker Implementation</h2><p></p><tt><b>worker implementation</b> +&equiv;</tt><div class="chunk"><pre>\c void *Worker(void *arg) {
+\c   REQUEST *req;
+\c   char *tmp;
+\c
+\c   for (;;) {
+       <b>get a pending request</b>
+       <b>handle a request</b>
+       <b>pass on result</b>
+\c   }
+\c }
+</pre></div><p>
+</p></div><div class="section"><h2>Get a Pending Request</h2><p></p><tt><b>get a pending request</b> +&equiv;</tt><div class="chunk"><pre>\c     pthread_mutex_lock(&amp;g_lock);
+\c     while (!g_requests_head) {
+\c       pthread_cond_wait(&amp;g_requests_ready, &amp;g_lock);
+\c     }
+\c     req = g_requests_head;
+\c     g_requests_head = req-&gt;next;
+\c     if (!g_requests_head) { g_requests_tail = 0; }
+\c     pthread_mutex_unlock(&amp;g_lock);
+</pre></div><p>
+</p></div><div class="section"><h2>Handle a Result</h2><p></p><tt><b>handle a request</b> +&equiv;</tt><div class="chunk"><pre>\c     switch (req-&gt;operation) {
+       <b>handle request types</b>
+\c     default:
+\c       assert(0);
+\c       break;
+\c     }
+</pre></div><p>
+</p></div><div class="section"><h2>Pass on Result</h2><p></p><tt><b>pass on result</b> +&equiv;</tt><div class="chunk"><pre>\c     pthread_mutex_lock(&amp;g_lock);
+\c     if (g_results_tail) {
+\c       g_results_tail-&gt;next = req;
+\c     } else {
+\c       g_results_head = req;
+\c     }
+\c     g_results_tail = req;
+\c     req-&gt;next = 0;
+\c     pthread_cond_signal(&amp;g_results_ready);
+\c     pthread_mutex_unlock(&amp;g_lock);
+</pre></div><p>
+</p></div><div class="section"><h2>Waiting for Results</h2><p>Waiting then occurs on the main thread.
+</p><tt><b>implement waiting</b> +&equiv;</tt><div class="chunk"><pre>\c void async_wait(int *result, int *callback) {
+\c   REQUEST *req;
+\c   pthread_mutex_lock(&amp;g_lock);
+\c   if (g_pending_count &lt;= 0) {
+\c     *result = 0;
+\c     *callback = 0;
+\c     pthread_mutex_unlock(&amp;g_lock);
+\c     return;
+\c   }
+\c   while (!g_results_head) {
+\c     pthread_cond_wait(&amp;g_results_ready, &amp;g_lock);
+\c   }
+\c   req = g_results_head;
+\c   g_results_head = req-&gt;next;
+\c   if (!g_results_head) { g_results_tail = 0; }
+\c   *result = req-&gt;result;
+\c   *callback = req-&gt;callback;
+\c   free(req);
+\c   --g_pending_count;
+\c   pthread_mutex_unlock(&amp;g_lock);
+\c }
+</pre></div><p></p><tt><b>forth to c declarations</b> +&equiv;</tt><div class="chunk"><pre>c-function async-wait async_wait a a -- void
+</pre></div><p>
+</p></div><div class="section"><h2>Run Loop</h2><p></p><tt><b>dispatch events</b> +&equiv;</tt><div class="chunk"><pre>variable result
+variable callback
+: async-run
+  begin
+    result callback async-wait
+    callback @ 0= if exit then
+    result @ callback @ invoke
+  again
+;
+</pre></div><p>
+</p></div><div class="section"><h2>Putting it together</h2><p>Some tests are in order.
+</p><tt><b>general tests</b> +&equiv;</tt><div class="chunk"><pre>: test1
+    async-startup
+    s&quot; ls -l out&quot; [:
+      0= assert
+      1 s&quot; Hello world!&quot; [:
+        drop cr .&quot; And Done!&quot; cr
+      ;] async-write
+    ;] async-system
+    async-run
+    async-shutdown
+;
+test1
+</pre></div><p>
+</p></div><div class="section"><h2>Using Scope</h2><p></p><tt><b>general tests</b> +&equiv;</tt><div class="chunk"><pre>: write-whole-file ( data filename next -- )
+    &gt;s &gt;r &gt;r &gt;s &gt;s r&gt; r&gt;
+    O_CREAT O_TRUNC or O_WRONLY or rwx [:
+      dup 0&gt;= assert
+      dup &gt;r s&gt; s&gt; r&gt; &gt;s [:
+        drop s&gt; [: s&gt; invoke ;] async-close
+      ;] async-write
+    ;] async-open
+;
+: test2
+    async-startup
+    s&quot; Hello there!&quot; s&quot; out/test1.txt&quot; [:
+      .&quot; Written file.&quot; cr
+    ;] write-whole-file 
+    async-run
+    async-shutdown
+;
+test2
+</pre></div><p>
+</p></div><div class="section"><h2>Question?</h2><p>Questions?
+
+</p></div></body></html>

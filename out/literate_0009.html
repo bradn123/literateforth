@@ -1,0 +1,61 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"
+ "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+<html>
+<head>
+
+<style type="text/css">
+  div.chunk {
+    margin: 0em 0.5em;
+  }
+  pre {
+    margin: 0em 0em;
+  }
+
+</style>
+
+<title>Slide Show</title></head><body><div class="section"><h1>Slide Show</h1><p>We would like to be able to support a slide show for some chapters.
+On eBook readers this is handled by marking each section being preceded
+with a page break.
+For desktop browsers, we add a small amount of Javascript to selectively
+hide each section &lt;div&gt; tag.
+</p><p>We need to be able to count the number of slides.
+</p><tt><b>slide show logic</b> +&equiv;</tt><div class="chunk"><pre>.d|
+&lt;script type=&quot;text/javascript&quot;&gt;
+function SlideCount() {
+  var sections = document.getElementsByClassName('section');
+  return sections.length;
+}
+</pre></div><p>
+Move to a slide.
+</p><tt><b>slide show logic</b> +&equiv;</tt><div class="chunk"><pre>function ShowSlide(index) {
+  var sections = document.getElementsByClassName('section');
+  for (var i = 0; i &lt; sections.length; i++) {
+    sections[i].style.display = ((i == index) ? 'inline' : 'none');
+  }
+}
+</pre></div><p>
+Track the current slide.
+</p><tt><b>slide show logic</b> +&equiv;</tt><div class="chunk"><pre>var current_slide = 0;
+</pre></div><p>
+Then start the show on load and intercept the arrow keys
+to control the show.
+</p><tt><b>slide show logic</b> +&equiv;</tt><div class="chunk"><pre>function Load() {
+  ShowSlide(0);
+  window.onkeydown = function(e) {
+    if (e.keyCode == 37) {  // left
+      current_slide = Math.max(0, current_slide - 1);
+    } else if (e.keyCode == 39) {  // right
+      current_slide = Math.min(SlideCount() - 1, current_slide + 1);
+    } else if (e.keyCode == 38) {  // up
+      current_slide = 0;
+    } else if (e.keyCode == 40) {  // down
+      current_slide = SlideCount() - 1;
+    }
+    ShowSlide(current_slide);
+  };
+}
+&lt;/script&gt;
+|.d
+</pre></div><p>
+
+</p></div></body></html>

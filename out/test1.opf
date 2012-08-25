@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://www.idpf.org/2007/opf" version="2.0"
+unique-identifier="BookId">
+<metadata xmlns:dc="http://purl.org/dc/elements/1.1/"
+xmlns:opf="http://www.idpf.org/2007/opf">
+
+<dc:title>fun^4</dc:title>
+<dc:language>en-us</dc:language>
+<meta name="cover" content="My_Cover"/> 
+<dc:identifier id="BookId" opf:scheme="ISBN">9999999999</dc:identifier>
+<dc:creator>me</dc:creator>
+<dc:publisher>me</dc:publisher>
+<dc:subject>Article</dc:subject>
+<dc:date>Unknown</dc:date>
+<dc:description>No description available.</dc:description>
+</metadata>
+
+<manifest>
+   <item id="My_Table_of_Contents" media-type="application/x-dtbncx+xml"
+
+   href="test1.ncx"/>
+
+  <item id="toc" media-type="application/xhtml+xml" href="test1.html"></item><item id="test1_0000.html" media-type="application/xhtml+xml" href="test1_0000.html"></item>
+<item id="test1_0001.html" media-type="application/xhtml+xml" href="test1_0001.html"></item>
+<item id="My_Cover" media-type="image/gif"
+ href="test1_cover.bmp"/>
+</manifest><spine toc="My_Table_of_Contents"><itemref idref="toc"/><itemref idref="test1_0000.html"/>
+<itemref idref="test1_0001.html"/>
+</spine><guide>
+  <reference type="toc" title="Table of Contents"
+
+   href="test1.html"></reference>
+</guide>
+</package>
+

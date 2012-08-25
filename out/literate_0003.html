@@ -1,0 +1,88 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"
+ "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+<html>
+<head>
+
+<style type="text/css">
+  div.chunk {
+    margin: 0em 0.5em;
+  }
+  pre {
+    margin: 0em 0em;
+  }
+
+</style>
+
+<title>Foundations</title></head><body><div class="section"><h1>Foundations</h1><p>
+</p></div><div class="section"><h2>Assertions</h2><p>We will often want to check if certain conditions are true,
+halting if they are not.
+</p><tt><b>assertion support</b> +&equiv;</tt><div class="chunk"><pre>: assert ( n -- )
+    0= if abort then ;
+</pre></div><p>
+
+</p></div><div class="section"><h2>Linked Lists</h2><p>
+In several places in this program, singly linked lists are useful.
+As we are interested primarily in inserting in elements at the end of a
+list (or are indifferent as to the order). We will standardize on
+a list root with this structure:
+</p><ul><li>pointer to the first element (head) of the list (0 on empty)
+</li><li>pointer to the last element (tail) of the list (0 on empty)
+</li></ul><p>
+We will need a word to create list roots in a variable:
+</p><tt><b>utility words</b> +&equiv;</tt><div class="chunk"><pre>: linked-list
+    create 0 , 0 , ;
+</pre></div><p>
+In allocating memory for lists, we will assume sufficient memory is available.
+</p><tt><b>utility words</b> +&equiv;</tt><div class="chunk"><pre>: allocate' ( n -- a )
+    allocate 0= assert ;
+</pre></div><p>
+We will also the allocated memory for simplicity.
+</p><tt><b>utility words</b> +&equiv;</tt><div class="chunk"><pre>: zero ( a n -- )
+    0 fill ;
+: allocate0 ( n -- a )
+    dup allocate' swap 2dup zero drop ;
+</pre></div><p>
+Support adding a new link to the end of a chain.
+</p><tt><b>utility words</b> +&equiv;</tt><div class="chunk"><pre>: chain-new ( n -- a )
+    1+ cells allocate0 ;
+: chain-fillout ( .. a n -- a )
+    0 do dup i 1+ cells + swap &gt;r ! r&gt; loop ;
+: chain-link ( ..n -- a )
+    dup chain-new swap chain-fillout ;
+: chain-first ( ..n head[t] -- )
+    &gt;r chain-link r&gt; 2dup ! cell+ ! ;
+: chain-rest ( ..n head[t] -- )
+    &gt;r chain-link r&gt; 2dup cell+ @ ! cell+ ! ;
+: chain ( ..n head[t] -- )
+    dup @ if chain-rest else chain-first then ;
+</pre></div><p>
+And walking down the list.
+</p><tt><b>utility words</b> +&equiv;</tt><div class="chunk"><pre>: -&gt;next ( a -- a' ) @ ;
+</pre></div><p>
+
+</p></div><div class="section"><h2>Ordinary Strings</h2><p>We will need to clone strings occasionally.
+</p><tt><b>utility words</b> +&equiv;</tt><div class="chunk"><pre>: $clone ( $ - $ )
+    dup allocate 0= assert swap 2dup &gt;r &gt;r move r&gt; r&gt; ;
+</pre></div><p>
+
+</p></div><div class="section"><h2>Stack Maneuvers</h2><p>We will also need to duplicate three items off the stack.
+</p><tt><b>utility words</b> +&equiv;</tt><div class="chunk"><pre>: 3dup ( xyz -- xyzxyz )
+    dup 2over rot ;
+</pre></div><p>
+</p></div><div class="section"><h2>File Writing</h2><p></p><tt><b>post atom utility words</b> +&equiv;</tt><div class="chunk"><pre>: file!-dangle ( A A -- fileid )
+    atom-string@ r/w bin create-file 0= assert
+    swap over &gt;r atom-string@ r&gt; write-file 0= assert
+    dup flush-file 0= assert
+;
+: file! ( A A -- )
+    file!-dangle
+    close-file 0= assert
+;
+: file!-tmp ( A A -- fileid )
+    file!-dangle
+    dup 0 s&gt;d rot reposition-file 0= assert
+;
+</pre></div><p>
+
+
+</p></div></body></html>

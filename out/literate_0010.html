@@ -1,0 +1,145 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"
+ "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+<html>
+<head>
+
+<style type="text/css">
+  div.chunk {
+    margin: 0em 0.5em;
+  }
+  pre {
+    margin: 0em 0em;
+  }
+
+</style>
+
+<title>Images</title></head><body><div class="section"><h1>Images</h1><p>
+</p></div><div class="section"><h2>Colors</h2><p>
+In order to represent images, we'll need to handle colors.
+We keep a 0-255 value for the red, green, and blue component of the current
+color.
+
+</p><tt><b>implement colors</b> +&equiv;</tt><div class="chunk"><pre>variable red
+variable green
+variable blue
+</pre></div><p>
+We'll often use it to setup colors specified as a triple.
+Often this triple will be floating point in the 0-1 range.
+</p><tt><b>implement colors</b> +&equiv;</tt><div class="chunk"><pre>: rgb ( r g b -- ) blue ! green ! red ! ;
+: f&gt;primary ( f -- n ) 255e f* f&gt;s 0 max 255 min ;
+: rgbf ( rf gf bf -- ) f&gt;primary f&gt;primary f&gt;primary rgb ;
+</pre></div><p>
+We can then define some important common colors.
+</p><tt><b>implement colors</b> +&equiv;</tt><div class="chunk"><pre>: black ( -- ) 0 0 0 rgb ;
+: white ( -- ) 255 255 255 rgb ;
+</pre></div><p>
+And some common color sets.
+</p><tt><b>implement colors</b> +&equiv;</tt><div class="chunk"><pre>: gray ( n -- ) dup dup rgb ;
+</pre></div><p>
+
+</p></div><div class="section"><h2>Images</h2><p>
+We will need to implement images.
+For now, a single global image will suffice.
+We'll store it in 4 byte per pixel form (with the alpha component unused for
+now). These fields will be needed.
+
+</p><tt><b>implement images</b> +&equiv;</tt><div class="chunk"><pre>variable image-width
+variable image-height
+variable image-data
+</pre></div><p>
+In manipulating images we'll want to be able to reference the total size of
+the image data.
+</p><tt><b>implement images</b> +&equiv;</tt><div class="chunk"><pre>: image-data-size ( -- n )
+    image-width @ image-height @ * 4 * ;
+</pre></div><p>
+We will (re-)allocate image data on setup.
+</p><tt><b>implement images</b> +&equiv;</tt><div class="chunk"><pre>: image-pick-size ( w h -- )
+    image-height ! image-width ! ;
+: image-free-old
+    image-data @ dup if free 0= assert else drop then ;
+: image-allocate
+    image-data-size allocate 0= assert image-data ! ;
+: image-clear
+    image-data @ image-data-size 0 fill ;
+: image-setup ( w h -- )
+    image-pick-size image-free-old image-allocate image-clear ;
+</pre></div><p>
+
+The most basic operation will be to plot to a given (x, y) coordinate
+with the current color.
+</p><tt><b>implement images</b> +&equiv;</tt><div class="chunk"><pre><b>implement colors</b>
+: image-xy ( x y -- a )
+    image-width @ * + 4 *
+    image-data @ + ;
+: plot ( x y -- )
+    image-xy
+    red @ over c!
+    green @ over 1+ c!
+    blue @ over 2 + c!
+    0 swap 3 + c! ;
+</pre></div><p>
+</p></div><div class="section"><h2>Writing BMPs.</h2><p>
+We will want to output the current image to a windows BMP file.
+We will assume we're only writing one BMP at time and keep a global to its
+file handle.
+
+</p><tt><b>writing bmp files</b> +&equiv;</tt><div class="chunk"><pre>variable bmp-file
+</pre></div><p>
+Opening and closing the file based on an atom name will be useful.
+</p><tt><b>writing bmp files</b> +&equiv;</tt><div class="chunk"><pre>: bmp-begin ( A -- )
+    atom-string@ w/o bin create-file 0= assert bmp-file ! ;
+: bmp-end ( -- )
+    bmp-file @ close-file 0= assert ;
+</pre></div><p>
+We will halt on failures to write, so we should centralize that.
+</p><tt><b>writing bmp files</b> +&equiv;</tt><div class="chunk"><pre>: bmp-write ( $ -- )
+    bmp-file @ write-file 0= assert ;
+</pre></div><p>
+Additionally writing out little endian bytes, words, and double words will be
+needed.
+
+</p><tt><b>writing bmp files</b> +&equiv;</tt><div class="chunk"><pre>: bmp-byte ( b -- ) here c! here 1 bmp-write ;
+: bmp-word ( w -- ) dup 255 and bmp-byte 8 rshift 255 and bmp-byte ;
+: bmp-dword ( d -- ) dup 65535 and bmp-word 16 rshift 65535 and bmp-word ;
+</pre></div><p>
+BMP files have two headers, the main BMP header and a DIB (device
+independent header. We'll need to talk about the size of them.
+</p><tt><b>writing bmp files</b> +&equiv;</tt><div class="chunk"><pre>3 2 * 2 4 * + constant bmp-header-size
+10 4 * constant dib-header-size
+</pre></div><p>
+We can then implement writing the bmp file.
+Starting with the BMP header.
+</p><tt><b>writing bmp files</b> +&equiv;</tt><div class="chunk"><pre>: bmp-save ( A -- )
+  bmp-begin
+  \ BMP header
+  s&quot; BM&quot; bmp-write
+  bmp-header-size
+  dib-header-size +
+  image-data-size + bmp-dword \ size of bmp file in bytes
+  0 bmp-word \ unused
+  0 bmp-word \ unused
+  bmp-header-size
+  dib-header-size + bmp-dword \ offset to start of bitmap image data
+</pre></div><p>
+Then the DIB header.
+</p><tt><b>writing bmp files</b> +&equiv;</tt><div class="chunk"><pre>  \ DIB header
+  dib-header-size bmp-dword \ size of header in bytes
+  image-width @ bmp-dword \ width
+  image-height @ bmp-dword \ height
+  1 bmp-word \ color planes
+  32 bmp-word \ bits per pixel
+  0 bmp-dword \ BI_RGB (uncompressed)
+  image-data-size bmp-dword \ pixel data size
+  0 bmp-dword \ horizontal pixels per meter
+  0 bmp-dword \ vertical pixels per meter
+  0 bmp-dword \ colors in color palette
+  0 bmp-dword \ important colors in palette
+</pre></div><p>
+Then the image data and done.
+</p><tt><b>writing bmp files</b> +&equiv;</tt><div class="chunk"><pre>  \ Image data
+  image-data @ image-data-size bmp-write
+  bmp-end
+;
+</pre></div><p>
+
+</p></div></body></html>

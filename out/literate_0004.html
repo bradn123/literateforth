@@ -1,0 +1,231 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"
+ "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+<html>
+<head>
+
+<style type="text/css">
+  div.chunk {
+    margin: 0em 0.5em;
+  }
+  pre {
+    margin: 0em 0em;
+  }
+
+</style>
+
+<title>Atomic Strings</title></head><body><div class="section"><h1>Atomic Strings</h1><p>
+</p></div><div class="section"><h2>Introduction</h2><p>We will devise a number of words to implement so called &quot;atomic strings&quot;.
+This data type augments Forth's more machine level string handling with
+something higher level. Hereafter atomic strings will simply be referred
+to as atoms. The central properties of atoms are:
+</p><ul><li>occupy a single cell on the stack
+</li><li>have identical numerical value when equal (for one program run)
+</li><li>have a single associative &quot;meaning&quot;
+</li></ul><p>The utility of atoms will become apparent given some examples.
+
+
+</p></div><div class="section"><h2>Using Atoms</h2><p>
+Atoms with the same string are equal:
+</p><tt><b>testing atoms</b> +&equiv;</tt><div class="chunk"><pre>atom&quot; foo&quot; atom&quot; foo&quot; = assert
+</pre></div><p>
+Atoms with different strings are of course, not equal:
+</p><tt><b>testing atoms</b> +&equiv;</tt><div class="chunk"><pre>atom&quot; bar&quot; atom&quot; foo&quot; &lt;&gt; assert
+</pre></div><p>
+Atoms can be concatenated:
+</p><tt><b>testing atoms</b> +&equiv;</tt><div class="chunk"><pre>atom&quot; testing&quot; atom&quot; 123&quot; atom+ atom&quot; testing123&quot; = assert
+</pre></div><p>
+Atoms can have a meaning assigned to them using
+<tt>atom+=$</tt> (to append a literal string)
+or <tt>atom+=ref</tt> (to append a reference to the meaning of another atom).
+</p><tt><b>testing atoms</b> +&equiv;</tt><div class="chunk"><pre>atom&quot; abc&quot; atom&quot; bar&quot; atom+=$
+atom&quot; def&quot; atom&quot; bar&quot; atom+=$
+atom&quot; 1234&quot; atom&quot; foo&quot; atom+=$
+atom&quot; bar&quot; atom&quot; foo&quot; atom+=ref
+atom&quot; 5678 9&quot; atom&quot; foo&quot; atom+=$
+atom&quot; bar&quot; atom&quot; foo&quot; atom+=ref
+atom&quot; foo&quot; means atom&quot; 1234abcdef5678 9abcdef&quot; = assert
+</pre></div><p>
+
+</p></div><div class="section"><h2>Structure of an Atom</h2><p>
+Conveniently, because atoms have a single numerical value per string value,
+we can implement meaning without the need for a lookup data structure.
+Each atom's value will be the address of a structure:
+</p><ul><li>address of next atom (in the set of atoms)
+</li><li>string length
+</li><li>address of string start
+</li><li>&quot;meaning&quot; head
+</li><li>&quot;meaning&quot; tail
+</li></ul><p>
+Some words to read these values are useful:
+</p><tt><b>implement atoms</b> +&equiv;</tt><div class="chunk"><pre>: atom-length@ ( A -- n )
+    1 cells + @ ;
+: atom-data@ ( A -- a )
+    2 cells + @ ;
+: atom-string@ ( A -- $ )
+    dup atom-data@ swap atom-length@ ;
+: atom-meaning-head ( A -- A[head] )
+    3 cells + ;
+</pre></div><p>
+</p><p>Off of each atom's primary structure, a chain of &quot;meaning&quot; links.
+When determining the &quot;meaning&quot; of an atom, the expansion of each
+link in the chain is concatenated.
+There are two types of link:
+</p><ul><li>raw strings (atom specifies the literal string)
+</li><li>reference links (atom specifies another atom who's
+    meaning should recursively be used)
+</li></ul><p></p><p>The format of the meaning links is:
+</p><ul><li>address of next link (in the meaning list)
+</li><li>flag indicating if this is a reference (rather than a raw string)
+</li><li>an atom (either raw string or a recursive reference)
+</li></ul><p>
+</p></div><div class="section"><h2>Implementing Atoms</h2><p>
+A list of all atoms will be kept chained off <tt>atom-root </tt>.
+Whenever an atom is needed, this list should be consulted before a
+new atoms is created (as an existing one may exist and
+<b>must </b> be used).
+</p><tt><b>implement atoms</b> +&equiv;</tt><div class="chunk"><pre>linked-list atom-root
+</pre></div><p>
+We will create new unchained atoms either from a string that can safely
+be assumed to persist:
+</p><tt><b>implement atoms</b> +&equiv;</tt><div class="chunk"><pre>: $atom-new ( $ -- A )
+    &gt;r &gt;r 0 0 r&gt; r&gt; 4 atom-root chain atom-root cell+ @ ;
+</pre></div><p>
+Or from one that is transitory (parse region for example).
+</p><tt><b>implement atoms</b> +&equiv;</tt><div class="chunk"><pre>: atom-new ( $ -- A )
+    $clone $atom-new ;
+</pre></div><p>
+Comparison for equality with a normal string is needed in order to seek
+out a match from the existing pool of atoms.
+</p><tt><b>implement atoms</b> +&equiv;</tt><div class="chunk"><pre>: atom= ( $ A -- f )
+    atom-string@ compare 0= ;
+</pre></div><p>
+We then need a way to look through all atoms for a match.
+
+</p><tt><b>implement atoms</b> +&equiv;</tt><div class="chunk"><pre>: atom-find' ( $ A -- A )
+    begin
+       dup 0= if nip nip exit then
+       3dup atom= if nip nip exit then
+       -&gt;next
+    again ;
+: atom-find ( $ -- A )
+    atom-root @ atom-find' ;
+</pre></div><p>
+Now we can implement two versions of atom lookup.
+<tt>$atom </tt> for atoms based on persistent strings.
+</p><tt><b>implement atoms</b> +&equiv;</tt><div class="chunk"><pre>: $atom ( $ -- A )
+    2dup atom-find dup if nip nip else drop $atom-new then ;
+</pre></div><p>
+And <tt>atom </tt> for atoms based on non-persistent strings.
+</p><tt><b>implement atoms</b> +&equiv;</tt><div class="chunk"><pre>: atom ( $ -- A )
+    2dup atom-find dup if nip nip else drop atom-new then ;
+</pre></div><p>
+Printing an atom is provided (mainly for debugging).
+</p><tt><b>implement atoms</b> +&equiv;</tt><div class="chunk"><pre>: atom. ( A -- )
+    atom-string@ type ;
+</pre></div><p>
+As is printing <b>all </b> atoms.
+</p><tt><b>implement atoms</b> +&equiv;</tt><div class="chunk"><pre>: atoms. ( -- )
+    atom-root @ begin dup while
+    dup atom. cr -&gt;next repeat drop ;
+</pre></div><p>
+We provide two different stringing words for atoms.
+One based on quotes, the other braces.
+</p><tt><b>implement atoms</b> +&equiv;</tt><div class="chunk"><pre>: atom&quot; ( -- A )
+    [char] &quot; parse
+    state @ if postpone sliteral postpone atom
+    else atom then ; immediate
+: atom{ ( -- A )
+    [char] } parse
+    state @ if postpone sliteral postpone atom
+    else atom then ; immediate
+</pre></div><p>
+As well as a word for an empty atom.
+</p><tt><b>implement atoms</b> +&equiv;</tt><div class="chunk"><pre>: atom&quot;&quot; ( -- A ) 0 0 atom ;
+</pre></div><p>
+While atoms are fixed, once created,
+their &quot;meanings&quot; can be accumulated gradually.
+The two words for this are <tt>atom+=$</tt> and
+<tt>atom+=ref</tt>.
+</p><tt><b>implement atoms</b> +&equiv;</tt><div class="chunk"><pre>: atom-append ( A n Ad -- )
+    atom-meaning-head 2 swap chain ;
+: atom+=$ ( A Ad -- )
+    0 swap atom-append ;
+: atom+=ref ( A Ad -- )
+    1 swap atom-append ;
+</pre></div><p>
+We then provide a way to extract the &quot;meaning&quot; of an atom.
+</p><tt><b>implement atoms</b> +&equiv;</tt><div class="chunk"><pre><b>implement means tools</b>
+: means ( A -- A' )
+    dup atom-walk-length dup allocate 0= assert
+    swap 2dup &gt;r &gt;r drop
+    atom-walk-gather r&gt; r&gt; $atom ;
+</pre></div><p>
+Using this plumbing.
+</p><tt><b>implement means tools</b> +&equiv;</tt><div class="chunk"><pre>: ref-parts ( ref -- A ref? )
+    cell+ dup cell+ @ swap @ ;
+: atom-walk ( fn A -- )
+     atom-meaning-head @ begin dup while
+         2dup &gt;r &gt;r
+         ref-parts if recurse else swap execute then
+         r&gt; r&gt;
+         -&gt;next
+     repeat 2drop ;
+: tally-length ( n A -- n )
+    atom-length@ + ;
+: gather-string ( a A -- a' )
+    2dup atom-string@ &gt;r swap r&gt; move tally-length ;
+: atom-walk-length ( A -- n )
+    0 swap ['] tally-length swap atom-walk ;
+: atom-walk-gather ( a A -- )
+    swap ['] gather-string swap atom-walk drop ;
+</pre></div><p>
+We provide atom concatenation.
+</p><tt><b>implement atoms</b> +&equiv;</tt><div class="chunk"><pre>: atom&gt;&gt;$ ( A d -- d' )
+    2dup &gt;r atom-string@ r&gt; swap move swap atom-length@ + ;
+: atom+ ( A A -- A )
+    swap 2dup atom-length@ swap atom-length@ + dup &gt;r
+    allocate 0= assert dup &gt;r
+    atom&gt;&gt;$ atom&gt;&gt;$ drop r&gt; r&gt; $atom ;
+</pre></div><p>
+And a way to get an atom from one character.
+</p><tt><b>implement atoms</b> +&equiv;</tt><div class="chunk"><pre>: atom-ch ( ch -- A )
+    1 allocate 0= assert 2dup c! nip 1 atom ;
+</pre></div><p>
+This allows us to add a shorthand for carriage returns
+and concatenation of carriage returns.
+</p><tt><b>implement atoms</b> +&equiv;</tt><div class="chunk"><pre>10 atom-ch constant atom-cr
+: atom-cr+ ( A -- A )
+    atom-cr atom+ ;
+</pre></div><p>
+We can then apply the tests above.
+</p><tt><b>implement atoms</b> +&equiv;</tt><div class="chunk"><pre><b>testing atoms</b>
+</pre></div><p>
+And some words that depend on atoms.
+</p><tt><b>implement atoms</b> +&equiv;</tt><div class="chunk"><pre><b>post atom utility words</b>
+</pre></div><p>
+</p></div><div class="section"><h2>HTML Escaping</h2><p>
+A critical feature is to be able to html escape an atom.
+We convert the following:
+</p><ul><li>&lt; &rarr; &amp;lt;
+</li><li>&gt; &rarr; &amp;gt;
+</li><li>&quot; &rarr; &amp;quot;
+</li><li>&amp; &rarr; &amp;amp;
+</li></ul><p></p><tt><b>implement atoms</b> +&equiv;</tt><div class="chunk"><pre>: escape-ch ( ch -- )
+   dup [char] &lt; = if [char] &amp; c, [char] l c, [char] t c,
+                     [char] ; c, drop exit then
+   dup [char] &gt; = if [char] &amp; c, [char] g c, [char] t c,
+                     [char] ; c, drop exit then
+   dup [char] &quot; = if [char] &amp; c, [char] q c, [char] u c, [char] o c,
+                     [char] t c, [char] ; c, drop exit then
+   dup [char] &amp; = if [char] &amp; c, [char] a c, [char] m c, [char] p c,
+                     [char] ; c, drop exit then
+   c, ;
+: escape-each ( A -- )
+    atom-string@ 0 ?do dup i + c@ escape-ch loop drop ;
+: here! ( a -- )
+    here - allot ;
+: escape ( A -- A )
+    here dup &gt;r swap escape-each here over - atom r&gt; here! ;
+</pre></div><p>
+
+</p></div></body></html>
