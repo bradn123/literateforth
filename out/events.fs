@@ -40,7 +40,7 @@
 
 \c   } operation;
 \c   VARIANT args[4];
-\c   int callback;
+\c   void *callback;
 \c   int result;
 \c } REQUEST;
 
@@ -188,7 +188,7 @@
 \c }
 
 \c void async_open(char *path, int path_len,
-\c                 int oflag, int mode, int callback) {
+\c                 int oflag, int mode, void *callback) {
 \c   REQUEST *req;
 \c   req = (REQUEST*) calloc(1, sizeof(REQUEST));
 \c   assert(req);
@@ -201,7 +201,7 @@
 \c   async_request_enqueue(req);
 \c }
 
-\c void async_close(int fd, int callback) {
+\c void async_close(int fd, void *callback) {
 \c   REQUEST *req;
 \c   req = (REQUEST*) calloc(1, sizeof(REQUEST));
 \c   assert(req);
@@ -211,7 +211,7 @@
 \c   async_request_enqueue(req);
 \c }
 
-\c void async_read(int fd, void *buf, int len, int callback) {
+\c void async_read(int fd, void *buf, int len, void *callback) {
 \c   REQUEST *req;
 \c   req = (REQUEST*) calloc(1, sizeof(REQUEST));
 \c   assert(req);
@@ -223,7 +223,7 @@
 \c   async_request_enqueue(req);
 \c }
 
-\c void async_write(int fd, void *buf, int len, int callback) {
+\c void async_write(int fd, void *buf, int len, void *callback) {
 \c   REQUEST *req;
 \c   req = (REQUEST*) calloc(1, sizeof(REQUEST));
 \c   assert(req);
@@ -235,7 +235,7 @@
 \c   async_request_enqueue(req);
 \c }
 
-\c void async_system(char *cmd, int cmd_len, int callback) {
+\c void async_system(char *cmd, int cmd_len, void *callback) {
 \c   REQUEST *req;
 \c   req = (REQUEST*) calloc(1, sizeof(REQUEST));
 \c   assert(req);
@@ -247,7 +247,7 @@
 \c }
 
 
-\c void async_wait(int *result, int *callback) {
+\c void async_wait(int *result, void **callback) {
 \c   REQUEST *req;
 \c   pthread_mutex_lock(&g_lock);
 \c   if (g_pending_count <= 0) {
@@ -290,24 +290,26 @@ c-function async-startup async_startup -- void
 
 c-function async-shutdown async_shutdown -- void
 
-c-function async-open async_open a n n n n -- void
+c-function async-open async_open a n n n a -- void
 
-c-function async-close async_close n n -- void
+c-function async-close async_close n a -- void
 
-c-function async-read async_read n a n n -- void
+c-function async-read async_read n a n a -- void
 
-c-function async-write async_write n a n n -- void
+c-function async-write async_write n a n a -- void
 
-c-function async-system async_system a n n -- void
+c-function async-system async_system a n a -- void
 
 c-function async-wait async_wait a a -- void
 
 
 
-3 constant control-sys-size
+4 constant colon-sys-size
+
+: colon-sys-drop ( colon-sys -- ) colon-sys-size 0 do drop loop ;
 
 
-control-sys-size 20 * constant scope-cells
+colon-sys-size 20 * constant scope-cells
 : scope-alloc ( -- s) scope-cells allocate 0= assert
               1 cells over ! ;
 variable myscope
@@ -318,24 +320,21 @@ scope-alloc myscope !
 : >s ( n -- ) scope-ptr !  1 scope+! ;
 : s> ( -- n ) -1 scope+!  scope-ptr @ ;
 
-: scope{ ( cs -- ) control-sys-size 0 do >s loop ;
-: }scope ( -- cs ) control-sys-size 0 do s> loop ;
+: scope. ( s -- ) ." scope(" dup @ cell / 1- . ." ) "
+    dup @ cell ?do dup i + @ . cell +loop drop cr ;
 
-: scope. ( s -- ) dup @ cell ?do dup i + @ . cell +loop drop cr ;
 : scope-clone ( s -- s' )
-    scope-alloc dup >r over @ cmove r>
+    scope-alloc dup >r scope-cells cmove r>
 ;
 : scope-free ( s -- ) free 0= assert ;
 
 
-: :noname2 ( -- control-sys xt )
-    :noname control-sys-size 1+ roll ;
-
-: :headless ( -- control-sys ) :noname2 drop ;
+: :noname2 ( -- xt )
+    :noname colon-sys-drop ;
 
 
 : bind ( xt -- closure )
-    >s myscope @ scope-clone
+    >s myscope @ scope-clone s> drop
 ;
 : invoke ( closure -- )
     myscope @ >r ( leak ) scope-clone myscope !
@@ -344,11 +343,10 @@ scope-alloc myscope !
 ;
 
 
-: [:   postpone ahead scope{
-       postpone ; :noname2 >s ; immediate
-: ;]   postpone ; :headless s> >r }scope
-       postpone then r> postpone literal
-       postpone bind ; immediate
+: [:   postpone ahead postpone exit
+       postpone [ :noname2 >s ; immediate
+: ;]   postpone exit postpone then
+       s> postpone literal postpone bind ; immediate
 
 
 
@@ -363,6 +361,9 @@ variable callback
 ;
 
 
+async-startup
+
+
 : scope-test 1 [: 2 [: 3 ;] 4 ;] 5 ;
 scope-test 5 assert=
 invoke 4 assert=
@@ -374,7 +375,6 @@ invoke 3 assert=
 5 4 test-adder invoke 9 assert=
 
 : test1
-    async-startup
     s" ls -l out" [:
       0= assert
       1 s" Hello world!" [:
@@ -382,7 +382,6 @@ invoke 3 assert=
       ;] async-write
     ;] async-system
     async-run
-    async-shutdown
 ;
 test1
 
@@ -396,16 +395,13 @@ test1
     ;] async-open
 ;
 : test2
-    async-startup
     s" Hello there!" s" out/test1.txt" [:
       ." Written file." cr
     ;] write-whole-file 
     async-run
-    async-shutdown
 ;
 test2
 
-(
 : special-adder dup 8 = if
      drop [: 256 ;]
    else
@@ -414,7 +410,9 @@ test2
 ;
 5 4 special-adder invoke 9 assert=
 5 8 special-adder invoke 256 assert=
-)
+
+
+async-shutdown
 
 
 

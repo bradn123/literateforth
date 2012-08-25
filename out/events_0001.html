@@ -119,9 +119,12 @@ reactor.run()
 <b>bind and invoke</b>
 <b>start and end scope</b>
 </pre></div><p>
-</p></div><div class="section"><h2>Carnal Knowledge</h2><p>For gforth we know control-sys is on the data stack and 3 cells:
-</p><tt><b>carnal knowledge</b> +&equiv;</tt><div class="chunk"><pre>3 constant control-sys-size
+</p></div><div class="section"><h2>Carnal Knowledge</h2><p>For gforth we know colon-sys is on the data stack and 3 cells:
+</p><tt><b>carnal knowledge</b> +&equiv;</tt><div class="chunk"><pre>4 constant colon-sys-size
+</pre></div><p>Add a word to drop a colon-sys.
+</p><tt><b>carnal knowledge</b> +&equiv;</tt><div class="chunk"><pre>: colon-sys-drop ( colon-sys -- ) colon-sys-size 0 do drop loop ;
 </pre></div><p>
+
 </p></div><div class="section"><h2>Scope Stack</h2><p></p><ul><li>Nested scopes
 </li><li>Can't use dstack or rstack as flow control is in the way
 </li><li>Define our own
@@ -129,7 +132,7 @@ reactor.run()
 </li><li>Store the size in the first cell
 </li><li>Leak like mad for now
 </li></ul><p>
-</p></div><div class="section"><h2>Scope Stack (implementation)</h2><p></p><tt><b>scope stack</b> +&equiv;</tt><div class="chunk"><pre>control-sys-size 20 * constant scope-cells
+</p></div><div class="section"><h2>Scope Stack (implementation)</h2><p></p><tt><b>scope stack</b> +&equiv;</tt><div class="chunk"><pre>colon-sys-size 20 * constant scope-cells
 : scope-alloc ( -- s) scope-cells allocate 0= assert
               1 cells over ! ;
 variable myscope
@@ -139,24 +142,21 @@ scope-alloc myscope !
 : scope-ptr ( -- n ) myscope @ @ myscope @ + ;
 : &gt;s ( n -- ) scope-ptr !  1 scope+! ;
 : s&gt; ( -- n ) -1 scope+!  scope-ptr @ ;
-</pre></div><p>Push and pop a whole control-sys.
-</p><tt><b>scope stack</b> +&equiv;</tt><div class="chunk"><pre>: scope{ ( cs -- ) control-sys-size 0 do &gt;s loop ;
-: }scope ( -- cs ) control-sys-size 0 do s&gt; loop ;
 </pre></div><p>
-</p></div><div class="section"><h2>Cloning Scopes and Freeing</h2><p></p><tt><b>scope stack</b> +&equiv;</tt><div class="chunk"><pre>: scope. ( s -- ) dup @ cell ?do dup i + @ . cell +loop drop cr ;
-: scope-clone ( s -- s' )
-    scope-alloc dup &gt;r over @ cmove r&gt;
+</p></div><div class="section"><h2>Printing a Scope</h2><p></p><tt><b>scope stack</b> +&equiv;</tt><div class="chunk"><pre>: scope. ( s -- ) .&quot; scope(&quot; dup @ cell / 1- . .&quot; ) &quot;
+    dup @ cell ?do dup i + @ . cell +loop drop cr ;
+</pre></div><p>
+</p></div><div class="section"><h2>Cloning Scopes and Freeing</h2><p></p><tt><b>scope stack</b> +&equiv;</tt><div class="chunk"><pre>: scope-clone ( s -- s' )
+    scope-alloc dup &gt;r scope-cells cmove r&gt;
 ;
 : scope-free ( s -- ) free 0= assert ;
 </pre></div><p>
 </p></div><div class="section"><h2>:noname</h2><p>Alternate version of <tt>:noname</tt>.
-</p><tt><b>scope flow control</b> +&equiv;</tt><div class="chunk"><pre>: :noname2 ( -- control-sys xt )
-    :noname control-sys-size 1+ roll ;
-</pre></div><p>Even simpler:
-</p><tt><b>scope flow control</b> +&equiv;</tt><div class="chunk"><pre>: :headless ( -- control-sys ) :noname2 drop ;
+</p><tt><b>scope flow control</b> +&equiv;</tt><div class="chunk"><pre>: :noname2 ( -- xt )
+    :noname colon-sys-drop ;
 </pre></div><p>
 </p></div><div class="section"><h2>Bind and Invoke</h2><p></p><tt><b>bind and invoke</b> +&equiv;</tt><div class="chunk"><pre>: bind ( xt -- closure )
-    &gt;s myscope @ scope-clone
+    &gt;s myscope @ scope-clone s&gt; drop
 ;
 : invoke ( closure -- )
     myscope @ &gt;r ( leak ) scope-clone myscope !
@@ -166,11 +166,10 @@ scope-alloc myscope !
 </pre></div><p>
 </p></div><div class="section"><h2>Start and End Scope</h2><p>We want:
 <div class="chunk"><pre>: foo a b c [: x y z ;] d e f ;
-</pre></div></p><tt><b>start and end scope</b> +&equiv;</tt><div class="chunk"><pre>: [:   postpone ahead scope{
-       postpone ; :noname2 &gt;s ; immediate
-: ;]   postpone ; :headless s&gt; &gt;r }scope
-       postpone then r&gt; postpone literal
-       postpone bind ; immediate
+</pre></div></p><tt><b>start and end scope</b> +&equiv;</tt><div class="chunk"><pre>: [:   postpone ahead postpone exit
+       postpone [ :noname2 &gt;s ; immediate
+: ;]   postpone exit postpone then
+       s&gt; postpone literal postpone bind ; immediate
 </pre></div><p>
 </p></div><div class="section"><h2>Try Out Closures</h2><p></p><tt><b>general tests</b> +&equiv;</tt><div class="chunk"><pre>: scope-test 1 [: 2 [: 3 ;] 4 ;] 5 ;
 scope-test 5 assert=
@@ -233,7 +232,7 @@ decimal
        <b>event types</b>
 \c   } operation;
 \c   VARIANT args[4];
-\c   int callback;
+\c   void *callback;
 \c   int result;
 \c } REQUEST;
 </pre></div><p>
@@ -307,7 +306,7 @@ pipeline can be kept.
 \c }
 </pre></div><p>
 </p></div><div class="section"><h2>Open</h2><p></p><tt><b>event types</b> +&equiv;</tt><div class="chunk"><pre>\c     OPEN,
-</pre></div><p></p><tt><b>forth to c declarations</b> +&equiv;</tt><div class="chunk"><pre>c-function async-open async_open a n n n n -- void
+</pre></div><p></p><tt><b>forth to c declarations</b> +&equiv;</tt><div class="chunk"><pre>c-function async-open async_open a n n n a -- void
 </pre></div><p></p><tt><b>handle request types</b> +&equiv;</tt><div class="chunk"><pre>\c     case OPEN:
 \c       tmp = malloc(req-&gt;args[1].number + 1);
 \c       assert(tmp);
@@ -317,7 +316,7 @@ pipeline can be kept.
 \c       free(tmp);
 \c       break;
 </pre></div><p></p><tt><b>issue requests</b> +&equiv;</tt><div class="chunk"><pre>\c void async_open(char *path, int path_len,
-\c                 int oflag, int mode, int callback) {
+\c                 int oflag, int mode, void *callback) {
 \c   REQUEST *req;
 \c   req = (REQUEST*) calloc(1, sizeof(REQUEST));
 \c   assert(req);
@@ -331,11 +330,11 @@ pipeline can be kept.
 \c }
 </pre></div><p>
 </p></div><div class="section"><h2>Close</h2><p></p><tt><b>event types</b> +&equiv;</tt><div class="chunk"><pre>\c     CLOSE,
-</pre></div><p></p><tt><b>forth to c declarations</b> +&equiv;</tt><div class="chunk"><pre>c-function async-close async_close n n -- void
+</pre></div><p></p><tt><b>forth to c declarations</b> +&equiv;</tt><div class="chunk"><pre>c-function async-close async_close n a -- void
 </pre></div><p></p><tt><b>handle request types</b> +&equiv;</tt><div class="chunk"><pre>\c     case CLOSE:
 \c       req-&gt;result = close(req-&gt;args[0].number);
 \c       break;
-</pre></div><p></p><tt><b>issue requests</b> +&equiv;</tt><div class="chunk"><pre>\c void async_close(int fd, int callback) {
+</pre></div><p></p><tt><b>issue requests</b> +&equiv;</tt><div class="chunk"><pre>\c void async_close(int fd, void *callback) {
 \c   REQUEST *req;
 \c   req = (REQUEST*) calloc(1, sizeof(REQUEST));
 \c   assert(req);
@@ -346,12 +345,12 @@ pipeline can be kept.
 \c }
 </pre></div><p>
 </p></div><div class="section"><h2>Read</h2><p></p><tt><b>event types</b> +&equiv;</tt><div class="chunk"><pre>\c     READ,
-</pre></div><p></p><tt><b>forth to c declarations</b> +&equiv;</tt><div class="chunk"><pre>c-function async-read async_read n a n n -- void
+</pre></div><p></p><tt><b>forth to c declarations</b> +&equiv;</tt><div class="chunk"><pre>c-function async-read async_read n a n a -- void
 </pre></div><p></p><tt><b>handle request types</b> +&equiv;</tt><div class="chunk"><pre>\c     case READ:
 \c       req-&gt;result = read(req-&gt;args[0].number, req-&gt;args[1].pointer,
 \c                          req-&gt;args[2].number);
 \c       break;
-</pre></div><p></p><tt><b>issue requests</b> +&equiv;</tt><div class="chunk"><pre>\c void async_read(int fd, void *buf, int len, int callback) {
+</pre></div><p></p><tt><b>issue requests</b> +&equiv;</tt><div class="chunk"><pre>\c void async_read(int fd, void *buf, int len, void *callback) {
 \c   REQUEST *req;
 \c   req = (REQUEST*) calloc(1, sizeof(REQUEST));
 \c   assert(req);
@@ -364,12 +363,12 @@ pipeline can be kept.
 \c }
 </pre></div><p>
 </p></div><div class="section"><h2>Write</h2><p></p><tt><b>event types</b> +&equiv;</tt><div class="chunk"><pre>\c     WRITE,
-</pre></div><p></p><tt><b>forth to c declarations</b> +&equiv;</tt><div class="chunk"><pre>c-function async-write async_write n a n n -- void
+</pre></div><p></p><tt><b>forth to c declarations</b> +&equiv;</tt><div class="chunk"><pre>c-function async-write async_write n a n a -- void
 </pre></div><p></p><tt><b>handle request types</b> +&equiv;</tt><div class="chunk"><pre>\c     case WRITE:
 \c       req-&gt;result = write(req-&gt;args[0].number, req-&gt;args[1].pointer,
 \c                           req-&gt;args[2].number);
 \c       break;
-</pre></div><p></p><tt><b>issue requests</b> +&equiv;</tt><div class="chunk"><pre>\c void async_write(int fd, void *buf, int len, int callback) {
+</pre></div><p></p><tt><b>issue requests</b> +&equiv;</tt><div class="chunk"><pre>\c void async_write(int fd, void *buf, int len, void *callback) {
 \c   REQUEST *req;
 \c   req = (REQUEST*) calloc(1, sizeof(REQUEST));
 \c   assert(req);
@@ -382,7 +381,7 @@ pipeline can be kept.
 \c }
 </pre></div><p>
 </p></div><div class="section"><h2>System</h2><p></p><tt><b>event types</b> +&equiv;</tt><div class="chunk"><pre>\c     SYSTEM,
-</pre></div><p></p><tt><b>forth to c declarations</b> +&equiv;</tt><div class="chunk"><pre>c-function async-system async_system a n n -- void
+</pre></div><p></p><tt><b>forth to c declarations</b> +&equiv;</tt><div class="chunk"><pre>c-function async-system async_system a n a -- void
 </pre></div><p></p><tt><b>handle request types</b> +&equiv;</tt><div class="chunk"><pre>\c     case SYSTEM:
 \c       tmp = malloc(req-&gt;args[1].number + 1);
 \c       assert(tmp);
@@ -391,7 +390,7 @@ pipeline can be kept.
 \c       req-&gt;result = system(tmp);
 \c       free(tmp);
 \c       break;
-</pre></div><p></p><tt><b>issue requests</b> +&equiv;</tt><div class="chunk"><pre>\c void async_system(char *cmd, int cmd_len, int callback) {
+</pre></div><p></p><tt><b>issue requests</b> +&equiv;</tt><div class="chunk"><pre>\c void async_system(char *cmd, int cmd_len, void *callback) {
 \c   REQUEST *req;
 \c   req = (REQUEST*) calloc(1, sizeof(REQUEST));
 \c   assert(req);
@@ -441,7 +440,7 @@ pipeline can be kept.
 \c     pthread_mutex_unlock(&amp;g_lock);
 </pre></div><p>
 </p></div><div class="section"><h2>Waiting for Results</h2><p>Waiting then occurs on the main thread.
-</p><tt><b>implement waiting</b> +&equiv;</tt><div class="chunk"><pre>\c void async_wait(int *result, int *callback) {
+</p><tt><b>implement waiting</b> +&equiv;</tt><div class="chunk"><pre>\c void async_wait(int *result, void **callback) {
 \c   REQUEST *req;
 \c   pthread_mutex_lock(&amp;g_lock);
 \c   if (g_pending_count &lt;= 0) {
@@ -476,7 +475,6 @@ variable callback
 </pre></div><p>
 </p></div><div class="section"><h2>Putting it together</h2><p>Some tests are in order.
 </p><tt><b>general tests</b> +&equiv;</tt><div class="chunk"><pre>: test1
-    async-startup
     s&quot; ls -l out&quot; [:
       0= assert
       1 s&quot; Hello world!&quot; [:
@@ -484,7 +482,6 @@ variable callback
       ;] async-write
     ;] async-system
     async-run
-    async-shutdown
 ;
 test1
 </pre></div><p>
@@ -498,14 +495,21 @@ test1
     ;] async-open
 ;
 : test2
-    async-startup
     s&quot; Hello there!&quot; s&quot; out/test1.txt&quot; [:
       .&quot; Written file.&quot; cr
     ;] write-whole-file 
     async-run
-    async-shutdown
 ;
 test2
+</pre></div><p>
+</p></div><div class="section"><h2>Closures with Conditions</h2><p></p><tt><b>general tests</b> +&equiv;</tt><div class="chunk"><pre>: special-adder dup 8 = if
+     drop [: 256 ;]
+   else
+     &gt;s [: s&gt; + ;]
+   then
+;
+5 4 special-adder invoke 9 assert=
+5 8 special-adder invoke 256 assert=
 </pre></div><p>
 </p></div><div class="section"><h2>Question?</h2><p>Questions?
 

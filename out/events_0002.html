@@ -40,21 +40,17 @@ It will contain everything that is normally run.
 <b>forth to c declarations</b>
 <b>closures</b>
 <b>dispatch events</b>
+<b>do startup</b>
 <b>general tests</b>
+<b>do shutdown</b>
 </pre></div><p>
 </p></div><div class="section"><h2>Testing Tools</h2><p>We'll also define some generic test tools.
 </p><tt><b>test tools</b> +&equiv;</tt><div class="chunk"><pre>: assert ( n -- ) 0= if abort then ;
 : assert= ( a b -- ) = assert ;
 </pre></div><p>
-</p></div><div class="section"><h2>Closures with Conditions</h2><p></p><tt><b>general tests</b> +&equiv;</tt><div class="chunk"><pre>(
-: special-adder dup 8 = if
-     drop [: 256 ;]
-   else
-     &gt;s [: s&gt; + ;]
-   then
-;
-5 4 special-adder invoke 9 assert=
-5 8 special-adder invoke 256 assert=
-)
+</p></div><div class="section"><h2>Startup and Shutdown</h2><p>
+</p><tt><b>do startup</b> +&equiv;</tt><div class="chunk"><pre>async-startup
+</pre></div><p>
+</p><tt><b>do shutdown</b> +&equiv;</tt><div class="chunk"><pre>async-shutdown
 </pre></div><p>
 </p></div></body></html>
