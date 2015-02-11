@@ -381,7 +381,7 @@ c-function async-shutdown async_shutdown -- void
 |: handle request types
 \c     case SHUTDOWN:
 \c       free(req);
-\c       return;
+\c       return 0;
 |;
 |: issue requests
 \c void async_shutdown(void) {
